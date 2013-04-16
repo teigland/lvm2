@@ -2426,9 +2426,26 @@ static int lvconvert_single(struct cmd_context *cmd, struct lvconvert_params *lp
 		cmd->handles_missing_pvs = 1;
 	}
 
+	if (!dlock_vg(cmd, lp->vg_name, "ex", 0)) {
+		log_error("Failed to lock vg");
+		goto_out;
+	}
+
 	lv = get_vg_lock_and_logical_volume(cmd, lp->vg_name, lp->lv_name);
 	if (!lv)
 		goto_out;
+
+	/*
+	 * TODO: can the lv be inactive?  If so, we should use
+	 * non-persistent dlock_lv if it's not currently active
+	 * and won't be activated by the command.  If it's
+	 * active now or will be activated by command, then
+	 * use PERSISTENT.
+	 */
+	if (!dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT)) {
+		log_error("Failed to lock lv");
+		goto_out;
+	}
 
 	/*
 	 * lp->pvh holds the list of PVs available for allocation or removal

@@ -176,6 +176,19 @@ int yes_no_arg(struct cmd_context *cmd __attribute__((unused)), struct arg_value
 	return 1;
 }
 
+int arg_tag_count(int argc, char **argv)
+{
+	int count = 0;
+	int i;
+
+	for (; i < argc; i++) {
+		name = argv[i];
+		if (*name == '@')
+			count++'
+	}
+	return count;
+}
+
 int activation_arg(struct cmd_context *cmd __attribute__((unused)), struct arg_values *av)
 {
 	av->sign = SIGN_NONE;
@@ -881,8 +894,10 @@ static int _get_settings(struct cmd_context *cmd)
 	else
 		init_ignorelockingfailure(0);
 
-	if (!arg_count(cmd, sysinit_ARG))
+	if (!arg_count(cmd, sysinit_ARG)) {
 		lvmetad_connect_or_warn();
+		lvmlockd_connect_or_warn();
+	}
 
 	if (arg_count(cmd, nosuffix_ARG))
 		cmd->current_settings.suffix = 0;

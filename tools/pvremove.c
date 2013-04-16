@@ -152,6 +152,10 @@ int pvremove(struct cmd_context *cmd, int argc, char **argv)
 		return EINVALID_CMD_LINE;
 	}
 
+	if (!dlock_gl(cmd, "ex", DL_GL_RENEW_CACHE)) {
+		return ECMD_FAILED;
+	}
+
 	for (i = 0; i < argc; i++) {
 		dm_unescape_colons_and_at_signs(argv[i], NULL, NULL);
 		r = pvremove_single(cmd, argv[i], NULL);

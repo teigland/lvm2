@@ -1029,6 +1029,68 @@ static int _validate_internal_thin_processing(const struct lvcreate_params *lp)
 	return r;
 }
 
+static int _init_lv_lock(struct cmd_context *cmd, struct volume_group *vg,
+			 struct lvcreate_params *lp)
+{
+	const char *lv_name;
+	const char *def_mode;
+	char *lock_type = NULL;
+	char *lock_args = NULL;
+
+	/*
+	 * Thin pool lvs have locks, but thin lvs within pools do not.
+	 * Exclusive access to a thin pool lv provides ex access to all
+	 * thin lvs within it.  Shared access to thin pools disallowed.
+	 * By not creating a lock for an lv, all dlock calls on it will
+	 * be no-ops.
+	 */
+	if (lp->thin && !lp->create_thin_pool)
+		return 1;
+
+	if (lp->create_thin_pool)
+		lv_name = lp->pool;
+	else
+		lv_name = lp->lv_name;
+
+	if (arg_count(cmd, lock_type_ARG))
+		lock_type = dm_pool_strdup(cmd->mem, arg_str_value(cmd, lock_type_ARG, NULL));
+	else if (vg->lock_type)
+		lock_type = dm_pool_strdup(cmd->mem, vg->lock_type);
+
+	if (!lv_init_lock_args(cmd, vg, lv_name, lock_type, &lock_args)) {
+		log_error("Failed to init lv lock args");
+		return 0;
+	}
+
+	lp->lock_type = lock_type;
+	lp->lock_args = lock_args;
+
+	def_mode = activate_y(lp->activate) ? "ex" : "na";
+
+	if (!dlock_lv_name(cmd, vg, lv_name, lock_args, def_mode, LD_LV_PERSISTENT)) {
+		log_error("Failed to lock lv");
+		lv_free_lock_args(cmd, vg, lv_name, lock_type, lock_args);
+		return 0;
+	}
+
+	return 1;
+}
+
+static void _free_lv_lock(struct cmd_context *cmd, struct volume_group *vg,
+			  struct lvcreate_params *lp)
+{
+	const char *lv_name;
+
+	if (lp->create_thin_pool)
+		lv_name = lp->pool;
+	else
+		lv_name = lp->lv_name;
+
+	dlock_lv_name(cmd, vg, lv_name, lp->lock_args, "un", LD_LV_PERSISTENT);
+	lv_free_lock_args(cmd, vg, lv_name, lp->lock_type, lp->lock_args);
+}
+
+
 int lvcreate(struct cmd_context *cmd, int argc, char **argv)
 {
 	int r = ECMD_PROCESSED;
@@ -1038,6 +1100,10 @@ int lvcreate(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!_lvcreate_params(&lp, &lcp, cmd, argc, argv))
 		return EINVALID_CMD_LINE;
+
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0)) {
+		return_ECMD_FAILED;
+	}
 
 	log_verbose("Finding volume group \"%s\"", lp.vg_name);
 	vg = vg_read_for_update(cmd, lp.vg_name, NULL, 0);
@@ -1087,7 +1153,13 @@ int lvcreate(struct cmd_context *cmd, int argc, char **argv)
 			    lp.snapshot ? " as snapshot of " : "",
 			    lp.snapshot ? lp.origin : "", lp.segtype->name);
 
+	if (!_init_lv_lock(cmd, vg, &lp)) {
+		r = ECMD_FAILED;
+		goto_out;
+	}
+
 	if (!lv_create_single(vg, &lp)) {
+		_free_lv_lock(cmd, vg, &lp);
 		stack;
 		r = ECMD_FAILED;
 	}
