@@ -29,6 +29,7 @@
 #include "archiver.h"
 #include "lvmcache.h"
 #include "lvmetad.h"
+#include "lvmlockd.h"
 #include "lvm-version.h"
 #include "config.h"
 #include "defaults.h"
@@ -182,6 +183,7 @@ const char *grouped_arg_str_value(const struct arg_values *av, int a, const char
 int32_t grouped_arg_int_value(const struct arg_values *av, int a, const int32_t def); 
 
 const char *command_name(struct cmd_context *cmd);
+const char *mode_vg(struct cmd_context *cmd);
 
 int pvmove_poll(struct cmd_context *cmd, const char *pv, unsigned background);
 int lvconvert_poll(struct cmd_context *cmd, struct logical_volume *lv, unsigned background);
