@@ -990,3 +990,34 @@ int lvmetad_pvscan_all_devs(struct cmd_context *cmd, activation_handler handler)
 	return r;
 }
 
+/*
+ * The gl lock (in sh or ex) must be held when this is called.
+ *
+ * Check if lvmetad's global_invalid has been set by lvmlockd.
+ * If so, reread all metadata from disk, update it in lvmetad,
+ * and clear lvmetad's global_invalid flag.
+ */
+
+int lvmetad_validate_dlock_global(struct cmd_context *cmd)
+{
+	daemon_reply reply;
+	int invalid;
+
+	reply = daemon_send_simple(_lvmetad, "status", NULL);
+
+	invalid = daemon_reply_int(reply, "global_invalid", 1);
+
+	if (!invalid)
+		goto out;
+
+	/* does this fully rebuild the cache? */
+	lvmetad_pvscan_all_devs(cmd, NULL);
+
+	lvmetad_clear_global_invalid(lvmetad_handle);
+
+	/* refresh our cmd cache based on new lvmetad cache */
+	lvmcache_seed_infos_from_lvmetad(cmd);
+ out:   
+	daemon_reply_destroy(reply);
+}
+

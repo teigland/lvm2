@@ -72,6 +72,7 @@ struct cmd_context {
 	struct dm_list segtypes;	/* Available segment types */
 	const char *hostname;
 	const char *kernel_vsn;
+	const char *local_id;
 
 	unsigned rand_seed;
 	char *linebuffer;
