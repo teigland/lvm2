@@ -35,6 +35,7 @@
 #include "segtype.h"
 #include "lvmcache.h"
 #include "lvmetad.h"
+#include "lvmlockd.h"
 #include "dev-cache.h"
 #include "archiver.h"
 
@@ -288,6 +289,7 @@ static int _process_config(struct cmd_context *cmd)
 	const struct dm_config_value *cv;
 	int64_t pv_min_kb;
 	const char *lvmetad_socket;
+	const char *lvmlockd_socket;
 	int udev_disabled = 0;
 
 	if (!config_def_check(cmd, 0, 0, 0) && find_config_tree_bool(cmd, config_abort_on_errors_CFG)) {
@@ -465,6 +467,19 @@ static int _process_config(struct cmd_context *cmd)
 		lvmetad_set_active(find_config_tree_bool(cmd, global_use_lvmetad_CFG));
 
 	lvmetad_init(cmd);
+
+	lvmlockd_disconnect();
+	lvmlockd_socket = getenv("LVM_LVMLOCKD_SOCKET");
+	if (!lvmlockd_socket)
+		lvmlockd_socket = DEFAULT_RUN_DIR "/lvmlockd.socket";
+
+	/* TODO?
+		lvmlockd_socket = find_config_tree_str(cmd, "lvmlockd/socket_path",
+						       DEFAULT_RUN_DIR "/lvmlockd.socket");
+	*/
+	lvmlockd_set_socket(lvmlockd_socket);
+	lvmlockd_set_active(find_config_tree_int(cmd, global_use_lvmlockd_CFG));
+	lvmlockd_init(cmd);
 
 	return 1;
 }
@@ -1725,6 +1740,9 @@ void destroy_toolcontext(struct cmd_context *cmd)
 		dm_hash_destroy(cmd->cft_def_hash);
 
 	dm_free(cmd);
+
+	lvmlockd_config_free();
+	lvmlockd_disconnect();
 
 	lvmetad_release_token();
 	lvmetad_disconnect();

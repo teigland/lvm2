@@ -21,6 +21,49 @@ const char *command_name(struct cmd_context *cmd)
 	return cmd->command->name;
 }
 
+const char *mode_vg(struct cmd_context *cmd)
+{
+	const char *cmd_name = command_name(cmd);
+	const char *arg_mode;
+
+	/*
+	arg_mode = arg_str_value(cmd, lockvg_ARG, NULL);
+	if (arg_mode)
+		return arg_mode;
+	*/
+
+	if (!strcmp(cmd_name, "vgs"))
+		return "sh";
+	if (!strcmp(cmd_name, "lvs"))
+		return "sh";
+	if (!strcmp(cmd_name, "pvs"))
+		return "sh";
+	if (!strcmp(cmd_name, "vgscan"))
+		return "sh";
+	if (!strcmp(cmd_name, "lvscan"))
+		return "sh";
+	if (!strcmp(cmd_name, "pvscan"))
+		return "sh";
+	if (!strcmp(cmd_name, "vgdisplay"))
+		return "sh";
+	if (!strcmp(cmd_name, "lvdisplay"))
+		return "sh";
+	if (!strcmp(cmd_name, "pvdisplay"))
+		return "sh";
+
+	if (!strcmp(cmd_name, "vgchange") && arg_count(cmd, activate_ARG))
+		return "sh";
+
+	if (!strcmp(cmd_name, "vgcfgbackup"))
+		return "sh";
+	if (!strcmp(cmd_name, "vgexport"))
+		return "sh";
+	if (!strcmp(cmd_name, "vgck"))
+		return "sh";
+
+	return "ex";
+}
+
 /*
  * Strip dev_dir if present
  */

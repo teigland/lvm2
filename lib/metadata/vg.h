@@ -55,6 +55,8 @@ struct volume_group {
 	const char *name;
 	const char *old_name;		/* Set during vgrename and vgcfgrestore */
 	char *system_id;
+	const char *lock_type;
+	const char *lock_args;
 
 	uint32_t extent_size;
 	uint32_t extent_count;
