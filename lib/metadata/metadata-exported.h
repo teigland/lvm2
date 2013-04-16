@@ -647,6 +647,9 @@ struct lvcreate_params {
 	alloc_policy_t alloc; /* all */
 
 	struct dm_list tags;	/* all */
+
+	const char *lock_type;
+	const char *lock_args;
 };
 
 struct logical_volume *lv_create_single(struct volume_group *vg,
@@ -895,6 +898,8 @@ struct vgcreate_params {
 	alloc_policy_t alloc;
 	int clustered; /* FIXME: put this into a 'status' variable instead? */
 	uint32_t vgmetadatacopies;
+	const char *lock_type;
+	const char *lock_args;
 };
 
 int vgcreate_params_validate(struct cmd_context *cmd,

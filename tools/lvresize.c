@@ -457,6 +457,38 @@ static int _lvresize(struct cmd_context *cmd, struct volume_group *vg,
 		return ECMD_FAILED;
 	}
 
+	prev_mode = dlock_get_mode(cmd, lv);
+
+	if (!dlock_lv(cmd, lv, "ex", 0)) {
+		if (lp->resize != LV_EXTEND) {
+			log_error("Can't acquire lv lock");
+			return ECMD_FAILED;
+		}
+#if 1
+		log_error("Can't acquire lv lock");
+		return ECMD_FAILED;
+#else
+		/*
+		 * If prev_mode is sh, then assume that the dlock_lv(ex)
+		 * failed to convert to ex because another host holds a
+		 * sh lock on the lv.  In this case, we can continue with
+		 * the resize, and at the end tell any other hosts to
+		 * refresh the vg.
+		 */
+#endif
+	}
+
+	/*
+	 * TODO: at the end of resize convert back to original mode,
+	 * and notify/wait for a vg refresh on other hosts.
+	 *
+	 * if (prev_mode == "sh") {
+	 * 	dlock_lv(cmd, lv, "sh", 0);
+	 * 	dlock_vg(cmd, vg->name, "sh", 0);
+	 * 	dlock_remote(cmd, lv, "vgrefresh");
+	 * }
+	 */
+
 	alloc = (alloc_policy_t) arg_uint_value(cmd, alloc_ARG, lv->alloc);
 
 	/*
@@ -895,6 +927,11 @@ int lvresize(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!_lvresize_params(cmd, argc, argv, &lp))
 		return EINVALID_CMD_LINE;
+
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0)) {
+		stack;
+		return ECMD_FAILED;
+	}
 
 	log_verbose("Finding volume group %s", lp.vg_name);
 	vg = vg_read_for_update(cmd, lp.vg_name, NULL, 0);

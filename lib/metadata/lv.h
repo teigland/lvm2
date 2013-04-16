@@ -50,6 +50,9 @@ struct logical_volume {
 
 	uint64_t timestamp;
 	const char *hostname;
+
+	const char *lock_type;
+	const char *lock_args;
 };
 
 uint64_t lv_size(const struct logical_volume *lv);

@@ -82,6 +82,12 @@ static int _pv_resize_single(struct cmd_context *cmd,
 		goto out;
 	}
 
+	if (is_orphan_vg(vg_name)) {
+		/* convert sh to ex */
+		if (!dlock_gl(cmd, "ex", 0))
+			goto out;
+	}
+
 	if (new_size) {
 		if (new_size > size)
 			log_warn("WARNING: %s: Overriding real size. "
@@ -172,6 +178,10 @@ int pvresize(struct cmd_context *cmd, int argc, char **argv)
 
 	params.done = 0;
 	params.total = 0;
+
+	/* converted to ex in single if an arg is an orphan */
+	if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
 
 	ret = process_each_pv(cmd, argc, argv, NULL, READ_FOR_UPDATE, 0, &params,
 			      _pvresize_single);
