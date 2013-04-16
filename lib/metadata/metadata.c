@@ -603,6 +603,8 @@ int vg_remove(struct volume_group *vg)
 	if (!lvmetad_vg_remove(vg))
 		stack;
 
+	dlock_vg_update(vg);
+
 	if (!backup_remove(vg->cmd, vg->name))
 		stack;
 
@@ -2678,6 +2680,8 @@ int vg_commit(struct volume_group *vg)
 	/* Skip if we already did this in vg_write */
 	if ((vg->fid->fmt->features & FMT_PRECOMMIT) && !lvmetad_vg_update(vg))
 		return_0;
+
+	dlock_vg_update(vg);
 
 	cache_updated = _vg_commit_mdas(vg);
 

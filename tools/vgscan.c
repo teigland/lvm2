@@ -42,6 +42,11 @@ int vgscan(struct cmd_context *cmd, int argc, char **argv)
 		return ECMD_FAILED;
 	}
 
+	if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE)) {
+		log_error("Unable to obtain global lock.");
+		return ECMD_FAILED;
+	}
+
 	if (cmd->filter->wipe)
 		cmd->filter->wipe(cmd->filter);
 	lvmcache_destroy(cmd, 1);

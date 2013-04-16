@@ -21,6 +21,30 @@ const char *command_name(struct cmd_context *cmd)
 	return cmd->command->name;
 }
 
+int activate_y(activation_change_t change)
+{
+	switch (change) {
+	case CHANGE_AY:
+	case CHANGE_AE:
+	case CHANGE_ALY:
+	case CHANGE_AAY:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+int activate_n(activation_change_t change)
+{
+	switch (change) {
+	case CHANGE_AN:
+	case CHANGE_ALN:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 /*
  * Strip dev_dir if present
  */
@@ -1243,6 +1267,13 @@ int vgcreate_params_set_from_args(struct cmd_context *cmd,
 				  struct vgcreate_params *vp_new,
 				  struct vgcreate_params *vp_def)
 {
+	int locking_type;
+	int use_lvmlockd;
+	int lt_num;
+	int clustered;
+	char *arg_str;
+	char *lock_type;
+
 	vp_new->vg_name = skip_dev_dir(cmd, vp_def->vg_name, NULL);
 	vp_new->max_lv = arg_uint_value(cmd, maxlogicalvolumes_ARG,
 					vp_def->max_lv);
@@ -1251,16 +1282,7 @@ int vgcreate_params_set_from_args(struct cmd_context *cmd,
 	vp_new->alloc = (alloc_policy_t) arg_uint_value(cmd, alloc_ARG, vp_def->alloc);
 
 	/* Units of 512-byte sectors */
-	vp_new->extent_size =
-	    arg_uint_value(cmd, physicalextentsize_ARG, vp_def->extent_size);
-
-	if (arg_count(cmd, clustered_ARG))
-		vp_new->clustered =
-			!strcmp(arg_str_value(cmd, clustered_ARG,
-					      vp_def->clustered ? "y":"n"), "y");
-	else
-		/* Default depends on current locking type */
-		vp_new->clustered = locking_is_clustered();
+	vp_new->extent_size = arg_uint_value(cmd, physicalextentsize_ARG, vp_def->extent_size);
 
 	if (arg_sign_value(cmd, physicalextentsize_ARG, SIGN_NONE) == SIGN_MINUS) {
 		log_error("Physical extent size may not be negative");
@@ -1292,6 +1314,82 @@ int vgcreate_params_set_from_args(struct cmd_context *cmd,
 	} else {
 		vp_new->vgmetadatacopies = find_config_tree_int(cmd, metadata_vgmetadatacopies_CFG);
 	}
+
+	/*
+	 * Locking
+	 *
+	 * set vp_new->lock_type to none|local|clvm|dlm|sanlock
+	 *
+	 * If --lock-type is used, it's simple and direct.
+	 *
+	 * If --clustered is used, then lock_type will depend
+	 * on the locking scheme defined in lvm.conf.
+	 *
+	 * When neither is used, the default also depends on
+	 * the locking scheme.
+	 */
+
+	locking_type = find_config_tree_int(cmd, global_locking_type_CFG);
+	use_lvmlockd = find_config_tree_int(cmd, global_use_lvmlockd_CFG);
+
+	if (arg_count(cmd, lock_type_ARG)) {
+		lock_type = arg_str_value(cmd, lock_type_ARG, "");
+
+	} else if (arg_count(cmd, clustered_ARG)) {
+		arg_str = arg_str_value(cmd, clustered_ARG, "");
+
+		if (!strcmp(arg_str, "y")) {
+			clustered = 1;
+		} else if (!strcmp(arg_str, "n")) {
+			clustered = 0;
+		} else {
+			log_error("Unknown clustered value");
+			return 0;
+		}
+
+		if (use_lvmlockd) {
+			if (clustered)
+				lock_type = find_config_tree_str(cmd, global_vgcreate_clustery_lock_type_CFG);
+			else
+				lock_type = find_config_tree_str(cmd, global_vgcreate_clustern_lock_type_CFG);
+		} else if (locking_type == 3) {
+			if (clustered)
+				lock_type = "clvm";
+			else
+				lock_type = "none";
+		} else {
+			log_error("clustered vg requires use_lvmlockd or locking_type 3");
+			return 0;
+		}
+
+	} else {
+		if (locking_type == 3)
+			lock_type = locking_is_clustered() ? "clvm" : "none";
+		else
+			lock_type = find_config_tree_str(cmd, global_vgcreate_default_lock_type_CFG);
+	}
+
+	/*
+	 * Check that the lock_type is recognized, and is being
+	 * used with the correct locking configuration.
+	 */
+	lt_num = lock_type_to_num(lock_type);
+
+	if (lt_num < 0) {
+		log_error("lock_type unknown");
+		return 0;
+	} else if ((lt_num == LOCK_TYPE_DLM || lt_num == LOCK_TYPE_SANLOCK) && !use_lvmlockd) {
+		log_error("lock_type %s requires use_lvmlockd configuration setting", lock_type);
+		return 0;
+	} else if ((lt_num == LOCK_TYPE_CLVM) && (locking_type != 3)) {
+		log_error("lock_type clvm requires locking_type 3 configuration setting");
+		return 0;
+	}
+
+	vp_new->lock_type = lock_type;
+
+	if (lock_type_num == LOCK_TYPE_CLVM)
+		vp_new->clustered = 1;
 
 	return 1;
 }
