@@ -364,6 +364,12 @@ static int _report(struct cmd_context *cmd, int argc, char **argv,
 	else if (report_type & LVS)
 		report_type = LVS;
 
+	if (!argc || arg_tag_count(argc, argv)) {
+		/* gl is needed to get a valid list of all vgs */
+		if (!dlock_gl(cmd, "sh", 0))
+			return ECMD_FAILED;
+	}
+
 	switch (report_type) {
 	case LVS:
 		r = process_each_lv(cmd, argc, argv, 0, report_handle,
