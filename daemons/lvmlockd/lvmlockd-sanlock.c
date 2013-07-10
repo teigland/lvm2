@@ -456,6 +456,9 @@ int lm_lock_sanlock(struct lockspace *ls, struct resource *r,
 	struct lm_sanlock *lms = ls->lm_data;
 	struct rd_sanlock *rds = r->lm_data;
 	struct sanlk_resource *rs = &rds->rs;
+	uint32_t flags = 0;
+	struct val_blk vb;
+	int lvb = (r->type == LD_RT_GL || r->type == LD_RT_VG);
 	int rv;
 
 	if (!r->lm_data) {
@@ -473,10 +476,20 @@ int lm_lock_sanlock(struct lockspace *ls, struct resource *r,
 
 	log_debug("lock_sanlock %s %s", ls->name, r->name);
 
-	rv = sanlock_acquire(lms->sock, -1, 0, 1, &rs, NULL);
+	if (lvb)
+		flags |= SANLK_ACQUIRE_LVB;
 
-	/* TODO: add lvb to sanlock */
-	*version = 0;
+	rv = sanlock_acquire(lms->sock, -1, flags, 1, &rs, NULL);
+	if (rv < 0) {
+	}
+
+	if (lvb) {
+		rv = sanlock_get_lvb(0, rs, vb, sizeof(vb));
+		if (rv < 0) {
+		}
+
+		*version = le64_to_cpu(vb.mdver);
+	}
 
 	return rv;
 }
@@ -486,11 +499,25 @@ int lm_unlock_sanlock(struct lockspace *ls, struct resource *r, uint64_t version
 	struct lm_sanlock *lms = ls->lm_data;
 	struct rd_sanlock *rds = r->lm_data;
 	struct sanlk_resource *rs = &rds->rs;
+	struct val_blk vb;
+	int lvb = (r->type == LD_RT_GL || r->type == LD_RT_VG);
 	int rv;
 
 	log_debug("unlock_sanlock %s %s", ls->name, r->name);
 
+	if (lvb && (r->mode == LD_LK_EX)) {
+		memset(&vb, 0, sizeof(vb));
+
+		vb.version = cpu_to_le64(version);
+
+		rv = sanlock_set_lvb(0, rs, vb, sizeof(vb));
+		if (rv < 0) {
+		}
+	}
+
 	rv = sanlock_release(lms->sock, -1, 0, 1, &rs);
+	if (rv < 0) {
+	}
 
 	return rv;
 }

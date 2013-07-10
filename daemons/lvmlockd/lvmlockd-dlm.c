@@ -30,30 +30,6 @@ struct lm_dlm {
 	dlm_lshandle_t *dh;
 };
 
-struct val_blk {
-	uint32_t version;
-	uint32_t flags;
-	uint64_t mdver;
-};
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define le16_to_cpu(x) (bswap_16((x)))
-#define le32_to_cpu(x) (bswap_32((x)))
-#define le64_to_cpu(x) (bswap_64((x)))
-#define cpu_to_le16(x) (bswap_16((x)))
-#define cpu_to_le32(x) (bswap_32((x)))
-#define cpu_to_le64(x) (bswap_64((x)))
-#endif
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#define le16_to_cpu(x) (x)
-#define le32_to_cpu(x) (x)
-#define le64_to_cpu(x) (x)
-#define cpu_to_le16(x) (x)
-#define cpu_to_le32(x) (x)
-#define cpu_to_le64(x) (x)
-#endif
-
 /* TODO: vb.version */
 
 static void read_lvb(struct resource *r, struct dlm_lksb *lksb, uint64_t *version)
@@ -134,7 +110,7 @@ static int lm_add_resource_dlm(struct lockspace *ls, struct resource *r)
 {
 	struct lm_dlm *lmd = ls->lm_data;
 	struct dlm_lksb *lksb;
-	uint32_t flags;
+	uint32_t flags = 0;
 	char *buf;
 	int size, rv;
 
@@ -158,10 +134,13 @@ static int lm_add_resource_dlm(struct lockspace *ls, struct resource *r)
 
 	lksb = r->lm_data;
 
-	if (r->type == LD_RT_GL || r->type == LD_RT_VG)
+	if (r->type == LD_RT_GL || r->type == LD_RT_VG) {
 		lksb->sb_lvbptr = buf + sizeof(struct dlm_lksb);
+		flags |= LKF_VALBLK;
+	}
 
-	flags = LKF_VALBLK | LKF_EXPEDITE;
+	/* because this is a new NL lock request */
+	flags |= LKF_EXPEDITE;
 
 	rv = dlm_ls_lock_wait(lmd->dh, LKM_NLMODE, lksb, flags,
 			      r->name, strlen(r->name),
@@ -206,6 +185,7 @@ int lm_lock_dlm(struct lockspace *ls, struct resource *r, int ld_mode, uint64_t 
 	struct dlm_lksb *lksb;
 	uint32_t mode;
 	uint32_t flags;
+	int lvb = (r->type == LD_RT_GL || r->type == LD_RT_VG);
 	int rv;
 
 	if (!r->lm_data) {
@@ -216,7 +196,10 @@ int lm_lock_dlm(struct lockspace *ls, struct resource *r, int ld_mode, uint64_t 
 
 	lksb = r->lm_data;
 
-	flags = LKF_CONVERT | LKF_VALBLK | LKF_NOQUEUE;
+	flags = LKF_CONVERT | LKF_NOQUEUE;
+
+	if (lvb)
+		flags |= LKF_VALBLK;
 
 	mode = to_dlm_mode(ld_mode);
 
@@ -227,7 +210,9 @@ int lm_lock_dlm(struct lockspace *ls, struct resource *r, int ld_mode, uint64_t 
 		return rv;
 	}
 
-	read_lvb(r, lksb, version);
+	if (lvb)
+		read_lvb(r, lksb, version);
+
 	return 0;
 }
 
@@ -236,11 +221,15 @@ int lm_unlock_dlm(struct lockspace *ls, struct resource *r, uint64_t version)
 	struct lm_dlm *lmd = ls->lm_data;
 	struct dlm_lksb *lksb = r->lm_data;
 	uint32_t flags;
+	int lvb = (r->type == LD_RT_GL || r->type == LD_RT_VG);
 	int rv;
 
-	flags = LKF_CONVERT | LKF_VALBLK;
+	flags = LKF_CONVERT;
 
-	write_lvb(r, lksb, version);
+	if (lvb && (r->mode == LD_LK_EX)) {
+		flags |= LKF_VALBLK;
+		write_lvb(r, lksb, version);
+	}
 
 	rv = dlm_ls_lock_wait(lmd->dh, LKM_NLMODE, lksb, flags,
 			      r->name, strlen(r->name),

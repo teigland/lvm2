@@ -141,6 +141,12 @@ struct lockspace {
 	struct list_head resources;	/* resource/lock state for gl/vg/lv */
 };
 
+struct val_blk {
+	uint32_t version;
+	uint32_t flags;
+	uint64_t mdver;
+};
+
 int lockspaces_empty(void);
 
 int lm_add_lockspace_dlm(struct lockspace *ls);
@@ -170,6 +176,24 @@ do { \
         if (daemon_debug) \
                 printf("E " fmt "\n", ##args); \
 } while (0)
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define le16_to_cpu(x) (bswap_16((x)))
+#define le32_to_cpu(x) (bswap_32((x)))
+#define le64_to_cpu(x) (bswap_64((x)))
+#define cpu_to_le16(x) (bswap_16((x)))
+#define cpu_to_le32(x) (bswap_32((x)))
+#define cpu_to_le64(x) (bswap_64((x)))
+#endif
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define le16_to_cpu(x) (x)
+#define le32_to_cpu(x) (x)
+#define le64_to_cpu(x) (x)
+#define cpu_to_le16(x) (x)
+#define cpu_to_le32(x) (x)
+#define cpu_to_le64(x) (x)
+#endif
 
 /* to improve readability */
 #define WAIT     1
