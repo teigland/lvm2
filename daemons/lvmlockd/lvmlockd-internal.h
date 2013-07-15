@@ -78,6 +78,7 @@ struct client {
 #define LD_AF_NEXT_VERSION  0x00000008
 #define LD_AF_WAIT          0x00000010
 #define LD_AF_FORCE         0x00000020
+#define LD_AF_EX_DISABLE    0x00000040
 
 struct action {
 	struct list_head list;

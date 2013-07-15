@@ -695,23 +695,6 @@ static int res_update(struct lockspace *ls, struct resource *r,
 }
 
 /*
- * TODO: locked enable/disable
- * ex_enable: enable resource and make it locked ex at once
- * ex_disable: lock resource ex, then unlock and disable at once
- * Both will need support from sanlock api.
- *
- * ex_enable and ex_disable should be safe when combined with
- * other hosts doing standard ex lock ops on the resource,
- * but they won't work safely with other hosts also doing
- * ex_enable/ex_disable.  So, the usage of these needs to be
- * applied only in cases where it is certain that that
- * ex_enable/ex_disable are only being used by a single host.
- *
- * The non-locked enable and disable cannot be safely combined
- * with anything, so they must be used even more carefully.
- */
-
-/*
  * NB. we can't do this if sanlock is holding any locks on
  * the resource; we'd be rewriting the resource from under
  * sanlock and would confuse or break it badly.  We don't
@@ -747,8 +730,13 @@ static int res_able(struct lockspace *ls, struct resource *r,
 		return -EINVAL;
 	}
 
-	rv = lm_able_gl_sanlock(ls, act->op == LD_OP_ENABLE);
+	if ((act->op == LD_OP_DISABLE) && (act->flags & LD_AF_EX_DISABLE)) {
+		rv = lm_ex_disable_gl_sanlock(ls);
+		goto out;
+	}
 
+	rv = lm_able_gl_sanlock(ls, act->op == LD_OP_ENABLE);
+ out:
 	return rv;
 }
 
@@ -2176,6 +2164,8 @@ static int set_act_opts(const char *opts, struct action *act)
 		act->flags |= LD_AF_WAIT;
 	if (strstr(opts, "force"))
 		act->flags |= LD_AF_FORCE;
+	if (strstr(opts, "ex_disable"))
+		act->flags |= LD_AF_EX_DIABLE;
 	return 0;
 }
 

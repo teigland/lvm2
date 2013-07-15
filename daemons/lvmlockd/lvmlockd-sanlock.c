@@ -218,6 +218,53 @@ int lm_init_lv_sanlock(char *ls_name, char *lv_name,
 	return rv;
 }
 
+int lm_ex_disable_gl_sanlock(struct lockspace *ls)
+{
+	struct lm_sanlock *lms = ls->lm_data;
+	struct sanlk_resourced rd1;
+	struct sanlk_resourced rd2;
+	struct sanlk_resource *rs1;
+	struct sanlk_resource *rs2;
+	struct sanlk_resource **rs_args;
+	int rv;
+
+	rs_args = malloc(2 * sizeof(struct sanlk_resource *));
+	if (!rs_args)
+		return -ENOMEM;
+
+	rs1 = &rd1.rs;
+	rs2 = &rd2.rs;
+
+	memset(&rd1, 0, sizeof(rd1));
+	memset(&rd2, 0, sizeof(rd2));
+
+	strncpy(rd1.rs.lockspace_name, ls->name, SANLK_NAME_LEN);
+	strncpy(rd1.rs.name, R_NAME_GL, SANLK_NAME_LEN);
+
+	strncpy(rd2.rs.lockspace_name, ls->name, SANLK_NAME_LEN);
+	strncpy(rd2.rs.name, R_NAME_GL_DISABLED, SANLK_NAME_LEN);
+
+	rd1.rs.num_disks = 1;
+	strncpy(rd1.rs.disks[0].path, lms->ss.host_id_disk.path, SANLK_PATH_LEN);
+	rd1.rs.disks[0].offset = lms->align_size * GL_LOCK_BEGIN;
+
+	rv = sanlock_acquire(lms->sock, -1, 0, 1, &rs1, NULL);
+	if (rv < 0) {
+		goto out;
+	}
+
+	rs_args[0] = rs1;
+	rs_args[1] = rs2;
+
+	rv = sanlock_release(lms->sock, -1, SANLK_REL_RENAME, 2, rs_args);
+	if (rv < 0) {
+	}
+
+out:
+	free(rs_args);
+	return rv;
+}
+
 /*
  * enable/disable exist because each vg contains a global lock,
  * but we only want to use the gl from one of them.  The first
@@ -232,11 +279,6 @@ int lm_init_lv_sanlock(char *ls_name, char *lv_name,
  * When a host attempts to acquire the gl with its standard
  * predefined name, it will fail because the resource's name
  * on disk doesn't match.
- *
- * TODO: it may be nice to have support from sanlock to
- * rewrite the resource name, leaving the rest of the
- * resource intact, rather than reinitializing the
- * entire thing from scratch in order to rename it.
  */
 
 int lm_able_gl_sanlock(struct lockspace *ls, int enable)
