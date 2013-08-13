@@ -20,14 +20,23 @@
 #include "daemon-server.h"
 #include "daemon-log.h"
 #include "lvm-version.h"
+#include "lvmetad-client.h"
 
 #include <assert.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <unistd.h>
-
 #include <math.h>  /* fabs() */
 #include <float.h> /* DBL_EPSILON */
+
+struct vg_info {
+	int64_t external_version;
+	uint32_t flags;
+};
+
+#define FL_GLOBAL_INVALID 0x00000001
+
+#define VGFL_INVALID 0x00000001
 
 typedef struct {
 	log_state *log; /* convenience */
@@ -38,6 +47,7 @@ typedef struct {
 
 	struct dm_hash_table *vgid_to_metadata;
 	struct dm_hash_table *vgid_to_vgname;
+	struct dm_hash_table *vgid_to_info;
 	struct dm_hash_table *vgname_to_vgid;
 	struct dm_hash_table *pvid_to_vgid;
 	struct {
@@ -49,6 +59,7 @@ typedef struct {
 	} lock;
 	char token[128];
 	pthread_mutex_t token_lock;
+	uint32_t flags; /* FL_ */
 } lvmetad_state;
 
 static void destroy_metadata_hashes(lvmetad_state *s)
@@ -69,6 +80,7 @@ static void destroy_metadata_hashes(lvmetad_state *s)
 	dm_hash_destroy(s->pvid_to_pvmeta);
 	dm_hash_destroy(s->vgid_to_metadata);
 	dm_hash_destroy(s->vgid_to_vgname);
+	dm_hash_destroy(s->vgid_to_info);
 	dm_hash_destroy(s->vgname_to_vgid);
 
 	n = dm_hash_get_first(s->device_to_pvid);
@@ -87,6 +99,7 @@ static void create_metadata_hashes(lvmetad_state *s)
 	s->device_to_pvid = dm_hash_create(32);
 	s->vgid_to_metadata = dm_hash_create(32);
 	s->vgid_to_vgname = dm_hash_create(32);
+	s->vgid_to_info = dm_hash_create(32);
 	s->pvid_to_vgid = dm_hash_create(32);
 	s->vgname_to_vgid = dm_hash_create(32);
 }
@@ -250,6 +263,30 @@ static int update_pv_status(lvmetad_state *s,
 	return complete;
 }
 
+static struct dm_config_node *add_last_node(struct dm_config_tree *cft, const char *node_name)
+{
+	struct dm_config_node *cn, *last;
+
+	cn = cft->root;
+	last = cn;
+
+	while (cn->sib) {
+		last = cn->sib;
+		cn = last;
+	}
+
+	cn = dm_config_create_node(cft, node_name);
+	if (!cn)
+		return NULL;
+
+	cn->v = NULL;
+	cn->sib = NULL;
+	cn->parent = cft->root;
+	last->sib = cn;
+
+	return cn;
+}
+
 static struct dm_config_node *make_pv_node(lvmetad_state *s, const char *pvid,
 					   struct dm_config_tree *cft,
 					   struct dm_config_node *parent,
@@ -314,6 +351,9 @@ static response pv_list(lvmetad_state *s, request r)
 		cn = make_pv_node(s, id, res.cft, cn_pvs, cn);
 	}
 
+	if (s->flags & FL_GLOBAL_INVALID)
+		add_last_node(res.cft, "global_invalid");
+
 	unlock_pvid_to_pvmeta(s);
 
 	return res;
@@ -357,6 +397,9 @@ static response pv_lookup(lvmetad_state *s, request r)
 
 	pv->key = "physical_volume";
 	unlock_pvid_to_pvmeta(s);
+
+	if (s->flags & FL_GLOBAL_INVALID)
+		add_last_node(res.cft, "global_invalid");
 
 	return res;
 }
@@ -429,6 +472,9 @@ static response vg_list(lvmetad_state *s, request r)
 	}
 
 	unlock_vgid_to_metadata(s);
+
+	if (s->flags & FL_GLOBAL_INVALID)
+		add_last_node(res.cft, "global_invalid");
 bad:
 	return res;
 }
@@ -437,6 +483,7 @@ static response vg_lookup(lvmetad_state *s, request r)
 {
 	struct dm_config_tree *cft;
 	struct dm_config_node *metadata, *n;
+	struct vg_info *info;
 	response res = { 0 };
 
 	const char *uuid = daemon_request_str(r, "uuid", NULL);
@@ -499,6 +546,16 @@ static response vg_lookup(lvmetad_state *s, request r)
 	unlock_vg(s, uuid);
 
 	update_pv_status(s, res.cft, n, 1); /* FIXME report errors */
+
+	if (s->flags & FL_GLOBAL_INVALID)
+		add_last_node(res.cft, "global_invalid");
+
+	info = dm_hash_lookup(s->vgid_to_info, uuid);
+	if (info && (info->flags & VGFL_INVALID)) {
+		n = add_last_node(res.cft, "vg_invalid");
+		if (!n)
+			goto bad;
+	}
 
 	return res;
 bad:
@@ -953,6 +1010,24 @@ static response pv_found(lvmetad_state *s, request r)
 				   NULL);
 }
 
+static void vg_info_update(lvmetad_state *s, const char *uuid,
+			   struct dm_config_node *metadata)
+{
+	struct vg_info *info;
+	int64_t cache_version;
+
+	cache_version = dm_config_find_int64(metadata, "metadata/seqno", -1);
+	if (cache_version == -1)
+		return;
+
+	info = (struct vg_info *) dm_hash_lookup(s->vgid_to_info, uuid);
+	if (!info)
+		return;
+
+	if (cache_version >= info->external_version)
+		info->flags &= ~VGFL_INVALID;
+}
+
 static response vg_update(lvmetad_state *s, request r)
 {
 	struct dm_config_node *metadata = dm_config_find_node(r.cft->root, "metadata");
@@ -970,6 +1045,8 @@ static response vg_update(lvmetad_state *s, request r)
 		 * call; if client does not commit, die */
 		if (!update_metadata(s, vgname, vgid, metadata, NULL))
 			return reply_fail("metadata update failed");
+
+		vg_info_update(s, vgid, metadata);
 	}
 	return daemon_reply_simple("OK", NULL);
 }
@@ -988,6 +1065,60 @@ static response vg_remove(lvmetad_state *s, request r)
 	unlock_pvid_to_vgid(s);
 
 	return daemon_reply_simple("OK", NULL);
+}
+
+static response set_global_info(lvmetad_state *s, request r)
+{
+	const int global_invalid = daemon_request_int(r, "global_invalid", -1);
+
+	if (global_invalid == 1)
+		s->flags |= FL_GLOBAL_INVALID;
+
+	if (global_invalid == 0)
+		s->flags &= ~FL_GLOBAL_INVALID;
+
+	return daemon_reply_simple("OK", NULL);
+}
+
+static response set_vg_info(lvmetad_state *s, request r)
+{
+	struct dm_config_tree *vg;
+	struct vg_info *info;
+	const char *uuid = daemon_request_str(r, "uuid", NULL);
+	const int64_t new_version = daemon_request_int(r, "version", -1);
+	int64_t cache_version;
+
+	if (!uuid)
+		goto out;
+
+	if (new_version == -1)
+		goto out;
+
+	vg = dm_hash_lookup(s->vgid_to_metadata, uuid);
+	if (!vg)
+		goto out;
+
+	cache_version = dm_config_find_int64(vg->root, "metadata/seqno", -1);
+
+	if (cache_version != -1 && new_version != -1 && cache_version >= new_version)
+		goto out;
+
+	info = dm_hash_lookup(s->vgid_to_info, uuid);
+	if (!info) {
+		info = malloc(sizeof(struct vg_info));
+		if (!info)
+			goto bad;
+		memset(info, 0, sizeof(struct vg_info));
+		dm_hash_insert(s->vgid_to_info, uuid, (void*)info);
+	}
+
+	info->external_version = new_version;
+	info->flags |= VGFL_INVALID;
+
+out:
+	return daemon_reply_simple("OK", NULL);
+bad:
+	return reply_fail("out of memory");
 }
 
 static void _dump_cft(struct buffer *buf, struct dm_hash_table *ht, const char *key_addr)
@@ -1028,6 +1159,36 @@ static void _dump_pairs(struct buffer *buf, struct dm_hash_table *ht, const char
 	buffer_append(buf, "}\n");
 }
 
+static void _dump_info(struct buffer *buf, struct dm_hash_table *ht, const char *name, int int_key)
+{
+	char *append;
+	struct dm_hash_node *n = dm_hash_get_first(ht);
+	struct vg_info *info;
+
+	buffer_append(buf, name);
+	buffer_append(buf, " {\n");
+
+	while (n) {
+		const char *key = dm_hash_get_key(ht, n);
+		info = dm_hash_get_data(ht, n);
+		buffer_append(buf, "    ");
+		if (int_key)
+			(void) dm_asprintf(&append, "%d = external_version %lld flags 0x%x",
+					   *(int*)key,
+					   (long long)info->external_version, info->flags);
+		else
+			(void) dm_asprintf(&append, "%s = external_version %lld flags 0x%x",
+					   key,
+					   (long long)info->external_version, info->flags);
+		if (append)
+			buffer_append(buf, append);
+		buffer_append(buf, "\n");
+		dm_free(append);
+		n = dm_hash_get_next(ht, n);
+	}
+	buffer_append(buf, "}\n");
+}
+
 static response dump(lvmetad_state *s)
 {
 	response res = { 0 };
@@ -1059,6 +1220,9 @@ static response dump(lvmetad_state *s)
 	buffer_append(b, "\n# DEVICE to PVID mapping\n\n");
 	_dump_pairs(b, s->device_to_pvid, "device_to_pvid", 1);
 
+	buffer_append(b, "\n# VGID to INFO mapping\n\n");
+	_dump_info(b, s->vgid_to_info, "vgid_to_info", 0);
+
 	unlock_pvid_to_vgid(s);
 	unlock_pvid_to_pvmeta(s);
 	unlock_vgid_to_metadata(s);
@@ -1080,7 +1244,7 @@ static response handler(daemon_state s, client_handle h, request r)
 		return daemon_reply_simple("OK", NULL);
 	}
 
-	if (strcmp(token, state->token) && strcmp(rq, "dump")) {
+	if (strcmp(token, state->token) && strcmp(rq, "dump") && strcmp(token, "skip")) {
 		pthread_mutex_unlock(&state->token_lock);
 		return daemon_reply_simple("token_mismatch",
 					   "expected = %s", state->token,
@@ -1119,6 +1283,12 @@ static response handler(daemon_state s, client_handle h, request r)
 
 	if (!strcmp(rq, "vg_list"))
 		return vg_list(state, r);
+
+	if (!strcmp(rq, "set_global_info"))
+		return set_global_info(state, r);
+
+	if (!strcmp(rq, "set_vg_info"))
+		return set_vg_info(state, r);
 
 	if (!strcmp(rq, "dump"))
 		return dump(state);
@@ -1179,6 +1349,19 @@ static int fini(daemon_state *s)
 	return 1;
 }
 
+static void print_dump(const char *socket_path)
+{
+	daemon_handle h = lvmetad_open(socket_path);
+	daemon_reply reply;
+
+	reply = daemon_send_simple(h, "dump", NULL);
+
+	printf("%s\n", reply.buffer.mem);
+
+	daemon_reply_destroy(reply);
+	daemon_close(h);
+}
+
 static void usage(char *prog, FILE *file)
 {
 	fprintf(file, "Usage:\n"
@@ -1214,7 +1397,7 @@ int main(int argc, char *argv[])
 	ls.log_config = "";
 
 	// use getopt_long
-	while ((opt = getopt(argc, argv, "?fhVl:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "?fhVdl:s:")) != EOF) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0], stdout);
@@ -1225,6 +1408,9 @@ int main(int argc, char *argv[])
 		case 'f':
 			s.foreground = 1;
 			break;
+		case 'd':
+			print_dump(s.socket_path);
+			exit(0);
 		case 'l':
 			ls.log_config = optarg;
 			break;
@@ -1239,10 +1425,12 @@ int main(int argc, char *argv[])
 	}
 
 	if (s.foreground) {
+		/*
 		if (!_socket_override) {
 			fprintf(stderr, "A socket path (-s) is required in foreground mode.");
 			exit(2);
 		}
+		*/
 
 		s.pidfile = NULL;
 	}
