@@ -332,6 +332,7 @@ struct volume_group *lvmetad_vg_lookup(struct cmd_context *cmd, const char *vgna
 	struct dm_config_node *pvcn;
 	struct pv_list *pvl;
 	struct lvmcache_info *info;
+	int stale_cache = 0;
 
 	if (!lvmetad_active())
 		return NULL;
@@ -358,6 +359,15 @@ struct volume_group *lvmetad_vg_lookup(struct cmd_context *cmd, const char *vgna
 		if (!(top = dm_config_find_node(reply.cft->root, "metadata"))) {
 			log_error(INTERNAL_ERROR "metadata config node not found.");
 			goto out;
+		}
+
+		/*
+		 * lvmlockd may have detected a newer vg version and
+		 * invalidated the cached vg.
+		 */
+		if (dm_config_find_node(reply.cft->root, "vg_invalid")) {
+			log_debug_lvmetad("Stale lvmetad cache for VG %s", vgname);
+			stale_cache = 1;
 		}
 
 		name = daemon_reply_str(reply, "name", NULL);
@@ -406,6 +416,9 @@ struct volume_group *lvmetad_vg_lookup(struct cmd_context *cmd, const char *vgna
 
 out:
 	daemon_reply_destroy(reply);
+
+	if (stale_cache)
+		vg->read_status |= FAILED_STALE_CACHE;
 
 	return vg;
 }
