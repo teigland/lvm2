@@ -744,6 +744,9 @@ struct lvcreate_params {
 	const char *vg_name; /* all */
 	const char *lv_name; /* all */
 
+	const char *lock_type;
+	const char *lock_args;
+
 	/* Keep args given by the user on command line */
 	/* FIXME: create some more universal solution here */
 #define PASS_ARG_CHUNK_SIZE		0x01
@@ -1041,6 +1044,8 @@ struct vgcreate_params {
 	alloc_policy_t alloc;
 	int clustered; /* FIXME: put this into a 'status' variable instead? */
 	uint32_t vgmetadatacopies;
+	const char *lock_type;
+	const char *lock_args;
 };
 
 int vgcreate_params_validate(struct cmd_context *cmd,

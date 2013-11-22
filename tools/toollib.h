@@ -20,6 +20,9 @@
 
 int become_daemon(struct cmd_context *cmd, int skip_lvm);
 
+int activate_y(activation_change_t change);
+int activate_n(activation_change_t change);
+
 int autobackup_set(void);
 int autobackup_init(const char *backup_dir, int keep_days, int keep_number,
 		    int autobackup);
