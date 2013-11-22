@@ -185,6 +185,31 @@ static int _clear_dev_from_lvmetad_cache(dev_t devno, int32_t major, int32_t min
 	return 1;
 }
 
+/*
+ *
+ *'pvscan --cache' does not use any dlocks, it just reads disks and
+ * passes what it finds to lvmetad.
+ * Later, when other lvm commands use the lvmetad cache,
+ * they will take dlock_vg, verify that the vg in lvmetad is
+ * the latest, and if not reread it.
+ *
+ * TODO: 'pvscan --cache -a' with lvmetad+lvmlockd for vgs with lock_type
+ *
+ * part1: like a plain pvscan --cache without -a
+ * - read pvs
+ * - pass metadata to lvmetad
+ * - keep list of vg name/uuid found
+ * - do not do handler/activation
+ *
+ * part2: like a vgchange -aay on the vgs found in part1
+ * - for each vg name/uuid in list from part1
+ * - dlock_vg("sh")
+ * - vg_read: will come from lvmetad, but may be invalid if it has
+ *   been changed between read above in part1 and dlock_vg. if invalid
+ *   then reread vg from disk and update in lvmetad
+ * - do activation in vg
+ */
+
 static int _pvscan_lvmetad(struct cmd_context *cmd, int argc, char **argv)
 {
 	int ret = ECMD_PROCESSED;
@@ -366,6 +391,9 @@ int pvscan(struct cmd_context *cmd, int argc, char **argv)
 		log_error("Unable to obtain global lock.");
 		return ECMD_FAILED;
 	}
+
+	if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
 
 	if (cmd->filter->wipe)
 		cmd->filter->wipe(cmd->filter);
