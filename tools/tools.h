@@ -29,12 +29,15 @@
 #include "archiver.h"
 #include "lvmcache.h"
 #include "lvmetad.h"
+#include "lvmlockd.h"
+#include "lock_type.h"
 #include "lvm-version.h"
 #include "config.h"
 #include "defaults.h"
 #include "dev-cache.h"
 #include "device.h"
 #include "display.h"
+#include "dlock.h"
 #include "errors.h"
 #include "metadata-exported.h"
 #include "locking.h"
@@ -104,6 +107,7 @@ struct arg_value_group_list {
 #define PERMITTED_READ_ONLY 	0x00000002
 #define ENABLE_ALL_VGS		0x00000004 /* run cmd on all vgs if none are named */
 #define ENABLE_ALL_DEVS		0x00000008
+#define DLOCK_VG_SH		0x00000010 /* cmd never modifies a vg */
 
 /* a register of the lvm commands */
 struct command {
@@ -163,6 +167,8 @@ unsigned grouped_arg_count(const struct arg_values *av, int a);
 unsigned grouped_arg_is_set(const struct arg_values *av, int a);
 const char *grouped_arg_str_value(const struct arg_values *av, int a, const char *def);
 int32_t grouped_arg_int_value(const struct arg_values *av, int a, const int32_t def); 
+
+int arg_tag_count(int argc, char **argv);
 
 const char *command_name(struct cmd_context *cmd);
 

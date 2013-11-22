@@ -175,6 +175,9 @@ int lvresize(struct cmd_context *cmd, int argc, char **argv)
 	if (!_lvresize_params(cmd, argc, argv, &lp))
 		return EINVALID_CMD_LINE;
 
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0))
+		return ECMD_FAILED;
+
 	log_verbose("Finding volume group %s", lp.vg_name);
 	vg = vg_read_for_update(cmd, lp.vg_name, NULL, 0);
 	if (vg_read_error(vg)) {
@@ -198,12 +201,36 @@ int lvresize(struct cmd_context *cmd, int argc, char **argv)
 		goto_out;
 	}
 
+        /* prev_mode = dlock_get_mode(cmd, lv); */
+
+	if (!dlock_lv(cmd, lvl->lv, "ex", 0)) {
+		if (lp.resize != LV_EXTEND)
+			return ECMD_FAILED;
+		/*
+		 * TODO: allow extend for shared lv under gfs.
+		 * If prev_mode is sh, then dlock_lv(ex) failed to convert
+		 * to ex because another host holds a sh lock on the lv.
+		 * In this case, we can continue with the resize, and at
+		 * the end tell other hosts with sh lv lock to refresh the vg.
+		 */
+		return ECMD_FAILED;
+	}
+
 	if (!lv_resize(cmd, lvl->lv, &lp, pvh))
 		goto_out;
 
 	r = ECMD_PROCESSED;
 
 out:
+	/*
+	 * TODO: return lv lock to original mode and tell others to refresh vg.
+	 * if (prev_mode == "sh") {
+	 * 	dlock_lv(cmd, lv, "sh", 0);
+	 * 	dlock_vg(cmd, vg->name, "sh", 0);
+	 * 	dlock_remote: have other nodes with sh lock refresh the vg
+	 * }
+	 */
+
 	unlock_and_release_vg(cmd, vg, lp.vg_name);
 
 	return r;
