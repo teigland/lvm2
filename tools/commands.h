@@ -142,7 +142,8 @@ xx(lvchange,
    profile_ARG, raidminrecoveryrate_ARG, raidmaxrecoveryrate_ARG,
    raidsyncaction_ARG, raidwritebehind_ARG, raidwritemostly_ARG, readahead_ARG,
    resync_ARG, refresh_ARG, setactivationskip_ARG, syncaction_ARG, sysinit_ARG,
-   test_ARG, writebehind_ARG, writemostly_ARG, zero_ARG)
+   test_ARG, writebehind_ARG, writemostly_ARG, zero_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvconvert,
    "Change logical volume layout",
@@ -211,7 +212,8 @@ xx(lvconvert,
    poolmetadataspare_ARG, readahead_ARG, regionsize_ARG, repair_ARG,
    replace_ARG, snapshot_ARG, splitmirrors_ARG, stripes_long_ARG,
    stripesize_ARG, test_ARG, thin_ARG, thinpool_ARG, trackchanges_ARG,
-   type_ARG, use_policies_ARG, zero_ARG)
+   type_ARG, use_policies_ARG, zero_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvcreate,
    "Create a logical volume",
@@ -294,11 +296,12 @@ xx(lvcreate,
    raidminrecoveryrate_ARG, raidmaxrecoveryrate_ARG, readahead_ARG,
    regionsize_ARG, setactivationskip_ARG, size_ARG, snapshot_ARG, stripes_ARG,
    stripesize_ARG, test_ARG, thin_ARG, thinpool_ARG,
-   type_ARG, virtualoriginsize_ARG, virtualsize_ARG, zero_ARG)
+   type_ARG, virtualoriginsize_ARG, virtualsize_ARG, zero_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvdisplay,
    "Display information about a logical volume",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "lvdisplay\n"
    "\t[-a|--all]\n"
    "\t[-c|--colon]\n"
@@ -337,7 +340,8 @@ xx(lvdisplay,
     aligned_ARG, all_ARG, colon_ARG, columns_ARG, ignorelockingfailure_ARG, 
     ignoreskippedcluster_ARG, maps_ARG, noheadings_ARG, nosuffix_ARG,
     options_ARG, sort_ARG, partial_ARG, segments_ARG, separator_ARG,
-    unbuffered_ARG, units_ARG)
+    unbuffered_ARG, units_ARG,
+    lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvextend,
    "Add space to a logical volume",
@@ -367,7 +371,8 @@ xx(lvextend,
    alloc_ARG, autobackup_ARG, extents_ARG, force_ARG, mirrors_ARG,
    nofsck_ARG, nosync_ARG, noudevsync_ARG, poolmetadatasize_ARG,
    resizefs_ARG, size_ARG, stripes_ARG,
-   stripesize_ARG, test_ARG, type_ARG, use_policies_ARG)
+   stripesize_ARG, test_ARG, type_ARG, use_policies_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvmchange,
    "With the device mapper, this is obsolete and does nothing.",
@@ -436,7 +441,8 @@ xx(lvreduce,
    "\tLogicalVolume[Path]\n",
 
    autobackup_ARG, force_ARG,  extents_ARG, nofsck_ARG, noudevsync_ARG,
-   resizefs_ARG, size_ARG, test_ARG)
+   resizefs_ARG, size_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvremove,
    "Remove logical volume(s) from the system",
@@ -452,7 +458,8 @@ xx(lvremove,
    "\t[--version]" "\n"
    "\tLogicalVolume[Path] [LogicalVolume[Path]...]\n",
 
-   autobackup_ARG, force_ARG, noudevsync_ARG, test_ARG)
+   autobackup_ARG, force_ARG, noudevsync_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvrename,
    "Rename a logical volume",
@@ -468,7 +475,8 @@ xx(lvrename,
    "\t{ OldLogicalVolumePath NewLogicalVolumePath |" "\n"
    "\t  VolumeGroupName OldLogicalVolumeName NewLogicalVolumeName }\n",
 
-   autobackup_ARG, noudevsync_ARG, test_ARG)
+   autobackup_ARG, noudevsync_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvresize,
    "Resize a logical volume",
@@ -495,11 +503,12 @@ xx(lvresize,
    alloc_ARG, autobackup_ARG, extents_ARG, force_ARG, nofsck_ARG,
    noudevsync_ARG, resizefs_ARG, poolmetadatasize_ARG,
    size_ARG, stripes_ARG, stripesize_ARG,
-   test_ARG, type_ARG)
+   test_ARG, type_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvs,
    "Display information about logical volumes",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "lvs" "\n"
    "\t[-a|--all]\n"
    "\t[--aligned]\n"
@@ -528,11 +537,12 @@ xx(lvs,
    nameprefixes_ARG,
    noheadings_ARG, nolocking_ARG, nosuffix_ARG, options_ARG, partial_ARG,
    rows_ARG, segments_ARG, separator_ARG, sort_ARG, trustcache_ARG,
-   unbuffered_ARG, units_ARG, unquoted_ARG)
+   unbuffered_ARG, units_ARG, unquoted_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(lvscan,
    "List all logical volumes in all volume groups",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "lvscan " "\n"
    "\t[-a|--all]\n"
    "\t[-b|--blockdevice] " "\n"
@@ -543,7 +553,8 @@ xx(lvscan,
    "\t[-v|--verbose] " "\n"
    "\t[--version]\n",
 
-   all_ARG, blockdevice_ARG, ignorelockingfailure_ARG, partial_ARG)
+   all_ARG, blockdevice_ARG, ignorelockingfailure_ARG, partial_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvchange,
    "Change attributes of physical volume(s)",
@@ -565,7 +576,8 @@ xx(pvchange,
    "\t[PhysicalVolumePath...]\n",
 
    all_ARG, allocatable_ARG, allocation_ARG, autobackup_ARG, deltag_ARG,
-   addtag_ARG, force_ARG, metadataignore_ARG, test_ARG, uuid_ARG)
+   addtag_ARG, force_ARG, metadataignore_ARG, test_ARG, uuid_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvresize,
    "Resize physical volume(s)",
@@ -579,11 +591,12 @@ xx(pvresize,
    "\t[--version] " "\n"
    "\tPhysicalVolume [PhysicalVolume...]\n",
 
-   physicalvolumesize_ARG, test_ARG)
+   physicalvolumesize_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvck,
    "Check the consistency of physical volume(s)",
-   0,
+   DLOCK_VG_SH,
    "pvck "
    "\t[-d|--debug]\n"
    "\t[-h|--help]\n"
@@ -623,7 +636,8 @@ xx(pvcreate,
    force_ARG, test_ARG, labelsector_ARG, metadatatype_ARG,
    metadatacopies_ARG, metadatasize_ARG, metadataignore_ARG,
    norestorefile_ARG, physicalvolumesize_ARG, pvmetadatacopies_ARG,
-   restorefile_ARG, uuidstr_ARG, zero_ARG)
+   restorefile_ARG, uuidstr_ARG, zero_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvdata,
    "Display the on-disk metadata for physical volume(s)",
@@ -646,7 +660,7 @@ xx(pvdata,
 
 xx(pvdisplay,
    "Display various attributes of physical volume(s)",
-   CACHE_VGMETADATA | PERMITTED_READ_ONLY | ENABLE_ALL_DEVS,
+   CACHE_VGMETADATA | PERMITTED_READ_ONLY | ENABLE_ALL_DEVS | DLOCK_VG_SH,
    "pvdisplay\n"
    "\t[-c|--colon]\n"
    "\t[-d|--debug]\n"
@@ -681,7 +695,8 @@ xx(pvdisplay,
 
    aligned_ARG, all_ARG, colon_ARG, columns_ARG, ignorelockingfailure_ARG,
    ignoreskippedcluster_ARG, maps_ARG, noheadings_ARG, nosuffix_ARG,
-   options_ARG, separator_ARG, short_ARG, sort_ARG, unbuffered_ARG, units_ARG)
+   options_ARG, separator_ARG, short_ARG, sort_ARG, unbuffered_ARG, units_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 /*
  * pvmove needs ENABLE_ALL_VGS because it calls polldaemon which
@@ -709,7 +724,8 @@ xx(pvmove,
    "\t[DestinationPhysicalVolume[:PhysicalExtent[-PhysicalExtent]...]...]\n",
 
    abort_ARG, alloc_ARG, autobackup_ARG, background_ARG,
-   interval_ARG, name_ARG, noudevsync_ARG, test_ARG)
+   interval_ARG, name_ARG, noudevsync_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvremove,
    "Remove LVM label(s) from physical volume(s)",
@@ -724,11 +740,12 @@ xx(pvremove,
    "\t[-y|--yes]" "\n"
    "\tPhysicalVolume [PhysicalVolume...]\n",
 
-   force_ARG, test_ARG)
+   force_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvs,
    "Display information about physical volumes",
-   CACHE_VGMETADATA | PERMITTED_READ_ONLY | ENABLE_ALL_VGS | ENABLE_ALL_DEVS,
+   CACHE_VGMETADATA | PERMITTED_READ_ONLY | ENABLE_ALL_VGS | ENABLE_ALL_DEVS | DLOCK_VG_SH,
    "pvs" "\n"
    "\t[-a|--all]\n"
    "\t[--aligned]\n"
@@ -756,11 +773,12 @@ xx(pvs,
    aligned_ARG, all_ARG, ignorelockingfailure_ARG, ignoreskippedcluster_ARG,
    nameprefixes_ARG, noheadings_ARG, nolocking_ARG, nosuffix_ARG, options_ARG,
    partial_ARG, rows_ARG, segments_ARG, separator_ARG, sort_ARG,
-   trustcache_ARG, unbuffered_ARG, units_ARG, unquoted_ARG)
+   trustcache_ARG, unbuffered_ARG, units_ARG, unquoted_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(pvscan,
    "List all physical volumes",
-   PERMITTED_READ_ONLY,
+   PERMITTED_READ_ONLY | DLOCK_VG_SH,
    "pvscan " "\n"
    "\t[-b|--background]\n"
    "\t[--cache [-a|--activate ay] [ DevicePath | --major major --minor minor]...]\n"
@@ -776,7 +794,8 @@ xx(pvscan,
 
    activate_ARG, available_ARG, backgroundfork_ARG, cache_ARG,
    exported_ARG, ignorelockingfailure_ARG, major_ARG, minor_ARG,
-   novolumegroup_ARG, partial_ARG, short_ARG, uuid_ARG)
+   novolumegroup_ARG, partial_ARG, short_ARG, uuid_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(segtypes,
    "List available segment types",
@@ -785,7 +804,7 @@ xx(segtypes,
 
 xx(vgcfgbackup,
    "Backup volume group configuration(s)",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "vgcfgbackup " "\n"
    "\t[-d|--debug] " "\n"
    "\t[-f|--file filename] " "\n"
@@ -796,7 +815,8 @@ xx(vgcfgbackup,
    "\t[--version] " "\n"
    "\t[VolumeGroupName...]\n",
 
-   file_ARG, ignorelockingfailure_ARG, partial_ARG)
+   file_ARG, ignorelockingfailure_ARG, partial_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgcfgrestore,
    "Restore volume group configuration",
@@ -813,7 +833,8 @@ xx(vgcfgrestore,
    "\t[--version] " "\n"
    "\tVolumeGroupName",
 
-   file_ARG, force_long_ARG, list_ARG, metadatatype_ARG, test_ARG)
+   file_ARG, force_long_ARG, list_ARG, metadatatype_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgchange,
    "Change volume group attributes",
@@ -857,11 +878,12 @@ xx(vgchange,
    logicalvolume_ARG, maxphysicalvolumes_ARG, monitor_ARG, noudevsync_ARG,
    metadatacopies_ARG, vgmetadatacopies_ARG, partial_ARG, profile_ARG,
    physicalextentsize_ARG, poll_ARG, refresh_ARG, resizeable_ARG,
-   resizable_ARG, sysinit_ARG, test_ARG, uuid_ARG)
+   resizable_ARG, sysinit_ARG, test_ARG, uuid_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgck,
    "Check the consistency of volume group(s)",
-   ENABLE_ALL_VGS,
+   ENABLE_ALL_VGS | DLOCK_VG_SH,
    "vgck "
    "\t[-d|--debug]\n"
    "\t[-h|--help]\n"
@@ -887,7 +909,8 @@ xx(vgconvert,
 
    force_ARG, test_ARG, labelsector_ARG, bootloaderareasize_ARG,
    metadatatype_ARG, metadatacopies_ARG, pvmetadatacopies_ARG,
-   metadatasize_ARG )
+   metadatasize_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgcreate,
    "Create a volume group",
@@ -915,11 +938,12 @@ xx(vgcreate,
    maxphysicalvolumes_ARG, metadatatype_ARG, physicalextentsize_ARG, test_ARG,
    force_ARG, zero_ARG, labelsector_ARG, metadatasize_ARG,
    pvmetadatacopies_ARG, metadatacopies_ARG, vgmetadatacopies_ARG,
-   dataalignment_ARG, dataalignmentoffset_ARG)
+   dataalignment_ARG, dataalignmentoffset_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG, locktype_ARG)
 
 xx(vgdisplay,
    "Display volume group information",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "vgdisplay " "\n"
    "\t[-A|--activevolumegroups]" "\n"
    "\t[-c|--colon | -s|--short | -v|--verbose]" "\n"
@@ -954,11 +978,12 @@ xx(vgdisplay,
    activevolumegroups_ARG, aligned_ARG, colon_ARG, columns_ARG,
    ignorelockingfailure_ARG, ignoreskippedcluster_ARG, noheadings_ARG,
    nosuffix_ARG, options_ARG, partial_ARG, short_ARG, separator_ARG,
-   sort_ARG, unbuffered_ARG, units_ARG)
+   sort_ARG, unbuffered_ARG, units_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgexport,
    "Unregister volume group(s) from the system",
-   ENABLE_ALL_VGS,
+   ENABLE_ALL_VGS | DLOCK_VG_SH,
    "vgexport " "\n"
    "\t[-a|--all] " "\n"
    "\t[-d|--debug] " "\n"
@@ -967,7 +992,8 @@ xx(vgexport,
    "\t[--version] " "\n"
    "\tVolumeGroupName [VolumeGroupName...]\n",
 
-   all_ARG, test_ARG)
+   all_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgextend,
    "Add physical volumes to a volume group",
@@ -989,7 +1015,8 @@ xx(vgextend,
    force_ARG, zero_ARG, labelsector_ARG, metadatatype_ARG,
    metadatasize_ARG, pvmetadatacopies_ARG, metadatacopies_ARG,
    metadataignore_ARG, dataalignment_ARG, dataalignmentoffset_ARG,
-   restoremissing_ARG)
+   restoremissing_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgimport,
    "Register exported volume group with system",
@@ -1004,7 +1031,8 @@ xx(vgimport,
    "\t[--version]" "\n"
    "\tVolumeGroupName..." "\n",
 
-   all_ARG, force_ARG, test_ARG)
+   all_ARG, force_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgmerge,
    "Merge volume groups",
@@ -1019,7 +1047,8 @@ xx(vgmerge,
    "\t[--version]" "\n"
    "\tDestinationVolumeGroupName SourceVolumeGroupName\n",
 
-   autobackup_ARG, list_ARG, test_ARG)
+   autobackup_ARG, list_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgmknodes,
    "Create the special files for volume group devices in /dev",
@@ -1053,7 +1082,8 @@ xx(vgreduce,
    "\t[PhysicalVolumePath...]\n",
 
    all_ARG, autobackup_ARG, force_ARG, mirrorsonly_ARG, removemissing_ARG,
-   test_ARG)
+   test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgremove,
    "Remove volume group(s)",
@@ -1068,7 +1098,8 @@ xx(vgremove,
    "\t[--version]" "\n"
    "\tVolumeGroupName [VolumeGroupName...]\n",
 
-   force_ARG, noudevsync_ARG, test_ARG)
+   force_ARG, noudevsync_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgrename,
    "Rename a volume group",
@@ -1083,11 +1114,12 @@ xx(vgrename,
    "\tOldVolumeGroupPath NewVolumeGroupPath |\n"
    "\tOldVolumeGroupName NewVolumeGroupName\n",
 
-   autobackup_ARG, force_ARG, test_ARG)
+   autobackup_ARG, force_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgs,
    "Display information about volume groups",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "vgs" "\n"
    "\t[--aligned]\n"
    "\t[-a|--all]\n"
@@ -1115,11 +1147,12 @@ xx(vgs,
    nameprefixes_ARG,
    noheadings_ARG, nolocking_ARG, nosuffix_ARG, options_ARG, partial_ARG,
    rows_ARG, separator_ARG, sort_ARG, trustcache_ARG, unbuffered_ARG, units_ARG,
-   unquoted_ARG)
+   unquoted_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgscan,
    "Search for all volume groups",
-   PERMITTED_READ_ONLY | ENABLE_ALL_VGS,
+   PERMITTED_READ_ONLY | ENABLE_ALL_VGS | DLOCK_VG_SH,
    "vgscan "
    "\t[--cache]\n"
    "\t[-d|--debug]\n"
@@ -1130,7 +1163,8 @@ xx(vgscan,
    "\t[-v|--verbose]\n"
    "\t[--version]" "\n",
 
-   cache_ARG, ignorelockingfailure_ARG, mknodes_ARG, partial_ARG)
+   cache_ARG, ignorelockingfailure_ARG, mknodes_ARG, partial_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(vgsplit,
    "Move physical volumes into a new or existing volume group",
@@ -1154,7 +1188,8 @@ xx(vgsplit,
 
    alloc_ARG, autobackup_ARG, clustered_ARG,
    maxlogicalvolumes_ARG, maxphysicalvolumes_ARG,
-   metadatatype_ARG, vgmetadatacopies_ARG, name_ARG, test_ARG)
+   metadatatype_ARG, vgmetadatacopies_ARG, name_ARG, test_ARG,
+   lockgl_ARG, lockvg_ARG, locklv_ARG)
 
 xx(version,
    "Display software and driver version information",
