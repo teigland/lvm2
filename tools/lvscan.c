@@ -74,6 +74,9 @@ int lvscan(struct cmd_context *cmd, int argc, char **argv)
 		return EINVALID_CMD_LINE;
 	}
 
+	if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
+
 	return process_each_lv(cmd, argc, argv, 0, NULL,
 			       &lvscan_single);
 }

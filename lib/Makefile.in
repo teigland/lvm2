@@ -82,6 +82,7 @@ SOURCES =\
 	locking/file_locking.c \
 	locking/locking.c \
 	locking/no_locking.c \
+	locking/lock_type.c \
 	log/log.c \
 	metadata/lv.c \
 	metadata/lv_manip.c \
@@ -179,6 +180,11 @@ endif
 ifeq ("@BUILD_LVMETAD@", "yes")
   SOURCES +=\
 	cache/lvmetad.c
+endif
+
+ifeq ("@BUILD_LVMLOCKD@", "yes")
+  SOURCES +=\
+	locking/lvmlockd.c
 endif
 
 ifeq ("@DMEVENTD@", "yes")

@@ -28,6 +28,8 @@
 #include "str_list.h"
 #include "defaults.h"
 #include "lvm-exec.h"
+#include "lvmlockd.h"
+#include "lock_type.h"
 
 typedef enum {
 	PREFERRED,
@@ -4571,6 +4573,9 @@ int lv_remove_single(struct cmd_context *cmd, struct logical_volume *lv,
 		return 0;
 	}
 
+	if (!dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+		return 0;
+
 	if (!archive(vg))
 		return 0;
 
@@ -4619,6 +4624,9 @@ int lv_remove_single(struct cmd_context *cmd, struct logical_volume *lv,
 	/* store it on disks */
 	if (!vg_write(vg) || !vg_commit(vg))
 		return_0;
+
+	dlock_lv(cmd, lv, "un", DL_LV_PERSISTENT | DL_LV_MODE_NOARG);
+	lv_free_lock_args(cmd, lv->vg, lv->name, lv->lock_type, lv->lock_args);
 
 	/* format1 */
 	if (format1_reload_required) {
@@ -5879,6 +5887,16 @@ static struct logical_volume *_lv_create_an_lv(struct volume_group *vg,
 		lv->status |= FIXED_MINOR;
 		log_verbose("Setting device number to (%d, %d)", lv->major,
 			    lv->minor);
+	}
+
+	if (lp->lock_type && !(lv->lock_type = dm_pool_strdup(cmd->mem, lp->lock_type))) {
+		log_error("Failed to allocate lock_type");
+		return NULL;
+	}
+
+	if (lp->lock_args && !(lv->lock_args = dm_pool_strdup(cmd->mem, lp->lock_args))) {
+		log_error("Failed to allocate lock_args");
+		return NULL;
 	}
 
 	dm_list_splice(&lv->tags, &lp->tags);
