@@ -47,7 +47,10 @@ int vgcreate(struct cmd_context *cmd, int argc, char **argv)
 		return EINVALID_CMD_LINE;
 
 	if (!vgcreate_params_validate(cmd, &vp_new))
-	    return EINVALID_CMD_LINE;
+		return EINVALID_CMD_LINE;
+
+	if (!dlock_gl(cmd, "ex", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
 
 	lvmcache_seed_infos_from_lvmetad(cmd);
 
@@ -70,7 +73,11 @@ int vgcreate(struct cmd_context *cmd, int argc, char **argv)
 	    !vg_set_max_pv(vg, vp_new.max_pv) ||
 	    !vg_set_alloc_policy(vg, vp_new.alloc) ||
 	    !vg_set_clustered(vg, vp_new.clustered) ||
+	    !vg_set_lock_type(vg, vp_new.lock_type) ||
 	    !vg_set_mda_copies(vg, vp_new.vgmetadatacopies))
+		goto bad_orphan;
+
+	if (vg_init_lock_args(cmd, vg))
 		goto bad_orphan;
 
 	if (!lock_vol(cmd, VG_ORPHANS, LCK_VG_WRITE, NULL)) {
@@ -124,6 +131,8 @@ int vgcreate(struct cmd_context *cmd, int argc, char **argv)
 
 	log_print_unless_silent("%s%colume group \"%s\" successfully created",
 				clustered_message, *clustered_message ? 'v' : 'V', vg->name);
+
+	dlock_start_vg(cmd, vg, arg_str_value(cmd, lockvg_ARG, NULL));
 
 	release_vg(vg);
 	return ECMD_PROCESSED;
