@@ -1267,6 +1267,153 @@ static int _validate_internal_thin_processing(const struct lvcreate_params *lp)
 	return r;
 }
 
+/*
+ * Thin pool lvs have locks, but thin lvs within pools do not.
+ * Exclusive access to a thin pool lv provides ex access to all
+ * thin lvs within it.  Shared access to thin pools is not allowed.
+ * All locking for a thin pool and its thin lvs is directed to
+ * the single lv lock on the thin pool.
+ */
+
+static int _init_lv_lock(struct cmd_context *cmd, struct volume_group *vg,
+			 struct lvcreate_params *lp)
+{
+	const char *lv_name;
+
+	/*
+	 * We could go through all the steps below but they will
+	 * all become no-ops for non-dlock type vgs, so quit early.
+	 */
+	if (!dlock_type(vg->lock_type))
+		return 1;
+
+	if (seg_is_cache(lp) || seg_is_cache_pool(lp)) {
+		log_error("Cache not yet allowed with lock type %s", vg->lock_type);
+		return 0;
+
+	} else if (!lp->thin && lp->snapshot) {
+		log_error("Only thin snapshots are allowed with lock type %s", vg->lock_type);
+		return 0;
+
+	} else if (seg_is_thin(lp)) {
+		if ((lp->thin && !lp->create_pool) || (!lp->thin && lp->snapshot)) {
+			struct lv_list *lvl;
+
+			/*
+			 * Creating a new thin lv or snapshot.  These lvs do not get
+			 * their own lock but use the pool lock.
+			 */
+
+			if (!(lvl = find_lv_in_vg(vg, lp->pool))) {
+				log_error("Failed to find thin pool %s/%s", vg->name, lp->pool);
+				return 0;
+			}
+			if (!dlock_lv(cmd, lvl->lv, "ex", DL_LV_PERSISTENT)) {
+				log_error("Failed to lock thin pool %s/%s", vg->name, lp->pool);
+				return 0;
+			}
+			return 1;
+
+		} else if (lp->thin && lp->create_pool) {
+			/*
+		 	 * Creating a thin pool and a thin lv in it.
+		 	 * We could probably make this work by setting lp->lock_type and
+		 	 * lp->lock_args to NULL in lv_create_single after creating the
+		 	 * pool lv.  Then we would just set lv_name = lp->pool here.
+		 	 * Stop it at least for now to try to slow down some of the
+		 	 * unnecessary complexity.
+		 	 */
+			log_error("Create thin pool and thin lv separately with lock type %s",
+				  vg->lock_type);
+			return 0;
+
+		} else if (!lp->thin && lp->create_pool) {
+			/* Creating a thin pool only. */
+			lv_name = lp->pool;
+
+		} else {
+			log_error("Failed to init lock for unknown thin options.");
+			return 0;
+		}
+
+	} else {
+		/* Creating a normal lv. */
+		lv_name = lp->lv_name;
+	}
+
+	lp->lock_type = dm_pool_strdup(cmd->mem, vg->lock_type);
+	if (!lp->lock_type)
+		return 0;
+
+	if (!dlock_init_lv_lock_args(cmd, vg, lv_name, lp->lock_type, &lp->lock_args)) {
+		log_error("Failed to init %s lock args LV %s/%s", lp->lock_type, vg->name, lv_name);
+		return 0;
+	}
+
+	if (!is_change_activating(lp->activate))
+		goto out;
+
+	if (!dlock_lv_name(cmd, vg, lv_name, lp->lock_args, "ex", DL_LV_PERSISTENT)) {
+		log_error("Failed to lock %s/%s", vg->name, lv_name);
+		return 0;
+	}
+out:
+	return 1;
+}
+
+static void _free_lv_lock(struct cmd_context *cmd, struct volume_group *vg,
+			  struct lvcreate_params *lp)
+{
+	const char *lv_name;
+
+	if (!dlock_type(vg->lock_type))
+		return;
+
+	if (seg_is_cache(lp) || seg_is_cache_pool(lp)) {
+		return;
+
+	} else if (seg_is_thin(lp)) {
+		if ((lp->thin && !lp->create_pool) || (!lp->thin && lp->snapshot)) {
+			struct lv_list *lvl;
+
+			/* Creating a new thin lv or a thin snapshot. */
+			if (!(lvl = find_lv_in_vg(vg, lp->pool))) {
+				log_error("Failed to find thin pool %s/%s", vg->name, lp->pool);
+				return;
+			}
+			if (!dlock_lv(cmd, lvl->lv, "un", DL_LV_PERSISTENT)) {
+				log_error("Failed to unlock thin pool %s/%s", vg->name, lp->pool);
+				return;
+			}
+			return;
+
+		} else if (lp->thin && lp->create_pool) {
+			/* Creating a thin pool and a thin lv in it. */
+			return;
+
+		} else if (!lp->thin && lp->create_pool) {
+			/* Creating a thin pool only. */
+			lv_name = lp->pool;
+
+		} else {
+			/* unknown operation */
+			return;
+		}
+
+	} else {
+		/* Creating a normal lv. */
+		lv_name = lp->lv_name;
+	}
+
+	if (!dlock_lv_name(cmd, vg, lv_name, lp->lock_args, "un", DL_LV_PERSISTENT)) {
+		log_error("Failed to unlock %s/%s", vg->name, lv_name);
+	}
+
+	if (!dlock_free_lv_lock_args(cmd, vg, lv_name, lp->lock_type, lp->lock_args)) {
+		log_error("Failed to free %s lock args LV %s/%s", lp->lock_type, vg->name, lv_name);
+	}
+}
+
 int lvcreate(struct cmd_context *cmd, int argc, char **argv)
 {
 	int r = ECMD_FAILED;
@@ -1277,12 +1424,18 @@ int lvcreate(struct cmd_context *cmd, int argc, char **argv)
 	if (!_lvcreate_params(&lp, &lcp, cmd, argc, argv))
 		return EINVALID_CMD_LINE;
 
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0))
+		return_ECMD_FAILED;
+
 	log_verbose("Finding volume group \"%s\"", lp.vg_name);
 	vg = vg_read_for_update(cmd, lp.vg_name, NULL, 0);
 	if (vg_read_error(vg)) {
 		release_vg(vg);
 		return_ECMD_FAILED;
 	}
+
+	if (!dlock_vg_verify(cmd, vg))
+		goto_out;
 
 	if (lp.snapshot && lp.origin && !_determine_snapshot_type(vg, &lp))
 		goto_out;
@@ -1325,8 +1478,17 @@ int lvcreate(struct cmd_context *cmd, int argc, char **argv)
 			    lp.snapshot ? " as snapshot of " : "",
 			    lp.snapshot ? lp.origin : "", lp.segtype->name);
 
-	if (!lv_create_single(vg, &lp))
+	if (!_init_lv_lock(cmd, vg, &lp)) {
+		r = ECMD_FAILED;
 		goto_out;
+	}
+
+	if (!lv_create_single(vg, &lp)) {
+		_free_lv_lock(cmd, vg, &lp);
+		stack;
+		r = ECMD_FAILED;
+		goto_out;
+	}
 
 	r = ECMD_PROCESSED;
 out:
