@@ -105,6 +105,9 @@ int pvdisplay(struct cmd_context *cmd, int argc, char **argv)
 		}
 	}
 
+	if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
+
 	ret = process_each_pv(cmd, argc, argv, NULL, 0, NULL,
 			      _pvdisplay_single);
 
