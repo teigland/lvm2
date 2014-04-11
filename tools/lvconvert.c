@@ -2901,6 +2901,15 @@ static int _lvconvert_to_pool(struct cmd_context *cmd,
 	if (!attach_pool_data_lv(seg, data_lv))
 		return_0;
 
+	if (data_lv->lock_type)
+		pool_lv->lock_type = dm_pool_strdup(cmd->mem, data_lv->lock_type);
+	if (data_lv->lock_args)
+		pool_lv->lock_args = dm_pool_strdup(cmd->mem, data_lv->lock_args);
+	if (lp->pool_metadata_lv_name) {
+		metadata_lv->lock_type = NULL;
+		metadata_lv->lock_args = NULL;
+	}
+
 	/* FIXME: revert renamed LVs in fail path? */
 	/* FIXME: any common code with metadata/thin_manip.c  extend_pool() ? */
 
@@ -2940,6 +2949,24 @@ mda_write:
 				pool_lv->vg->name, pool_lv->name,
 				(segtype_is_cache_pool(lp->segtype)) ?
 				"cache" : "thin");
+
+	/*
+	 * The pool lv adopts the lock from the data lv (above),
+	 * and the lock for the meta lv is unlocked and freed.
+	 */
+	if (lp->pool_metadata_lv_name) {
+		const char *dlock_meta_name = strstr(lp->pool_metadata_lv_name, "/");
+		if (dlock_meta_name)
+			dlock_meta_name++;
+		else
+			dlock_meta_name = lp->pool_metadata_lv_name;
+		if (!dlock_lv_name(cmd, pool_lv->vg, dlock_meta_name, NULL, "un", DL_LV_PERSISTENT)) {
+			log_error("Failed to unlock pool metadata LV %s/%s",
+				  pool_lv->vg->name, dlock_meta_name);
+		}
+		dlock_free_lv_lock_args(cmd, pool_lv->vg, dlock_meta_name,
+					pool_lv->vg->lock_type, NULL);
+	}
 
 	r = 1;
 out:
@@ -3171,6 +3198,16 @@ static int lvconvert_single(struct cmd_context *cmd, struct lvconvert_params *lp
 		goto_bad;
 
 	/*
+	 * TODO: can the lv be inactive?  If so, we should use
+	 * non-persistent dlock_lv if it's not currently active
+	 * and won't be activated by the command.  If it's
+	 * active now or will be activated by command, then
+	 * use PERSISTENT.
+	 */
+	if (!dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+		goto_out;
+
+	/*
 	 * lp->pvh holds the list of PVs available for allocation or removal
 	 */
 	if (lp->pv_count) {
@@ -3267,6 +3304,11 @@ int lvconvert(struct cmd_context * cmd, int argc, char **argv)
 		return process_each_lv(cmd, argc, argv, READ_FOR_UPDATE, &lp,
 				       &_lvconvert_merge_single);
 	}
+
+	/* TODO: missing dlock_vg_verify() after vg_read() */
+
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0))
+		return ECMD_FAILED;
 
 	return lvconvert_single(cmd, &lp);
 }
