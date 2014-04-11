@@ -18,8 +18,24 @@
 static int lvremove_single(struct cmd_context *cmd, struct logical_volume *lv,
 			   void *handle __attribute__((unused)))
 {
+	struct logical_volume *lock_lv = lv;
+
+	if (lv_is_thin_volume(lv)) {
+		/*
+		 * Get pool here because after remove it can't be found from lv.
+		 * free_lv is no-op because a thin lv has no lock_type/lock_args.
+		 */
+		lock_lv = first_seg(lv)->pool_lv;
+	}
+
+	if (!dlock_lv(cmd, lock_lv, "ex", DL_LV_PERSISTENT))
+		return_ECMD_FAILED;
+
 	if (!lv_remove_with_dependencies(cmd, lv, (force_t) arg_count(cmd, force_ARG), 0))
 		return_ECMD_FAILED;
+
+	dlock_lv(cmd, lock_lv, "un", DL_LV_PERSISTENT | DL_LV_MODE_NOARG);
+	dlock_free_lv_lock_args(cmd, lv->vg, lv->name, lv->lock_type, lv->lock_args);
 
 	return ECMD_PROCESSED;
 }

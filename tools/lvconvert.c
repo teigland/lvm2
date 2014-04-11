@@ -2532,6 +2532,11 @@ static int _lvconvert_thinpool_external(struct cmd_context *cmd,
 		.voriginsize = external_lv->size,
 	};
 
+	if (dlock_type(vg->lock_type)) {
+		log_error("External origins not allowed with lock type %s", vg->lock_type);
+		return 0;
+	}
+
 	dm_list_init(&lvc.tags);
 
 	if (!pool_supports_external_origin(first_seg(pool_lv), external_lv))
@@ -2901,6 +2906,15 @@ static int _lvconvert_to_pool(struct cmd_context *cmd,
 	if (!attach_pool_data_lv(seg, data_lv))
 		return_0;
 
+	if (data_lv->lock_type)
+		pool_lv->lock_type = dm_pool_strdup(cmd->mem, data_lv->lock_type);
+	if (data_lv->lock_args)
+		pool_lv->lock_args = dm_pool_strdup(cmd->mem, data_lv->lock_args);
+	if (lp->pool_metadata_lv_name) {
+		metadata_lv->lock_type = NULL;
+		metadata_lv->lock_args = NULL;
+	}
+
 	/* FIXME: revert renamed LVs in fail path? */
 	/* FIXME: any common code with metadata/thin_manip.c  extend_pool() ? */
 
@@ -2940,6 +2954,24 @@ mda_write:
 				pool_lv->vg->name, pool_lv->name,
 				(segtype_is_cache_pool(lp->segtype)) ?
 				"cache" : "thin");
+
+	/*
+	 * The pool lv adopts the lock from the data lv (above),
+	 * and the lock for the meta lv is unlocked and freed.
+	 */
+	if (lp->pool_metadata_lv_name) {
+		const char *dlock_meta_name = strstr(lp->pool_metadata_lv_name, "/");
+		if (dlock_meta_name)
+			dlock_meta_name++;
+		else
+			dlock_meta_name = lp->pool_metadata_lv_name;
+		if (!dlock_lv_name(cmd, pool_lv->vg, dlock_meta_name, NULL, "un", DL_LV_PERSISTENT)) {
+			log_error("Failed to unlock pool metadata LV %s/%s",
+				  pool_lv->vg->name, dlock_meta_name);
+		}
+		dlock_free_lv_lock_args(cmd, pool_lv->vg, dlock_meta_name,
+					pool_lv->vg->lock_type, NULL);
+	}
 
 	r = 1;
 out:
@@ -3164,11 +3196,25 @@ static int lvconvert_single(struct cmd_context *cmd, struct lvconvert_params *lp
 	if (!lv)
 		goto_out;
 
+	if (!dlock_vg_verify(cmd, lv->vg))
+		goto out;
+
 	if (!get_pool_params(cmd, lv_config_profile(lv),
 			     &lp->passed_args, &lp->thin_chunk_size_calc_policy,
 			     &lp->chunk_size, &lp->discards,
 			     &lp->poolmetadata_size, &lp->zero))
 		goto_bad;
+
+	/*
+	 * If the lv is inactive before and after the command, the
+	 * use of PERSISTENT here means the lv will remain locked as
+	 * an effect of running the lvconvert.
+	 * To unlock it, it would need to be activated+deactivated.
+	 * Or, we might identify the commands for which the lv remains
+	 * inactive, and not use PERSISTENT here for those cases.
+	 */
+	if (!dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+		goto_out;
 
 	/*
 	 * lp->pvh holds the list of PVs available for allocation or removal
@@ -3267,6 +3313,9 @@ int lvconvert(struct cmd_context * cmd, int argc, char **argv)
 		return process_each_lv(cmd, argc, argv, READ_FOR_UPDATE, &lp,
 				       &_lvconvert_merge_single);
 	}
+
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0))
+		return ECMD_FAILED;
 
 	return lvconvert_single(cmd, &lp);
 }
