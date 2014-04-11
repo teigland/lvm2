@@ -29,6 +29,7 @@
 #include "segtype.h"
 #include "lvmcache.h"
 #include "lvmetad.h"
+#include "lvmlockd.h"
 #include "archiver.h"
 
 #ifdef HAVE_LIBDL
@@ -303,7 +304,10 @@ static int _process_config(struct cmd_context *cmd)
 	const struct dm_config_value *cv;
 	int64_t pv_min_kb;
 	const char *lvmetad_socket;
+	const char *lvmlockd_socket;
 	int udev_disabled = 0;
+	int locking_type;
+	int use_lvmlockd;
 	char sysfs_dir[PATH_MAX];
 
 	if (!_check_config(cmd))
@@ -449,8 +453,9 @@ static int _process_config(struct cmd_context *cmd)
 	cn = find_config_tree_node(cmd, devices_global_filter_CFG, NULL);
 	lvmetad_set_token(cn ? cn->v : NULL);
 
-	if (find_config_tree_int(cmd, global_locking_type_CFG, NULL) == 3 &&
-	    find_config_tree_bool(cmd, global_use_lvmetad_CFG, NULL)) {
+	locking_type = find_config_tree_int(cmd, global_locking_type_CFG, NULL);
+
+	if (locking_type == 3 && find_config_tree_bool(cmd, global_use_lvmetad_CFG, NULL)) {
 		log_warn("WARNING: configuration setting use_lvmetad overridden to 0 due to locking_type 3. "
 			 "Clustered environment not supported by lvmetad yet.");
 		lvmetad_set_active(0);
@@ -458,6 +463,31 @@ static int _process_config(struct cmd_context *cmd)
 		lvmetad_set_active(find_config_tree_bool(cmd, global_use_lvmetad_CFG, NULL));
 
 	lvmetad_init(cmd);
+
+	lvmlockd_disconnect();
+	lvmlockd_socket = getenv("LVM_LVMLOCKD_SOCKET");
+	if (!lvmlockd_socket)
+		lvmlockd_socket = DEFAULT_RUN_DIR "/lvmlockd.socket";
+
+	/* TODO?
+		lvmlockd_socket = find_config_tree_str(cmd, "lvmlockd/socket_path",
+						       DEFAULT_RUN_DIR "/lvmlockd.socket");
+	*/
+	lvmlockd_set_socket(lvmlockd_socket);
+
+	use_lvmlockd = find_config_tree_bool(cmd, global_use_lvmlockd_CFG, NULL);
+
+	if (locking_type == 3 && use_lvmlockd) {
+		log_error("ERROR: configuration setting use_lvmlockd cannot be used with locking_type 3.");
+		return 0;
+	}
+
+	if (use_lvmlockd)
+		lvmlockd_set_active(1);
+	else
+		lvmlockd_set_active(0);
+
+	lvmlockd_init(cmd);
 
 	return 1;
 }
@@ -1738,6 +1768,8 @@ void destroy_toolcontext(struct cmd_context *cmd)
 	}
 #endif
 	dm_free(cmd);
+
+	lvmlockd_disconnect();
 
 	lvmetad_release_token();
 	lvmetad_disconnect();
