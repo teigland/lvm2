@@ -18,8 +18,14 @@
 static int lvremove_single(struct cmd_context *cmd, struct logical_volume *lv,
 			   void *handle __attribute__((unused)))
 {
+	if (!dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+		return_ECMD_FAILED;
+
 	if (!lv_remove_with_dependencies(cmd, lv, (force_t) arg_count(cmd, force_ARG), 0))
 		return_ECMD_FAILED;
+
+	dlock_lv(cmd, lv, "un", DL_LV_PERSISTENT | DL_LV_MODE_NOARG);
+	dlock_free_lv_lock_args(cmd, lv->vg, lv->name, lv->lock_type, lv->lock_args);
 
 	return ECMD_PROCESSED;
 }
