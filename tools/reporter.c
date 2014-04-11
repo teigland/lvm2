@@ -241,6 +241,12 @@ static int _report(struct cmd_context *cmd, int argc, char **argv,
 		}
 	}
 
+	if (!argc || arg_tag_count(argc, argv)) {
+		/* gl is needed to get a valid list of all vgs */
+		if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+			return ECMD_FAILED;
+	}
+
 	switch (report_type) {
 	case DEVTYPES:
 		keys = find_config_tree_str(cmd, report_devtypes_sort_CFG, NULL);
