@@ -188,6 +188,9 @@ int vgreduce(struct cmd_context *cmd, int argc, char **argv)
 		cmd->handles_missing_pvs = 1;
 	}
 
+	if (!dlock_gl_vg(cmd, vg_name, "ex", "ex", DL_GL_RENEW_CACHE))
+		return_ECMD_FAILED;
+
 	vg = vg_read_for_update(cmd, vg_name, NULL, READ_ALLOW_EXPORTED);
 	if (vg_read_error(vg) == FAILED_ALLOCATION ||
 	    vg_read_error(vg) == FAILED_NOTFOUND)
@@ -196,6 +199,9 @@ int vgreduce(struct cmd_context *cmd, int argc, char **argv)
 	/* FIXME We want to allow read-only VGs to be changed here? */
 	if (vg_read_error(vg) && vg_read_error(vg) != FAILED_READ_ONLY
 	    && !arg_count(cmd, removemissing_ARG))
+		goto_out;
+
+	if (!dlock_vg_verify(cmd, vg))
 		goto_out;
 
 	locked = !vg_read_error(vg);
