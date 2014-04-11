@@ -21,6 +21,7 @@
 #include "lvm-file.h"
 #include "lvmcache.h"
 #include "lvmetad.h"
+#include "lvmlockd.h"
 #include "memlock.h"
 #include "str_list.h"
 #include "pv_alloc.h"
@@ -606,6 +607,8 @@ int vg_remove(struct volume_group *vg)
 	/* FIXME Handle partial failures from above. */
 	if (!lvmetad_vg_remove(vg))
 		stack;
+
+	dlock_vg_update(vg);
 
 	if (!backup_remove(vg->cmd, vg->name))
 		stack;
@@ -2753,6 +2756,8 @@ int vg_commit(struct volume_group *vg)
 	if ((vg->fid->fmt->features & FMT_PRECOMMIT) && !lvmetad_vg_update(vg))
 		return_0;
 
+	dlock_vg_update(vg);
+
 	cache_updated = _vg_commit_mdas(vg);
 
 	if (cache_updated) {
@@ -3043,6 +3048,7 @@ static struct volume_group *_vg_read(struct cmd_context *cmd,
 	char uuid[64] __attribute__((aligned(8)));
 	unsigned seqno = 0;
 	int reappeared = 0;
+	int update_lvmetad = 0;
 
 	if (is_orphan_vg(vgname)) {
 		if (use_precommitted) {
@@ -3064,7 +3070,20 @@ static struct volume_group *_vg_read(struct cmd_context *cmd,
 			else
 				*consistent = !reappeared;
 		}
-		return correct_vg;
+
+		if (correct_vg && (correct_vg->read_status & FAILED_STALE_CACHE)) {
+			log_debug_metadata("Stale cache of VG %s seqno %u",
+					   correct_vg->name, correct_vg->seqno);
+			fmt = correct_vg->fid->fmt;
+			if (!vgname)
+				vgname = dm_pool_strdup(cmd->mem, correct_vg->name);
+			release_vg(correct_vg);
+			correct_vg = NULL;
+			update_lvmetad = 1;
+			goto disk_read;
+		} else {
+			return correct_vg;
+		}
 	}
 
 	/*
@@ -3103,6 +3122,7 @@ static struct volume_group *_vg_read(struct cmd_context *cmd,
 	if (!vgname && !(vgname = lvmcache_vgname_from_vgid(cmd->mem, vgid)))
 		return_NULL;
 
+disk_read:
 	if (use_precommitted && !(fmt->features & FMT_PRECOMMIT))
 		use_precommitted = 0;
 
@@ -3481,6 +3501,14 @@ static struct volume_group *_vg_read(struct cmd_context *cmd,
 			  "vgcfgrestore.");
 		release_vg(correct_vg);
 		return NULL;
+	}
+
+	if (update_lvmetad) {
+		vg->cft_precommitted = export_vg_to_config_tree(correct_vg);
+		if (!lvmetad_vg_update(correct_vg))
+			log_error("Failed to update lvmetad with new vg version");
+		dm_config_destroy(correct_vg->cft_precommitted);
+		correct_vg->cft_precommitted = NULL;
 	}
 
 	*consistent = 1;
