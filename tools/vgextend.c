@@ -74,12 +74,18 @@ int vgextend(struct cmd_context *cmd, int argc, char **argv)
 	 */
 	cmd->handles_missing_pvs = 1;
 
+	if (!dlock_gl_vg(cmd, vg_name, "ex", "ex", DL_GL_RENEW_CACHE))
+		return_ECMD_FAILED;
+
 	log_verbose("Checking for volume group \"%s\"", vg_name);
 	vg = vg_read_for_update(cmd, vg_name, NULL, 0);
 	if (vg_read_error(vg)) {
 		release_vg(vg);
 		return_ECMD_FAILED;
 	}
+
+	if (!dlock_vg_verify(cmd, vg))
+		goto_bad;
 
 	if (!archive(vg))
 		goto_bad;

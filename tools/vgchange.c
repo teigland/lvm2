@@ -131,6 +131,10 @@ static int _activate_lvs_in_vg(struct cmd_context *cmd, struct volume_group *vg,
 		    !lv_passes_auto_activation_filter(cmd, lv))
 			continue;
 
+		if (is_change_activating(activate) &&
+		    !dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+			continue;
+
 		expected_count++;
 
 		if (!lv_change_activate(cmd, lv, activate)) {
@@ -146,6 +150,12 @@ static int _activate_lvs_in_vg(struct cmd_context *cmd, struct volume_group *vg,
 				expected_count--; /* not accounted */
 			}
 			continue;
+		}
+
+		if (!is_change_activating(activate) &&
+		    !dlock_lv(cmd, lv, "un", DL_LV_PERSISTENT)) {
+			log_error("Deactivated LV %s/%s remains locked",
+				  lv->vg->name, lv->name);
 		}
 
 		count++;
@@ -304,6 +314,12 @@ static int _vgchange_clustered(struct cmd_context *cmd,
 			       struct volume_group *vg)
 {
 	int clustered = !strcmp(arg_str_value(cmd, clustered_ARG, "n"), "y");
+	int locking_type = find_config_tree_int(cmd, global_locking_type_CFG, NULL);
+
+	if (locking_type != 3) {
+		log_error("clustered vg requires locking_type 3 and clvm");
+		return 0;
+	}
 
 	if (clustered && (vg_is_clustered(vg))) {
 		log_error("Volume group \"%s\" is already clustered",
@@ -319,6 +335,166 @@ static int _vgchange_clustered(struct cmd_context *cmd,
 
 	if (!vg_set_clustered(vg, clustered))
 		return_0;
+
+	if (clustered)
+		vg->lock_type = "clvm";
+	else
+		vg->lock_type = "none";
+
+	return 1;
+}
+
+static int _vgchange_systemid(struct cmd_context *cmd,
+			      struct volume_group *vg)
+{
+	const char *id = arg_str_value(cmd, systemid_ARG, NULL);
+
+	if (vg->system_id && vg->system_id[0] && !arg_count(cmd, force_ARG)) {
+		log_error("Volume group \"%s\" already has system id \"%s\"",
+			  vg->name, vg->system_id);
+		return 0;
+	}
+
+	if (dlock_type(vg->lock_type)) {
+		log_error("Volume group \"%s\" has lock_type %s",
+			  vg->name, vg->lock_type);
+		return 0;
+	}
+
+	/* systemid args beginning with '#' are reserved for lvm use */
+
+	if (id[0] == '#') {
+		if (!strcmp(id, "#none")) {
+			vg->system_id = NULL;
+		} else if (!strcmp(id, "#uname")) {
+			vg->system_id = dm_pool_strdup(cmd->mem, cmd->hostname);
+		} else {
+			log_error("Unknown system id type");
+			return 0;
+		}
+	} else {
+		vg->system_id = dm_pool_strdup(cmd->mem, id);
+	}
+
+	if (vg->system_id && strcmp(vg->system_id, cmd->hostname)) {
+		log_warn("VG \"%s\" with system id \"%s\" will not be accessible to local system id \"%s\"",
+			 vg->name, vg->system_id, cmd->hostname);
+	}
+
+	if (!vg->system_id) {
+		log_warn("VG \"%s\" with no system id will be accessible to any system", vg->name);
+	}
+
+	/* does add_local to update sysid in lvmlockd local_vgs entry */
+	dlock_start_vg(cmd, vg, arg_str_value(cmd, lockvg_ARG, NULL));
+
+	return 1;
+}
+
+/* We shouldn't get here if the vg system_id does not match the local system_id. */
+
+static int _vgchange_locktype(struct cmd_context *cmd,
+			      struct volume_group *vg)
+{
+	const char *lock_type = arg_str_value(cmd, locktype_ARG, NULL);
+	const char *lock_args = NULL;
+	struct lv_list *lvl;
+	struct logical_volume *lv;
+
+	if (dlock_type(vg->lock_type) && !strcmp(lock_type, "none") &&
+	    arg_count(cmd, force_ARG)) {
+		/*
+		 * This is not general support for changing the lock_type,
+		 * because it ignores lvmlockd, the state of the vg on other hosts,
+		 * and the lvmlock lv (for sanlock).  It is meant to just remove
+		 * lock_type/lock_args from the vg metadata, which is one step that
+		 * can be necessary when manually recovering from certain failures.
+		 * e.g. when a pv is lost containing the lvmlock lv (holding sanlock
+		 * leases), the vg lock_type needs to be changed to none, and then
+		 * back to sanlock, which recreates the lvmlock lv and leases.
+		 */
+		log_warn("Changing lock_type from sanlock to none for VG %s", vg->name);
+		vg->lock_type = "none";
+		vg->lock_args = NULL;
+
+		dm_list_iterate_items(lvl, &vg->lvs) {
+			lvl->lv->lock_type = "none";
+			lvl->lv->lock_args = NULL;
+		}
+		return 1;
+	}
+
+	if (dlock_type(vg->lock_type)) {
+		/* TODO: will need to perform lvmlockd steps similar to vgremove to do this. */
+		log_error("Changing VG %s from lock type %s not allowed.",
+			  vg->name, vg->lock_type);
+		return 0;
+	}
+
+	if (lvs_in_vg_activated(vg)) {
+		log_error("Changing lock type not allowed with active LVs");
+		return 0;
+	}
+
+	dm_list_iterate_items(lvl, &vg->lvs) {
+		lv = lvl->lv;
+
+		if (lv_is_cache_type(lv)) {
+			log_error("Changing to lock type %s is not allowed with cache LV %s/%s",
+				  lock_type, vg->name, lv->name);
+			return 0;
+		}
+
+		if ((lv->status & SNAPSHOT) || lv_is_cow(lv)) {
+			log_error("Changing to lock type %s is not allowed with cow snapshot LV %s/%s",
+				  lock_type, vg->name, lv->name);
+			return 0;
+		}
+	}
+
+	if (vg_is_clustered(vg) && !vg_set_clustered(vg, 0)) {
+		log_error("Failed to change VG %s clustered status", vg->name);
+		return 0;
+	}
+
+	if (!vg_set_lock_type(vg, lock_type, 1))
+		return 0;
+
+	if (!dlock_init_vg_lock_args(cmd, vg)) {
+		log_error("Failed to initialize VG %s lock args for lock type %s",
+			  vg->name, lock_type);
+		return 0;
+	}
+
+	dm_list_iterate_items(lvl, &vg->lvs) {
+		lv = lvl->lv;
+
+		if (!lv_is_visible(lv))
+			continue;
+
+		if (lv_is_thin_volume(lv) ||
+		    lv_is_thin_pool_data(lv) ||
+		    lv_is_thin_pool_metadata(lv))
+			continue;
+
+		if (lv_is_pool_metadata_spare(lv))
+			continue;
+
+		if (!dlock_init_lv_lock_args(cmd, vg, lv->name,
+					     lock_type, &lock_args)) {
+			log_error("Failed to init %s lock args LV %s/%s",
+				  lock_type, vg->name, lv->name);
+			return 0;
+		}
+
+		lv->lock_type = dm_pool_strdup(cmd->mem, lock_type);
+		lv->lock_args = lock_args;
+	}
+
+	if (!dlock_start_vg(cmd, vg, arg_str_value(cmd, lockvg_ARG, NULL)))
+		log_error("Failed to start locking for VG %s", vg->name);
+
+	vg->system_id = NULL;
 
 	return 1;
 }
@@ -453,6 +629,25 @@ static int _vgchange_profile(struct cmd_context *cmd,
 	return 1;
 }
 
+/*
+ * The first lock-start after startup will fail to get the sh gl lock but will
+ * continue without it.  Subsequent lock-start's will be able to get the global
+ * lock which will refresh the cache with any new dlock vgs that have been
+ * created from other hosts.
+ */
+
+static int _vgchange_lock_start(struct cmd_context *cmd, struct volume_group *vg)
+{
+	return dlock_start_vg(cmd, vg, arg_str_value(cmd, lockvg_ARG, NULL));
+}
+
+static int _vgchange_lock_stop(struct cmd_context *cmd, struct volume_group *vg)
+{
+	/* Stopping the lockspace unlocks the vg lock, so don't try unlock. */
+	cmd->command->flags |= DLOCK_VG_NA;
+	return dlock_stop_vg(cmd, vg);
+}
+
 static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 			   struct volume_group *vg,
 			   void *handle __attribute__((unused)))
@@ -472,6 +667,8 @@ static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 		{ uuid_ARG, &_vgchange_uuid },
 		{ alloc_ARG, &_vgchange_alloc },
 		{ clustered_ARG, &_vgchange_clustered },
+		{ systemid_ARG, &_vgchange_systemid },
+		{ locktype_ARG, &_vgchange_locktype },
 		{ vgmetadatacopies_ARG, &_vgchange_metadata_copies },
 		{ profile_ARG, &_vgchange_profile},
 		{ detachprofile_ARG, &_vgchange_profile},
@@ -538,7 +735,67 @@ static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 		if (!_vgchange_background_polling(cmd, vg))
 			return_ECMD_FAILED;
 
+	if (arg_count(cmd, lockstart_ARG)) {
+		if (!_vgchange_lock_start(cmd, vg))
+			return_ECMD_FAILED;
+	} else if (arg_count(cmd, lockstop_ARG)) {
+		if (!_vgchange_lock_stop(cmd, vg))
+			return_ECMD_FAILED;
+	}
+
         return ECMD_PROCESSED;
+}
+
+static int dlock_vgchange(struct cmd_context *cmd, int argc, char **argv)
+{
+	/* The default vg lock mode is ex, but these options only need sh. */
+
+	if (arg_count(cmd, activate_ARG) || arg_count(cmd, refresh_ARG))
+		cmd->command->flags |= DLOCK_VG_SH;
+
+	/* Starting a vg lockspace means there are no locks available yet. */
+
+	if (arg_count(cmd, lockstart_ARG))
+		cmd->command->flags |= DLOCK_VG_NA;
+
+	/*
+	 * In most cases, dlock_vg does not apply when changing lock type.
+	 * (We don't generally allow changing *from* dlock type yet.)
+	 * dlock_vg could be called within _vgchange_locktype as needed.
+	 */
+
+	if (arg_count(cmd, locktype_ARG))
+		cmd->command->flags |= DLOCK_VG_NA;
+
+	/* Changing system_id or lock_type must only be done on explicitly named vgs. */
+
+	if (arg_count(cmd, systemid_ARG) || arg_count(cmd, locktype_ARG))
+		cmd->command->flags &= ~ENABLE_ALL_VGS;
+
+	/*
+	 * The dlock_vg and dlock_vg_verify steps would skip a vg with
+	 * another system id, but the force option should override that.
+	 */
+
+	if (arg_count(cmd, systemid_ARG) && arg_count(cmd, force_ARG))
+		cmd->command->flags |= DLOCK_VG_NA;
+
+	/*
+	 * No args or tag args imply all vg names are needed, which
+	 * requires an up to date list of all vg names.
+	 */
+
+	if (!argc || arg_tag_count(argc, argv) ||
+	    arg_count(cmd, lockstart_ARG) || arg_count(cmd, lockgl_ARG)) {
+		if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+			return ECMD_FAILED;
+
+	} else if (arg_count(cmd, systemid_ARG) || arg_count(cmd, locktype_ARG)) {
+		if (!dlock_gl(cmd, "ex", DL_GL_RENEW_CACHE | DL_GL_UPDATE_NAMES))
+			return ECMD_FAILED;
+	}
+
+	return 1;
 }
 
 int vgchange(struct cmd_context *cmd, int argc, char **argv)
@@ -556,12 +813,17 @@ int vgchange(struct cmd_context *cmd, int argc, char **argv)
 		arg_count(cmd, uuid_ARG) ||
 		arg_count(cmd, physicalextentsize_ARG) ||
 		arg_count(cmd, clustered_ARG) ||
+		arg_count(cmd, systemid_ARG) ||
+		arg_count(cmd, locktype_ARG) ||
 		arg_count(cmd, alloc_ARG) ||
 		arg_count(cmd, vgmetadatacopies_ARG);
 	int update = update_partial_safe || update_partial_unsafe;
 
 	if (!update &&
 	    !arg_count(cmd, activate_ARG) &&
+	    !arg_count(cmd, lockstart_ARG) &&
+	    !arg_count(cmd, lockstop_ARG) &&
+	    !arg_count(cmd, lockgl_ARG) &&
 	    !arg_count(cmd, monitor_ARG) &&
 	    !arg_count(cmd, poll_ARG) &&
 	    !arg_count(cmd, refresh_ARG)) {
@@ -656,6 +918,9 @@ int vgchange(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!update || !update_partial_unsafe)
 		cmd->handles_missing_pvs = 1;
+
+	if (!dlock_vgchange(cmd, argc, argv))
+		return ECMD_FAILED;
 
 	return process_each_vg(cmd, argc, argv, update ? READ_FOR_UPDATE : 0,
 			       NULL, &vgchange_single);
