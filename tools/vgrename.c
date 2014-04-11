@@ -122,6 +122,12 @@ static int vg_rename_path(struct cmd_context *cmd, const char *old_vg_path,
 		if (!vg)
 			return_0;
 
+		if (dlock_type(vg->lock_type)) {
+			log_error("Rename not supported for lock type %s", vg->lock_type);
+			unlock_and_release_vg(cmd, vg, vg_name_old);
+			return_0;
+		}
+
 		if (!_lock_new_vg_for_rename(cmd, vg_name_new)) {
 			unlock_and_release_vg(cmd, vg, vg_name_old);
 			return_0;
@@ -132,6 +138,13 @@ static int vg_rename_path(struct cmd_context *cmd, const char *old_vg_path,
 
 		vg = _get_old_vg_for_rename(cmd, vg_name_old, vgid);
 		if (!vg) {
+			unlock_vg(cmd, vg_name_new);
+			return_0;
+		}
+
+		if (dlock_type(vg->lock_type)) {
+			log_error("Rename not supported for lock type %s", vg->lock_type);
+			unlock_and_release_vg(cmd, vg, vg_name_old);
 			unlock_vg(cmd, vg_name_new);
 			return_0;
 		}

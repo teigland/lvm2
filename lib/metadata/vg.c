@@ -560,6 +560,18 @@ int vg_set_clustered(struct volume_group *vg, int clustered)
 	return 1;
 }
 
+int vg_set_lock_type(struct volume_group *vg, const char *lock_type)
+{
+	if (!lock_type)
+		lock_type = "none";
+	vg->lock_type = dm_pool_strdup(vg->vgmem, lock_type);
+	if (!vg->lock_type) {
+		log_error("vg_set_lock_type %s no mem", lock_type);
+		return 0;
+	}
+	return 1;
+}
+
 char *vg_attr_dup(struct dm_pool *mem, const struct volume_group *vg)
 {
 	char *repstr;
