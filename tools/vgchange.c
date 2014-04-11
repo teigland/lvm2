@@ -131,6 +131,10 @@ static int _activate_lvs_in_vg(struct cmd_context *cmd, struct volume_group *vg,
 		    !lv_passes_auto_activation_filter(cmd, lv))
 			continue;
 
+		if (is_change_activating(activate) &&
+		    !dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+			continue;
+
 		expected_count++;
 
 		if (!lv_change_activate(cmd, lv, activate)) {
@@ -146,6 +150,12 @@ static int _activate_lvs_in_vg(struct cmd_context *cmd, struct volume_group *vg,
 				expected_count--; /* not accounted */
 			}
 			continue;
+		}
+
+		if (!is_change_activating(activate) &&
+		    !dlock_lv(cmd, lv, "un", DL_LV_PERSISTENT)) {
+			log_error("Deactivated LV %s/%s remains locked",
+				  lv->vg->name, lv->name);
 		}
 
 		count++;
@@ -304,6 +314,12 @@ static int _vgchange_clustered(struct cmd_context *cmd,
 			       struct volume_group *vg)
 {
 	int clustered = !strcmp(arg_str_value(cmd, clustered_ARG, "n"), "y");
+	int locking_type = find_config_tree_int(cmd, global_locking_type_CFG, NULL);
+
+	if (locking_type != 3) {
+		log_error("clustered vg requires locking_type 3 and clvm");
+		return 0;
+	}
 
 	if (clustered && (vg_is_clustered(vg))) {
 		log_error("Volume group \"%s\" is already clustered",
@@ -319,6 +335,11 @@ static int _vgchange_clustered(struct cmd_context *cmd,
 
 	if (!vg_set_clustered(vg, clustered))
 		return_0;
+
+	if (clustered)
+		vg->lock_type = "clvm";
+	else
+		vg->lock_type = "none";
 
 	return 1;
 }
@@ -453,6 +474,20 @@ static int _vgchange_profile(struct cmd_context *cmd,
 	return 1;
 }
 
+/*
+ * vgchange --lock-start [names/tags...]
+ * Start all vgs that use dlock.
+ * Starting specific vgs would generally use vgchange --lock-vg start.
+ */
+
+static int _vgchange_lock_start(struct cmd_context *cmd,
+				struct volume_group *vg)
+{
+	if (!dlock_start_vg(cmd, vg, arg_str_value(cmd, lockvg_ARG, NULL)))
+		return_0;
+	return 1;
+}
+
 static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 			   struct volume_group *vg,
 			   void *handle __attribute__((unused)))
@@ -538,6 +573,11 @@ static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 		if (!_vgchange_background_polling(cmd, vg))
 			return_ECMD_FAILED;
 
+	if (arg_count(cmd, lockstart_ARG)) {
+		if (!_vgchange_lock_start(cmd, vg))
+			return_ECMD_FAILED;
+	}
+
         return ECMD_PROCESSED;
 }
 
@@ -562,6 +602,8 @@ int vgchange(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!update &&
 	    !arg_count(cmd, activate_ARG) &&
+	    !arg_count(cmd, lockvg_ARG) &&
+	    !arg_count(cmd, lockstart_ARG) &&
 	    !arg_count(cmd, monitor_ARG) &&
 	    !arg_count(cmd, poll_ARG) &&
 	    !arg_count(cmd, refresh_ARG)) {
@@ -656,6 +698,19 @@ int vgchange(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!update || !update_partial_unsafe)
 		cmd->handles_missing_pvs = 1;
+
+	if (arg_count(cmd, activate_ARG) || arg_count(cmd, refresh_ARG))
+		cmd->command->flags |= DLOCK_VG_SH;
+
+	/* starting a vg lockspace means there are no locks available yet */
+	if (arg_count(cmd, lockstart_ARG))
+		cmd->command->flags |= DLOCK_VG_NA;
+
+	if ((!argc || arg_tag_count(argc, argv)) && !arg_count(cmd, lockstart_ARG)) {
+		/* gl is needed to get a valid list of all vgs */
+		if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+			return ECMD_FAILED;
+	}
 
 	return process_each_vg(cmd, argc, argv, update ? READ_FOR_UPDATE : 0,
 			       NULL, &vgchange_single);

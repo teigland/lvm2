@@ -103,6 +103,11 @@ arg(profile_ARG, '\0', "profile", string_arg, 0)
 arg(detachprofile_ARG, '\0', "detachprofile", NULL, 0)
 arg(mergedconfig_ARG, '\0', "mergedconfig", NULL, 0)
 arg(ignoreskippedcluster_ARG, '\0', "ignoreskippedcluster", NULL, 0)
+arg(lockgl_ARG, '\0', "lock-gl", string_arg, 0)
+arg(lockvg_ARG, '\0', "lock-vg", string_arg, 0)
+arg(locklv_ARG, '\0', "lock-lv", string_arg, 0)
+arg(locktype_ARG, '\0', "lock-type", string_arg, 0)
+arg(lockstart_ARG, '\0', "lock-start", NULL, 0)
 arg(splitsnapshot_ARG, '\0', "splitsnapshot", NULL, 0)
 
 /* Allow some variations */

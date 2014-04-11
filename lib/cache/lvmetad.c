@@ -377,6 +377,7 @@ struct volume_group *lvmetad_vg_lookup(struct cmd_context *cmd, const char *vgna
 	struct dm_config_node *pvcn;
 	struct pv_list *pvl;
 	struct lvmcache_info *info;
+	int stale_cache = 0;
 
 	if (!lvmetad_active())
 		return NULL;
@@ -403,6 +404,15 @@ struct volume_group *lvmetad_vg_lookup(struct cmd_context *cmd, const char *vgna
 		if (!(top = dm_config_find_node(reply.cft->root, "metadata"))) {
 			log_error(INTERNAL_ERROR "metadata config node not found.");
 			goto out;
+		}
+
+		/*
+		 * lvmlockd may have detected a newer vg version and
+		 * invalidated the cached vg.
+		 */
+		if (dm_config_find_node(reply.cft->root, "vg_invalid")) {
+			log_debug_lvmetad("Stale lvmetad cache for VG %s", vgname);
+			stale_cache = 1;
 		}
 
 		name = daemon_reply_str(reply, "name", NULL);
@@ -453,6 +463,9 @@ out:
 	if (!vg && fid)
 		fid->fmt->ops->destroy_instance(fid);
 	daemon_reply_destroy(reply);
+
+	if (stale_cache)
+		vg->read_status |= FAILED_STALE_CACHE;
 
 	return vg;
 }
@@ -1031,5 +1044,49 @@ int lvmetad_pvscan_all_devs(struct cmd_context *cmd, activation_handler handler)
 		return 0;
 
 	return r;
+}
+
+/*
+ * The gl lock (in sh or ex) must be held when this is called.
+ *
+ * Check if lvmetad's global invalid flag has been set by lvmlockd.
+ * If so, reread all metadata from disk, update it in lvmetad,
+ * and clear lvmetad's global invalid flag.
+ */
+
+void lvmetad_validate_dlock_global(struct cmd_context *cmd, int force)
+{
+	daemon_reply reply;
+
+	if (force)
+		goto do_scan;
+
+	/*
+	 * TODO: replace pv_list with a new request that just returns
+	 * the global_invalid information since that's all we need here.
+	 */
+	reply = daemon_send_simple(_lvmetad, "pv_list",
+				   "token = %s", "skip",
+				   NULL);
+
+	/* TODO: check reply? */
+
+	if (!dm_config_find_node(reply.cft->root, "global_invalid"))
+		goto out;
+
+ do_scan:
+	/* TODO: does this fully rebuild the cache? */
+	lvmetad_pvscan_all_devs(cmd, NULL);
+
+	reply = daemon_send_simple(_lvmetad, "set_global_info",
+				   "token = %s", "skip",
+				   "global_invalid = %d", 0,
+				   NULL);
+	/* TODO: check reply? */
+
+	/* refresh our cmd cache based on new lvmetad cache */
+	lvmcache_seed_infos_from_lvmetad(cmd);
+ out:   
+	daemon_reply_destroy(reply);
 }
 
