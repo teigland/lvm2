@@ -808,6 +808,7 @@ exclusive:
 		if (!activate_lv_excl(cmd, lv))
 			return_0;
 		break;
+	case CHANGE_AS:
 	default: /* CHANGE_AY */
 		if (_lv_is_exclusive(lv))
 			goto exclusive;
