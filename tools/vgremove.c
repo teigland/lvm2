@@ -27,6 +27,13 @@ static int vgremove_single(struct cmd_context *cmd, const char *vg_name,
 
 	lv_count = vg_visible_lvs(vg);
 
+	if (dlock_type(vg->lock_type) && lv_count) {
+		/* TODO: we can lift this restriction with a little testing */
+		log_error("Remove LVs before removing VG with lock_type %s",
+			  vg->lock_type);
+		return ECMD_FAILED;
+	}
+
 	force = (force_t) arg_count(cmd, force_ARG);
 	if (lv_count) {
 		if (force == PROMPT) {
@@ -45,6 +52,9 @@ static int vgremove_single(struct cmd_context *cmd, const char *vg_name,
 			return_ECMD_FAILED;
 	}
 
+	if (!dlock_free_vg_lock_args_before(cmd, vg))
+		return_ECMD_FAILED;
+
 	if (!force && !vg_remove_check(vg))
 		return_ECMD_FAILED;
 
@@ -52,6 +62,8 @@ static int vgremove_single(struct cmd_context *cmd, const char *vg_name,
 
 	if (!vg_remove(vg))
 		return_ECMD_FAILED;
+
+	dlock_free_vg_lock_args_final(cmd, vg);
 
 	return ECMD_PROCESSED;
 }
@@ -64,6 +76,9 @@ int vgremove(struct cmd_context *cmd, int argc, char **argv)
 		log_error("Please enter one or more volume group paths");
 		return EINVALID_CMD_LINE;
 	}
+
+	if (!dlock_gl(cmd, "ex", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
 
 	cmd->handles_missing_pvs = 1;
 	ret = process_each_vg(cmd, argc, argv,
