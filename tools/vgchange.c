@@ -131,6 +131,10 @@ static int _activate_lvs_in_vg(struct cmd_context *cmd, struct volume_group *vg,
 		    !lv_passes_auto_activation_filter(cmd, lv))
 			continue;
 
+		if (is_change_activating(activate) &&
+		    !dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+			continue;
+
 		expected_count++;
 
 		if (!lv_change_activate(cmd, lv, activate)) {
@@ -146,6 +150,12 @@ static int _activate_lvs_in_vg(struct cmd_context *cmd, struct volume_group *vg,
 				expected_count--; /* not accounted */
 			}
 			continue;
+		}
+
+		if (!is_change_activating(activate) &&
+		    !dlock_lv(cmd, lv, "un", DL_LV_PERSISTENT)) {
+			log_error("Deactivated LV %s/%s remains locked",
+				  lv->vg->name, lv->name);
 		}
 
 		count++;
@@ -304,6 +314,12 @@ static int _vgchange_clustered(struct cmd_context *cmd,
 			       struct volume_group *vg)
 {
 	int clustered = !strcmp(arg_str_value(cmd, clustered_ARG, "n"), "y");
+	int locking_type = find_config_tree_int(cmd, global_locking_type_CFG, NULL);
+
+	if (locking_type != 3) {
+		log_error("clustered vg requires locking_type 3 and clvm");
+		return 0;
+	}
 
 	if (clustered && (vg_is_clustered(vg))) {
 		log_error("Volume group \"%s\" is already clustered",
@@ -319,6 +335,11 @@ static int _vgchange_clustered(struct cmd_context *cmd,
 
 	if (!vg_set_clustered(vg, clustered))
 		return_0;
+
+	if (clustered)
+		vg->lock_type = "clvm";
+	else
+		vg->lock_type = "none";
 
 	return 1;
 }
@@ -453,6 +474,25 @@ static int _vgchange_profile(struct cmd_context *cmd,
 	return 1;
 }
 
+/*
+ * The first lock-start after startup will fail to get the sh gl lock but will
+ * continue without it.  Subsequent lock-start's will be able to get the global
+ * lock which will refresh the cache with any new dlock vgs that have been
+ * created from other hosts.
+ */
+
+static int _vgchange_lock_start(struct cmd_context *cmd, struct volume_group *vg)
+{
+	return dlock_start_vg(cmd, vg, arg_str_value(cmd, lockvg_ARG, NULL));
+}
+
+static int _vgchange_lock_stop(struct cmd_context *cmd, struct volume_group *vg)
+{
+	/* Stopping the lockspace unlocks the vg lock, so don't try unlock. */
+	cmd->command->flags |= DLOCK_VG_NA;
+	return dlock_stop_vg(cmd, vg);
+}
+
 static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 			   struct volume_group *vg,
 			   void *handle __attribute__((unused)))
@@ -538,6 +578,14 @@ static int vgchange_single(struct cmd_context *cmd, const char *vg_name,
 		if (!_vgchange_background_polling(cmd, vg))
 			return_ECMD_FAILED;
 
+	if (arg_count(cmd, lockstart_ARG)) {
+		if (!_vgchange_lock_start(cmd, vg))
+			return_ECMD_FAILED;
+	} else if (arg_count(cmd, lockstop_ARG)) {
+		if (!_vgchange_lock_stop(cmd, vg))
+			return_ECMD_FAILED;
+	}
+
         return ECMD_PROCESSED;
 }
 
@@ -562,6 +610,9 @@ int vgchange(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!update &&
 	    !arg_count(cmd, activate_ARG) &&
+	    !arg_count(cmd, lockstart_ARG) &&
+	    !arg_count(cmd, lockstop_ARG) &&
+	    !arg_count(cmd, lockgl_ARG) &&
 	    !arg_count(cmd, monitor_ARG) &&
 	    !arg_count(cmd, poll_ARG) &&
 	    !arg_count(cmd, refresh_ARG)) {
@@ -656,6 +707,37 @@ int vgchange(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!update || !update_partial_unsafe)
 		cmd->handles_missing_pvs = 1;
+
+	if (arg_count(cmd, activate_ARG) || arg_count(cmd, refresh_ARG))
+		cmd->command->flags |= DLOCK_VG_SH;
+
+	/* Starting a vg lockspace means there are no locks available yet. */
+	if (arg_count(cmd, lockstart_ARG))
+		cmd->command->flags |= DLOCK_VG_NA;
+
+	if (!argc || arg_tag_count(argc, argv) || arg_count(cmd, lockstart_ARG)) {
+		if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+			return ECMD_FAILED;
+	}
+
+	/*
+	 * Special case to enable or disable the global lock in a sanlock vg:
+	 * vgchange --lock-gl enable|disable vg_name
+	 * This only ever wants a single explicit vg, so toollib
+	 * processing is not wanted.  This is the only case where the
+	 * lockgl arg implies a command itself.  It is otherwise a
+	 * modifier for other commands.
+	 */
+	if (arg_count(cmd, lockgl_ARG)) {
+		const char *able = arg_str_value(cmd, lockgl_ARG, NULL);
+		if (!strcmp(able, "enable") || !strcmp(able, "disable")) {
+			if (argc != 1 || arg_tag_count(argc, argv)) {
+				log_error("Enable/disable global lock in a single VG");
+				return ECMD_FAILED;
+			}
+			return dlock_gl_able(cmd, argv[0], able);
+		}
+	}
 
 	return process_each_vg(cmd, argc, argv, update ? READ_FOR_UPDATE : 0,
 			       NULL, &vgchange_single);
