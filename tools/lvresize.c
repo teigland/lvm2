@@ -175,6 +175,9 @@ int lvresize(struct cmd_context *cmd, int argc, char **argv)
 	if (!_lvresize_params(cmd, argc, argv, &lp))
 		return EINVALID_CMD_LINE;
 
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0))
+		return ECMD_FAILED;
+
 	log_verbose("Finding volume group %s", lp.vg_name);
 	vg = vg_read_for_update(cmd, lp.vg_name, NULL, 0);
 	if (vg_read_error(vg)) {
@@ -197,6 +200,9 @@ int lvresize(struct cmd_context *cmd, int argc, char **argv)
 		r = EINVALID_CMD_LINE;
 		goto_out;
 	}
+
+	if (!dlock_lv(cmd, lvl->lv, "ex", 0))
+		return ECMD_FAILED;
 
 	if (!lv_resize(cmd, lvl->lv, &lp, pvh))
 		goto_out;
