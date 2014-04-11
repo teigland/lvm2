@@ -315,6 +315,22 @@ out:
 	sync_local_dev_names(cmd);
 	unlock_vg(cmd, VG_GLOBAL);
 
+	/*
+	 * lvmlockd wants to know about any new local vgs that
+	 * have been added to lvmetad.  If not done automatically
+	 * here, then an explicit vgchange --lock-start would be
+	 * needed to cause lvmlockd to update its list of local vgs
+	 * from lvmetad.  We could possibly optimize this by only
+	 * calling this if a new vg has been found.
+	 *
+	 * This will do nothing during startup because lvmlockd is
+	 * not yet running.  lvmlockd will get an initial list of
+	 * local vgs from lvmetad when it's started.  This call is
+	 * for the case when lvmetad/lvmlockd are already running
+	 * and a new local vg appears to the system.
+	 */
+	dlock_update_local(cmd);
+
 	return ret;
 }
 
@@ -363,6 +379,9 @@ int pvscan(struct cmd_context *cmd, int argc, char **argv)
 		log_error("Unable to obtain global lock.");
 		return ECMD_FAILED;
 	}
+
+	if (!dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
 
 	if (cmd->filter->wipe)
 		cmd->filter->wipe(cmd->filter);

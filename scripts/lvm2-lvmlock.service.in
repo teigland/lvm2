@@ -1,0 +1,15 @@
+[Unit]
+Description=Availability of lvm2 dlock vgs and lvs
+Documentation=man:lvmlockd(8)
+After=lvm2-lvmlockd.service
+
+[Service]
+Type=oneshot
+ExecStart=@sbindir@/vgchange --lock-start-auto-wait
+ExecStart=@sbindir@/vgchange -aay # TODO: -S 'lock_type={sanlock,dlm}'
+ExecStop=@sbindir@/vgchange -an   # TODO: -S 'lock_type={sanlock,dlm}'
+ExecStop=@sbindir@/lvmlock --stop-lockspaces --wait
+
+[Install]
+WantedBy=multi-user.target
+
