@@ -176,6 +176,20 @@ int yes_no_arg(struct cmd_context *cmd __attribute__((unused)), struct arg_value
 	return 1;
 }
 
+int arg_tag_count(int argc, char **argv)
+{
+	const char *name;
+	int count = 0;
+	int i;
+
+	for (i = 0; i < argc; i++) {
+		name = argv[i];
+		if (*name == '@')
+			count++;
+	}
+	return count;
+}
+
 int activation_arg(struct cmd_context *cmd __attribute__((unused)), struct arg_values *av)
 {
 	av->sign = SIGN_NONE;
@@ -185,6 +199,12 @@ int activation_arg(struct cmd_context *cmd __attribute__((unused)), struct arg_v
 	    !strcmp(av->value, "ye")) {
 		av->i_value = CHANGE_AE;
 		av->ui_value = CHANGE_AE;
+	}
+
+	else if (!strcmp(av->value, "s") || !strcmp(av->value, "sy") ||
+		 !strcmp(av->value, "ys")) {
+		av->i_value = CHANGE_AS;
+		av->ui_value = CHANGE_AS;
 	}
 
 	else if (!strcmp(av->value, "y")) {
@@ -908,8 +928,10 @@ static int _get_settings(struct cmd_context *cmd)
 
 	cmd->ignore_clustered_vgs = arg_count(cmd, ignoreskippedcluster_ARG) ? 1 : 0;
 
-	if (!arg_count(cmd, sysinit_ARG))
+	if (!arg_count(cmd, sysinit_ARG)) {
 		lvmetad_connect_or_warn();
+		lvmlockd_connect_or_warn();
+	}
 
 	if (arg_count(cmd, nosuffix_ARG))
 		cmd->current_settings.suffix = 0;
