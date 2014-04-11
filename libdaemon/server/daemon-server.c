@@ -552,13 +552,21 @@ void daemon_start(daemon_state s)
 
 	if (!_systemd_activation && s.socket_path) {
 		s.socket_fd = _open_socket(s);
-		if (s.socket_fd < 0)
+		if (s.socket_fd < 0) {
 			failed = 1;
+			goto out;
+		}
 	}
 
 	/* Signal parent, letting them know we are ready to go. */
 	if (!s.foreground)
 		kill(getppid(), SIGTERM);
+
+	if (s.daemon_main) {
+		if (!s.daemon_main(&s))
+			failed = 1;
+		goto out;
+	}
 
 	if (s.daemon_init)
 		if (!s.daemon_init(&s))
@@ -575,6 +583,7 @@ void daemon_start(daemon_state s)
 				ERROR(&s, "Failed to handle a client connection.");
 	}
 
+out:
 	/* If activated by systemd, do not unlink the socket - systemd takes care of that! */
 	if (!_systemd_activation && s.socket_fd >= 0)
 		if (unlink(s.socket_path))
