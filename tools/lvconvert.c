@@ -2941,6 +2941,15 @@ mda_write:
 				(segtype_is_cache_pool(lp->segtype)) ?
 				"cache" : "thin");
 
+	if (lp->pool_metadata_lv_name) {
+		char *dlock_meta_name = strstr(lp->pool_metadata_lv_name, "/");
+		if (dlock_meta_name)
+			dlock_meta_name++;
+		else
+			dlock_meta_name = lp->pool_metadata_lv_name;
+		dlock_lv_name(cmd, pool_lv->vg, dlock_meta_name, NULL, "un", 0);
+	}
+
 	r = 1;
 out:
 	if (r && external_lv &&
@@ -3171,6 +3180,16 @@ static int lvconvert_single(struct cmd_context *cmd, struct lvconvert_params *lp
 		goto_bad;
 
 	/*
+	 * TODO: can the lv be inactive?  If so, we should use
+	 * non-persistent dlock_lv if it's not currently active
+	 * and won't be activated by the command.  If it's
+	 * active now or will be activated by command, then
+	 * use PERSISTENT.
+	 */
+	if (!dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT))
+		goto_out;
+
+	/*
 	 * lp->pvh holds the list of PVs available for allocation or removal
 	 */
 	if (lp->pv_count) {
@@ -3267,6 +3286,11 @@ int lvconvert(struct cmd_context * cmd, int argc, char **argv)
 		return process_each_lv(cmd, argc, argv, READ_FOR_UPDATE, &lp,
 				       &_lvconvert_merge_single);
 	}
+
+	/* TODO: missing dlock_vg_verify() after vg_read() */
+
+	if (!dlock_vg(cmd, lp.vg_name, "ex", 0))
+		return ECMD_FAILED;
 
 	return lvconvert_single(cmd, &lp);
 }

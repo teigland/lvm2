@@ -125,6 +125,13 @@ int lvrename(struct cmd_context *cmd, int argc, char **argv)
 		goto bad;
 	}
 
+	if (dlock_type(vg->lock_type)) {
+		/* TODO: add ability to rename sanlock lease on disk */
+		log_error("Cannot rename %s with lock_type %s",
+			  lvl->lv->name, vg->lock_type);
+		goto bad;
+	}
+
 	if (!lv_rename(cmd, lvl->lv, lv_name_new))
 		goto_bad;
 

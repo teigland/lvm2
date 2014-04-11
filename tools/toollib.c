@@ -615,7 +615,8 @@ struct dm_list *clone_pv_list(struct dm_pool *mem, struct dm_list *pvsl)
 	return r;
 }
 
-void vgcreate_params_set_defaults(struct vgcreate_params *vp_def,
+void vgcreate_params_set_defaults(struct cmd_context *cmd,
+				  struct vgcreate_params *vp_def,
 				  struct volume_group *vg)
 {
 	if (vg) {
@@ -626,6 +627,7 @@ void vgcreate_params_set_defaults(struct vgcreate_params *vp_def,
 		vp_def->alloc = vg->alloc;
 		vp_def->clustered = vg_is_clustered(vg);
 		vp_def->vgmetadatacopies = vg->mda_copies;
+		vp_def->system_id = vg->system_id ? dm_pool_strdup(cmd->mem, vg->system_id) : NULL;
 	} else {
 		vp_def->vg_name = NULL;
 		vp_def->extent_size = DEFAULT_EXTENT_SIZE * 2;
@@ -647,6 +649,16 @@ int vgcreate_params_set_from_args(struct cmd_context *cmd,
 				  struct vgcreate_params *vp_new,
 				  struct vgcreate_params *vp_def)
 {
+	int locking_type;
+	int use_lvmlockd;
+	int lt_num;
+	int clustered;
+	const char *arg_str;
+	const char *lock_type;
+	const char *system_id_from;
+
+	memset(vp_new, 0, sizeof(struct vgcreate_params));
+
 	vp_new->vg_name = skip_dev_dir(cmd, vp_def->vg_name, NULL);
 	vp_new->max_lv = arg_uint_value(cmd, maxlogicalvolumes_ARG,
 					vp_def->max_lv);
@@ -655,16 +667,7 @@ int vgcreate_params_set_from_args(struct cmd_context *cmd,
 	vp_new->alloc = (alloc_policy_t) arg_uint_value(cmd, alloc_ARG, vp_def->alloc);
 
 	/* Units of 512-byte sectors */
-	vp_new->extent_size =
-	    arg_uint_value(cmd, physicalextentsize_ARG, vp_def->extent_size);
-
-	if (arg_count(cmd, clustered_ARG))
-		vp_new->clustered =
-			!strcmp(arg_str_value(cmd, clustered_ARG,
-					      vp_def->clustered ? "y":"n"), "y");
-	else
-		/* Default depends on current locking type */
-		vp_new->clustered = locking_is_clustered();
+	vp_new->extent_size = arg_uint_value(cmd, physicalextentsize_ARG, vp_def->extent_size);
 
 	if (arg_sign_value(cmd, physicalextentsize_ARG, SIGN_NONE) == SIGN_MINUS) {
 		log_error("Physical extent size may not be negative");
@@ -696,6 +699,140 @@ int vgcreate_params_set_from_args(struct cmd_context *cmd,
 	} else {
 		vp_new->vgmetadatacopies = find_config_tree_int(cmd, metadata_vgmetadatacopies_CFG, NULL);
 	}
+
+	/*
+	 * In lvm.conf global/system_id_from, select one of:
+	 * none:   no system_id
+	 * uname:  utsname.nodename from cmd->hostname
+	 * file:   content of global/system_id_file,
+	 *         e.g. system_id_file="/etc/machine-id"
+	 *
+	 * TODO: should we allow vgcreate --systemid <arg>
+	 * to override what would be set based on lvm.conf setting?
+	 * Now, you would need to use vgchange --systemid <arg>
+	 * to customize it after vgcreate.
+	 *
+	 * TODO: add cmd->system_id and set it during startup
+	 * according to system_id_from.  It may be set to NULL.
+	 * We'd use cmd->system_id direct here, and in dlock_vg_verify,
+	 * and possibly pass it to lvmlockd in add_local so that
+	 * lvmlockd doesn't need to get it from lvm.conf.
+	 */
+
+	system_id_from = find_config_tree_str(cmd, global_system_id_from_CFG, NULL);
+	if (!system_id_from)
+		system_id_from = "none";
+
+	if (!strcmp(system_id_from, "none")) {
+		vp_new->system_id = NULL;
+	} else if (!strcmp(system_id_from, "uname")) {
+		vp_new->system_id = dm_pool_strdup(cmd->mem, cmd->hostname);
+	} else if (!strcmp(system_id_from, "file")) {
+		/* TODO: read content of file global_system_id_file_CFG */
+		log_error("system_id_from file not complete, using none");
+		vp_new->system_id = NULL;
+	} else {
+		log_error("Unknown system_id source %s, using none", system_id_from);
+		vp_new->system_id = NULL;
+	}
+
+	/*
+	 * Locking
+	 *
+	 * set vp_new->lock_type to none|clvm|dlm|sanlock
+	 *
+	 * If --lock-type is used, it's simple and direct.
+	 *
+	 * If --clustered is used, then lock_type will depend
+	 * on the locking scheme defined in lvm.conf.
+	 *
+	 * When neither is used, the default also depends on
+	 * the locking scheme.
+	 */
+
+	locking_type = find_config_tree_int(cmd, global_locking_type_CFG, NULL);
+	use_lvmlockd = find_config_tree_bool(cmd, global_use_lvmlockd_CFG, NULL);
+
+	if (arg_count(cmd, locktype_ARG)) {
+		lock_type = arg_str_value(cmd, locktype_ARG, "");
+
+	} else if (arg_count(cmd, clustered_ARG)) {
+		arg_str = arg_str_value(cmd, clustered_ARG, "");
+
+		if (!strcmp(arg_str, "y")) {
+			clustered = 1;
+		} else if (!strcmp(arg_str, "n")) {
+			clustered = 0;
+		} else {
+			log_error("Unknown clustered value");
+			return 0;
+		}
+
+		if (use_lvmlockd) {
+			if (clustered)
+				lock_type = find_config_tree_str(cmd, metadata_vgcreate_clustery_lock_type_CFG, NULL);
+			else
+				lock_type = find_config_tree_str(cmd, metadata_vgcreate_clustern_lock_type_CFG, NULL);
+		} else if (locking_type == 3) {
+			if (clustered)
+				lock_type = "clvm";
+			else
+				lock_type = "none";
+		} else {
+			log_error("clustered vg requires use_lvmlockd or locking_type 3");
+			return 0;
+		}
+
+	} else {
+		if (locking_type == 3)
+			lock_type = locking_is_clustered() ? "clvm" : "none";
+		else
+			lock_type = find_config_tree_str(cmd, metadata_vgcreate_default_lock_type_CFG, NULL);
+
+		/*
+		 * lock_type NULL is when there is no --lock-type,
+		 * no --clustered, locking_type is not 3, and
+		 * vgcreate_default_lock_type is not set.
+		 */
+		if (!lock_type)
+			lock_type = "none";
+	}
+
+	/*
+	 * Check that the lock_type is recognized, and is being
+	 * used with the correct locking configuration.
+	 */
+	lt_num = dlock_type_to_num(lock_type);
+
+	if (lt_num < 0) {
+		log_error("lock_type %s is invalid", lock_type);
+		return 0;
+	} else if ((lt_num == LOCK_TYPE_DLM || lt_num == LOCK_TYPE_SANLOCK) && !use_lvmlockd) {
+		log_error("lock_type %s requires use_lvmlockd configuration setting", lock_type);
+		return 0;
+	} else if ((lt_num == LOCK_TYPE_CLVM) && (locking_type != 3)) {
+		log_error("lock_type clvm requires locking_type 3 configuration setting");
+		return 0;
+	}
+
+	/*
+	 * The vg is not owned by one host/system_id.
+	 * Locking coordinates access from multiple hosts.
+	 */
+	if (lt_num == LOCK_TYPE_DLM || lt_num == LOCK_TYPE_SANLOCK || lt_num == LOCK_TYPE_CLVM)
+		vp_new->system_id = NULL;
+
+	vp_new->lock_type = lock_type;
+
+	log_debug("Setting lock_type to %s", vp_new->lock_type);
+
+	if (lt_num == LOCK_TYPE_CLVM)
+		vp_new->clustered = 1;
+	else
+		vp_new->clustered = 0;
+
+	if (use_lvmlockd && !strcmp(system_id_from, "none"))
+		log_warn("Warning: system id should be used with lvmlockd.");
 
 	return 1;
 }
@@ -1324,12 +1461,22 @@ static int process_vg_name_list(struct cmd_context *cmd, uint32_t flags,
 		vg_uuid = nl->uuid;
 		ret = 0;
 
+		if (!dlock_vg(cmd, vg_name, NULL, 0))
+			continue;
+
 		vg = vg_read(cmd, vg_name, vg_uuid, flags);
 		if (ignore_vg(vg, vg_name, flags & READ_ALLOW_INCONSISTENT, &ret)) {
 			if (ret > ret_max)
 				ret_max = ret;
 			release_vg(vg);
+			dlock_vg(cmd, vg_name, "un", 0);
 			stack;
+			continue;
+		}
+
+		if (!dlock_vg_verify(cmd, vg)) {
+			unlock_and_release_vg(cmd, vg, vg_name);
+			dlock_vg(cmd, vg_name, "un", 0);
 			continue;
 		}
 
@@ -1353,6 +1500,8 @@ static int process_vg_name_list(struct cmd_context *cmd, uint32_t flags,
 			release_vg(vg);
 		else
 			unlock_and_release_vg(cmd, vg, vg_name);
+
+		dlock_vg(cmd, vg_name, "un", 0);
 
 		if (ret > ret_max)
 			ret_max = ret;
@@ -1700,18 +1849,30 @@ static int process_lv_vg_name_list(struct cmd_context *cmd, uint32_t flags,
 			}
 		}
 
+		if (!dlock_vg(cmd, vg_name, NULL, 0))
+			continue;
+
 		vg = vg_read(cmd, vg_name, vg_uuid, flags);
 		if (ignore_vg(vg, vg_name, flags & READ_ALLOW_INCONSISTENT, &ret)) {
 			if (ret > ret_max)
 				ret_max = ret;
 			release_vg(vg);
+			dlock_vg(cmd, vg_name, "un", 0);
 			stack;
+			continue;
+		}
+
+		if (!dlock_vg_verify(cmd, vg)) {
+			unlock_and_release_vg(cmd, vg, vg_name);
+			dlock_vg(cmd, vg_name, "un", 0);
 			continue;
 		}
 
 		ret = process_each_lv_in_vg(cmd, vg, &lvnames, tags_arg,
 					    handle, process_single_lv);
 		unlock_and_release_vg(cmd, vg, vg_name);
+
+		dlock_vg(cmd, vg_name, "un", 0);
 
 		if (ret > ret_max)
 			ret_max = ret;
@@ -1986,12 +2147,22 @@ static int process_pvs_in_vgs(struct cmd_context *cmd, uint32_t flags,
 		vg_uuid = nl->uuid;
 		ret = 0;
 
+		if (!dlock_vg(cmd, vg_name, NULL, 0))
+			continue;
+
 		vg = vg_read(cmd, vg_name, vg_uuid, flags);
 		if (ignore_vg(vg, vg_name, flags & READ_ALLOW_INCONSISTENT, &ret)) {
 			if (ret > ret_max)
 				ret_max = ret;
 			release_vg(vg);
+			dlock_vg(cmd, vg_name, "un", 0);
 			stack;
+			continue;
+		}
+
+		if (!dlock_vg_verify(cmd, vg)) {
+			unlock_and_release_vg(cmd, vg, vg_name);
+			dlock_vg(cmd, vg_name, "un", 0);
 			continue;
 		}
 
@@ -2002,6 +2173,8 @@ static int process_pvs_in_vgs(struct cmd_context *cmd, uint32_t flags,
 			ret_max = ret;
 
 		unlock_and_release_vg(cmd, vg, vg->name);
+
+		dlock_vg(cmd, vg_name, "un", 0);
 
 		if (sigint_caught())
 			return ret_max;

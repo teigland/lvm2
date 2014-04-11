@@ -15,6 +15,90 @@
 
 #include "tools.h"
 
+/*
+ * Options that update metadata should be listed in one of
+ * the two update lists below.
+ * Options that do not update metadata should be listed in
+ * the noupdate list.
+ */
+
+/* options safe to update if partial */
+static int update_partial_safe_arg_count(struct cmd_context *cmd)
+{
+	return
+	arg_count(cmd, contiguous_ARG) +
+	arg_count(cmd, permission_ARG) +
+	arg_count(cmd, readahead_ARG) +
+	arg_count(cmd, persistent_ARG) +
+	arg_count(cmd, addtag_ARG) +
+	arg_count(cmd, deltag_ARG) +
+	arg_count(cmd, profile_ARG) +
+	arg_count(cmd, detachprofile_ARG) +
+	arg_count(cmd, setactivationskip_ARG);
+}
+
+static int update_partial_unsafe_arg_count(struct cmd_context *cmd)
+{
+	return
+	arg_count(cmd, alloc_ARG) +
+	arg_count(cmd, discards_ARG) +
+	arg_count(cmd, minrecoveryrate_ARG) +
+	arg_count(cmd, maxrecoveryrate_ARG) +
+	arg_count(cmd, resync_ARG) +
+	arg_count(cmd, syncaction_ARG) +
+	arg_count(cmd, writebehind_ARG) +
+	arg_count(cmd, writemostly_ARG) +
+	arg_count(cmd, zero_ARG);
+}
+
+static int noupdate_arg_count(struct cmd_context *cmd)
+{
+	return
+	arg_count(cmd, activate_ARG) +
+	arg_count(cmd, refresh_ARG) +
+	arg_count(cmd, monitor_ARG) +
+	arg_count(cmd, poll_ARG) +
+	arg_count(cmd, locklv_ARG);
+}
+
+static const char *update_partial_safe_arg_names(void)
+{
+	return
+	"--contiguous, "
+	"--permission, "
+	"--readahead, "
+	"--persistent, "
+	"--addtag, "
+	"--deltag,"
+	"--profile, "
+	"--detachprofile, "
+	"--setactivationskip";
+}
+
+static const char *update_partial_unsafe_arg_names(void)
+{
+	return
+	"--alloc, "
+	"--discards, "
+	"--minrecoveryrate, "
+	"--maxrecoveryrate, "
+	"--resync, "
+	"--syncaction, "
+	"--writebehind, "
+	"--writemostly, "
+	"--zero";
+}
+
+static const char *noupdate_arg_names(void)
+{
+	return
+	"--activate, "
+	"--refresh, "
+	"--monitor, "
+	"--poll, "
+	"--lock-lv";
+}
+
 static int lvchange_permission(struct cmd_context *cmd,
 			       struct logical_volume *lv)
 {
@@ -225,8 +309,18 @@ static int _lvchange_activate(struct cmd_context *cmd, struct logical_volume *lv
 	    !lv_passes_auto_activation_filter(cmd, lv))
 		return 1;
 
+	if (is_change_activating(activate) &&
+	    !dlock_lv(cmd, lv, "ex", DL_LV_PERSISTENT)) {
+		log_error("Failed to lock logical volume %s/%s", lv->vg->name, lv->name);
+		return 1;
+	}
+
 	if (!lv_change_activate(cmd, lv, activate))
 		return_0;
+
+	if (!is_change_activating(activate) &&
+	    !dlock_lv(cmd, lv, "un", DL_LV_PERSISTENT))
+		log_error("Failed to unlock logical volume %s/%s", lv->vg->name, lv->name);
 
 	return 1;
 }
@@ -937,8 +1031,13 @@ static int _lvchange_single(struct cmd_context *cmd, struct logical_volume *lv,
 			   void *handle __attribute__((unused)))
 {
 	int doit = 0, docmds = 0;
+	int update_args, noupdate_args;
 	struct logical_volume *origin;
 	char snaps_msg[128];
+
+	update_args = update_partial_safe_arg_count(cmd) +
+		      update_partial_unsafe_arg_count(cmd);
+	noupdate_args = noupdate_arg_count(cmd);
 
 	if (!(lv->vg->status & LVM_WRITE) &&
 	    (arg_count(cmd, contiguous_ARG) || arg_count(cmd, permission_ARG) ||
@@ -1017,6 +1116,25 @@ static int _lvchange_single(struct cmd_context *cmd, struct logical_volume *lv,
 		log_error("Unable to change internal LV %s directly",
 			  lv->name);
 		return ECMD_FAILED;
+	}
+
+	/*
+	 * When --lock-lv is used alone, it's an explicit request for a
+	 * persistent lv lock.  Otherwise, --lock-lv overrides the default
+	 * lv lock mode that the command would use.
+	 */
+	if (arg_count(cmd, locklv_ARG) && !update_args && noupdate_args == 1) {
+		if (!dlock_lv(cmd, lv, NULL, DL_LV_MODE_NOCMD | DL_LV_PERSISTENT)) {
+			stack;
+			return ECMD_FAILED;
+		}
+	} else if (!arg_count(cmd, activate_ARG)) {
+		/* If a persistent lv lock already exists with the needed mode
+		   or higher, this lock will be considered already held. */
+		if (!dlock_lv(cmd, lv, update_args ? "ex" : "sh", 0)) {
+			stack;
+			return ECMD_FAILED;
+		}
 	}
 
 	/*
@@ -1158,39 +1276,19 @@ static int _lvchange_single(struct cmd_context *cmd, struct logical_volume *lv,
 
 int lvchange(struct cmd_context *cmd, int argc, char **argv)
 {
-	/*
-	 * Options that update metadata should be listed in one of
-	 * the two lists below (i.e. options other than -a, --refresh,
-	 * --monitor or --poll).
-	 */
-	int update_partial_safe = /* options safe to update if partial */
-		arg_count(cmd, contiguous_ARG) ||
-		arg_count(cmd, permission_ARG) ||
-		arg_count(cmd, readahead_ARG) ||
-		arg_count(cmd, persistent_ARG) ||
-		arg_count(cmd, addtag_ARG) ||
-		arg_count(cmd, deltag_ARG) ||
-		arg_count(cmd, profile_ARG) ||
-		arg_count(cmd, detachprofile_ARG) ||
-		arg_count(cmd, setactivationskip_ARG);
-	int update_partial_unsafe =
-		arg_count(cmd, alloc_ARG) ||
-		arg_count(cmd, discards_ARG) ||
-		arg_count(cmd, minrecoveryrate_ARG) ||
-		arg_count(cmd, maxrecoveryrate_ARG) ||
-		arg_count(cmd, resync_ARG) ||
-		arg_count(cmd, syncaction_ARG) ||
-		arg_count(cmd, writebehind_ARG) ||
-		arg_count(cmd, writemostly_ARG) ||
-		arg_count(cmd, zero_ARG);
-	int update = update_partial_safe || update_partial_unsafe;
+	int update_partial_safe = update_partial_safe_arg_count(cmd);
+	int update_partial_unsafe = update_partial_unsafe_arg_count(cmd);
+	int update = update_partial_safe + update_partial_unsafe;
+	int noupdate = noupdate_arg_count(cmd);
 
-	if (!update &&
-            !arg_count(cmd, activate_ARG) && !arg_count(cmd, refresh_ARG) &&
-            !arg_count(cmd, monitor_ARG) && !arg_count(cmd, poll_ARG)) {
-		log_error("Need 1 or more of -a, -C, -M, -p, -r, -Z, "
-			  "--resync, --refresh, --alloc, --addtag, --deltag, "
-			  "--monitor, --poll or --discards");
+	if (!update && !noupdate) {
+		log_error("Need 1 or more of\n"
+			  "%s\n"
+			  "%s\n"
+			  "%s\n",
+			  update_partial_safe_arg_names(),
+			  update_partial_unsafe_arg_names(),
+			  noupdate_arg_names());
 		return EINVALID_CMD_LINE;
 	}
 
@@ -1267,6 +1365,17 @@ int lvchange(struct cmd_context *cmd, int argc, char **argv)
 			return ECMD_PROCESSED;
 		}
 	}
+
+	/*
+	 * Include here any option that implies lvchange will *not*
+	 * update/write the vg (the default lvchange mode is ex because
+	 * most lvchange options involve writing the vg.)
+	 */
+	if (arg_count(cmd, activate_ARG) || arg_count(cmd, refresh_ARG))
+		cmd->command->flags |= DLOCK_VG_SH;
+
+	if (arg_tag_count(argc, argv) && !dlock_gl(cmd, "sh", DL_GL_RENEW_CACHE))
+		return ECMD_FAILED;
 
 	return process_each_lv(cmd, argc, argv,
 			       update ? READ_FOR_UPDATE : 0, NULL,

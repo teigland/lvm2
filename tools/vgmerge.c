@@ -25,6 +25,13 @@ static struct volume_group *_vgmerge_vg_read(struct cmd_context *cmd,
 		release_vg(vg);
 		return NULL;
 	}
+
+	if (dlock_type(vg->lock_type)) {
+		log_error("Merge not allowed for lock_type %s", vg->lock_type);
+		unlock_and_release_vg(cmd, vg, vg_name);
+		return NULL;
+	}
+
 	return vg;
 }
 
@@ -192,6 +199,9 @@ int vgmerge(struct cmd_context *cmd, int argc, char **argv)
 		log_error("Please enter 2 or more volume groups to merge");
 		return EINVALID_CMD_LINE;
 	}
+
+	if (!dlock_gl(cmd, "ex", DL_GL_RENEW_CACHE | DL_GL_UPDATE_NAMES))
+		return ECMD_FAILED;
 
 	vg_name_to = skip_dev_dir(cmd, argv[0], NULL);
 	argc--;

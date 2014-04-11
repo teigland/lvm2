@@ -409,6 +409,13 @@ static struct volume_group *_vgsplit_from(struct cmd_context *cmd,
 		release_vg(vg_from);
 		return NULL;
 	}
+
+	if (dlock_type(vg_from->lock_type)) {
+		log_error("Split not allowed for lock_type %s", vg_from->lock_type);
+		unlock_and_release_vg(cmd, vg_from, vg_name_from);
+		return NULL;
+	}
+
 	return vg_from;
 }
 
@@ -466,6 +473,9 @@ int vgsplit(struct cmd_context *cmd, int argc, char **argv)
 	if (strcmp(vg_name_to, vg_name_from) < 0)
 		lock_vg_from_first = 0;
 
+	if (!dlock_gl(cmd, "ex", DL_GL_RENEW_CACHE | DL_GL_UPDATE_NAMES))
+		return ECMD_FAILED;
+
 	if (lock_vg_from_first) {
 		if (!(vg_from = _vgsplit_from(cmd, vg_name_from)))
 			return_ECMD_FAILED;
@@ -506,7 +516,7 @@ int vgsplit(struct cmd_context *cmd, int argc, char **argv)
 		if (!vgs_are_compatible(cmd, vg_from,vg_to))
 			goto_bad;
 	} else {
-		vgcreate_params_set_defaults(&vp_def, vg_from);
+		vgcreate_params_set_defaults(cmd, &vp_def, vg_from);
 		vp_def.vg_name = vg_name_to;
 		if (!vgcreate_params_set_from_args(cmd, &vp_new, &vp_def)) {
 			r = EINVALID_CMD_LINE;
