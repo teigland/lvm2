@@ -60,6 +60,7 @@
 
 #define CLUSTERED		UINT64_C(0x00000400)	/* VG */
 //#define SHARED		UINT64_C(0x00000800)	/* VG */
+#define LOCK_TYPE		UINT64_C(0x00001000)	/* VG */
 
 /* FIXME Remove when metadata restructuring is completed */
 #define SNAPSHOT		UINT64_C(0x00001000)	/* LV - internal use only */
@@ -153,6 +154,7 @@
 #define FAILED_CLUSTERED	0x00000040U
 #define FAILED_ALLOCATION	0x00000080U
 #define FAILED_EXIST		0x00000100U
+#define FAILED_STALE_CACHE	0x00000200U
 #define SUCCESS			0x00000000U
 
 #define VGMETADATACOPIES_ALL UINT32_MAX
@@ -779,6 +781,9 @@ struct lvcreate_params {
 	const char *vg_name; /* all */
 	const char *lv_name; /* all */
 
+	const char *lock_type;
+	const char *lock_args;
+
 	/* Keep args given by the user on command line */
 	/* FIXME: create some more universal solution here */
 #define PASS_ARG_CHUNK_SIZE		0x01
@@ -1093,6 +1098,9 @@ struct vgcreate_params {
 	alloc_policy_t alloc;
 	int clustered; /* FIXME: put this into a 'status' variable instead? */
 	uint32_t vgmetadatacopies;
+	const char *lock_type;
+	const char *lock_args;
+	const char *system_id;
 };
 
 int vgcreate_params_validate(struct cmd_context *cmd,
