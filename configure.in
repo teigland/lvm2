@@ -2253,9 +2253,6 @@ test/api/Makefile
 test/unit/Makefile
 tools/Makefile
 udev/Makefile
-unit-tests/datastruct/Makefile
-unit-tests/regex/Makefile
-unit-tests/mm/Makefile
 ])
 AC_OUTPUT
 
