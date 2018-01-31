@@ -13,6 +13,7 @@
  */
 
 #include "units.h"
+#include "libdevmapper.h"
 
 static struct dm_pool *_mem;
 

@@ -13,6 +13,7 @@
  */
 
 #include "units.h"
+#include "libdevmapper.h"
 
 int dmlist_init(void)
 {

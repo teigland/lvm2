@@ -13,6 +13,7 @@
  */
 
 #include "units.h"
+#include "libdevmapper.h"
 
 enum {
         NR_BITS = 137

@@ -13,6 +13,7 @@
  */
 
 #include "units.h"
+#include "libdevmapper.h"
 
 #include <stdio.h>
 #include <string.h>

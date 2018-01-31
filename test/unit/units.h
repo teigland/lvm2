@@ -15,7 +15,6 @@
 #ifndef _UNITS_H
 #define _UNITS_H
 
-#include "libdevmapper.h"
 #include <CUnit/CUnit.h>
 
 #define DECL(n) \
