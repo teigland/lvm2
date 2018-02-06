@@ -2112,6 +2112,7 @@ int refresh_toolcontext(struct cmd_context *cmd)
 
 	activation_release();
 	lvmcache_destroy(cmd, 0, 0);
+	label_scan_destroy(cmd);
 	label_exit();
 	_destroy_segtypes(&cmd->segtypes);
 	_destroy_formats(cmd, &cmd->formats);
@@ -2231,6 +2232,7 @@ void destroy_toolcontext(struct cmd_context *cmd)
 	archive_exit(cmd);
 	backup_exit(cmd);
 	lvmcache_destroy(cmd, 0, 0);
+	label_scan_destroy(cmd);
 	label_exit();
 	_destroy_segtypes(&cmd->segtypes);
 	_destroy_formats(cmd, &cmd->formats);
