@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2018 Red Hat, Inc. All rights reserved.
  *
  * This file is part of LVM2.
  *
@@ -12,23 +12,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _UNITS_H
-#define _UNITS_H
+#ifndef TEST_UNIT_UNITS_H
+#define TEST_UNIT_UNITS_H
 
-#include <CUnit/CUnit.h>
+#include "framework.h"
 
-#define DECL(n) \
-	extern CU_TestInfo n ## _list[];\
-	int n ## _init(void); \
-	int n ## _fini(void);
+//-----------------------------------------------------------------
 
-DECL(bcache);
-DECL(bitset);
-DECL(config);
-DECL(dmlist);
-DECL(dmstatus);
-DECL(regex);
-DECL(percent);
-DECL(string);
+struct test_suite *bcache_tests(void);
 
+//-----------------------------------------------------------------
 #endif

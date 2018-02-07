@@ -15,6 +15,7 @@
 *.so.*
 *.sw*
 *~
+*.patch
 
 .export.sym
 .exported_symbols_generated
@@ -80,3 +81,4 @@ test/lib/vgs
 test/lib/vgscan
 test/lib/vgsplit
 
+test/unit/run

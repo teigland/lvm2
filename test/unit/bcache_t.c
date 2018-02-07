@@ -15,36 +15,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <setjmp.h>
 
 #include "bcache.h"
+#include "framework.h"
+#include "units.h"
 
 #define SHOW_MOCK_CALLS 0
-
-/*----------------------------------------------------------------
- * Assertions
- *--------------------------------------------------------------*/
-
-static jmp_buf _test_k;
-#define TEST_FAILED 1
-
-static void _fail(const char *fmt, ...)
-	__attribute__((format (printf, 1, 2)));
-
-
-static void _fail(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-
-	longjmp(_test_k, TEST_FAILED);
-}
-
-#define T_ASSERT(e) if (!(e)) {_fail("assertion failed: '%s'", # e);}
 
 /*----------------------------------------------------------------
  * Mock engine
@@ -135,13 +111,13 @@ static struct mock_call *_match_pop(struct mock_engine *e, enum method m)
 	struct mock_call *mc;
 
 	if (dm_list_empty(&e->expected_calls))
-		_fail("unexpected call to method %s\n", _show_method(m));
+		test_fail("unexpected call to method %s\n", _show_method(m));
 
 	mc = dm_list_item(e->expected_calls.n, struct mock_call);
 	dm_list_del(&mc->list);
 
 	if (mc->m != m)
-		_fail("expected %s, but got %s\n", _show_method(mc->m), _show_method(m));
+		test_fail("expected %s, but got %s\n", _show_method(mc->m), _show_method(m));
 #if SHOW_MOCK_CALLS
 	else
 		fprintf(stderr, "%s called (expected)\n", _show_method(m));
@@ -567,70 +543,38 @@ static void test_multiple_files(void * context)
 }
 
 // Tests to be written
-// Open multiple files and prove the blocks are coming from the correct file
 // show invalidate works
 // show invalidate_fd works
 // show writeback is working
-// check zeroing
 
-struct test_details {
-	const char *path;
-	const char *desc;
-	void (*fn)(void *);
-	void *(*fixture_init)(void);
-	void (*fixture_exit)(void *);
-};
+/*----------------------------------------------------------------
+ * Top level
+ *--------------------------------------------------------------*/
+#define TEST(path, desc, fn) register_test(ts, path, desc, fn, NULL, NULL)
+#define TEST_S(path, desc, fn) register_test(ts, path, desc, fn, _small_fixture_init, _small_fixture_exit)
+#define TEST_L(path, desc, fn) register_test(ts, path, desc, fn, _large_fixture_init, _large_fixture_exit)
 
-#define PATH "device/bcache/"
-#define TEST(path, name, fn) {PATH path, name, fn, NULL, NULL}
-#define TEST_S(path, name, fn) {PATH path, name, fn, _small_fixture_init, _small_fixture_exit}
-#define TEST_L(path, name, fn) {PATH path, name, fn, _large_fixture_init, _large_fixture_exit}
-
-int main(int argc, char **argv)
+struct test_suite *bcache_tests(void)
 {
-	static struct test_details _tests[] = {
-		TEST("create-destroy", "simple create/destroy", test_create),
-		TEST("cache-blocks-positive", "nr cache blocks must be positive", test_nr_cache_blocks_must_be_positive),
-		TEST("block-size-positive", "block size must be positive", test_block_size_must_be_positive),
-		TEST("block-size-multiple-page", "block size must be a multiple of page size", test_block_size_must_be_multiple_of_page_size),
-		TEST_S("get-reads", "bcache_get() triggers read", test_get_triggers_read),
-		TEST_S("reads-cached", "repeated reads are cached", test_repeated_reads_are_cached),
-		TEST_S("blocks-get-evicted", "block get evicted with many reads", test_block_gets_evicted_with_many_reads),
-		TEST_S("prefetch-reads", "prefetch issues a read", test_prefetch_issues_a_read),
-		TEST_S("prefetch-never-waits", "too many prefetches does not trigger a wait", test_too_many_prefetches_does_not_trigger_a_wait),
-		TEST_S("writeback-occurs", "dirty data gets written back", test_dirty_data_gets_written_back),
-		TEST_S("zero-flag-dirties", "zeroed data counts as dirty", test_zeroed_data_counts_as_dirty),
-		TEST_L("flush waits for all dirty", "flush waits for all dirty", test_flush_waits_for_all_dirty),
-		TEST_S("read-multiple-files", "read from multiple files", test_multiple_files),
-	};
-
-	// We have to declare these as volatile because of the setjmp()
-	volatile unsigned i = 0, passed = 0;
-
-	for (i = 0; i < DM_ARRAY_SIZE(_tests); i++) {
-		void *fixture;
-		struct test_details *t = _tests + i;
-		fprintf(stderr, "[RUN    ] %s\n", t->path);
-
-		if (setjmp(_test_k))
-			fprintf(stderr, "[   FAIL] %s\n", t->path);
-		else {
-			if (t->fixture_init)
-				fixture = t->fixture_init();
-			else
-				fixture = NULL;
-
-			t->fn(fixture);
-
-			if (t->fixture_exit)
-				t->fixture_exit(fixture);
-
-			passed++;
-			fprintf(stderr, "[     OK] %s\n", t->path);
-		}
+	struct test_suite *ts = test_suite_create("device/bcache");
+	if (!ts) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
 	}
 
-	fprintf(stderr, "\n%u/%lu tests passed\n", passed, DM_ARRAY_SIZE(_tests));
+	TEST("create-destroy", "simple create/destroy", test_create);
+	TEST("cache-blocks-positive", "nr cache blocks must be positive", test_nr_cache_blocks_must_be_positive);
+	TEST("block-size-positive", "block size must be positive", test_block_size_must_be_positive);
+	TEST("block-size-multiple-page", "block size must be a multiple of page size", test_block_size_must_be_multiple_of_page_size);
+	TEST_S("get-reads", "bcache_get() triggers read", test_get_triggers_read);
+	TEST_S("reads-cached", "repeated reads are cached", test_repeated_reads_are_cached);
+	TEST_S("blocks-get-evicted", "block get evicted with many reads", test_block_gets_evicted_with_many_reads);
+	TEST_S("prefetch-reads", "prefetch issues a read", test_prefetch_issues_a_read);
+	TEST_S("prefetch-never-waits", "too many prefetches does not trigger a wait", test_too_many_prefetches_does_not_trigger_a_wait);
+	TEST_S("writeback-occurs", "dirty data gets written back", test_dirty_data_gets_written_back);
+	TEST_S("zero-flag-dirties", "zeroed data counts as dirty", test_zeroed_data_counts_as_dirty);
+	TEST_L("flush waits for all dirty", "flush waits for all dirty", test_flush_waits_for_all_dirty);
+	TEST_S("read-multiple-files", "read from multiple files", test_multiple_files);
 
-	return 0;
+	return ts;
 }

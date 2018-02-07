@@ -12,9 +12,8 @@
 
 UNIT_SOURCE=\
 	test/unit/bcache_t.c \
-
-
-#	test/unit/run.c
+	test/unit/framework.c \
+	test/unit/run.c
 
 #	test/unit/bitset_t.c\
 #	test/unit/config_t.c\
@@ -24,6 +23,7 @@ UNIT_SOURCE=\
 #	test/unit/percent_t.c\
 #	test/unit/string_t.c\
 
+UNIT_DEPENDS=$(subst .c,.d,$(UNIT_SOURCE))
 UNIT_OBJECTS=$(UNIT_SOURCE:%.c=%.o)
 
 UNIT_LDLIBS += $(LVMINTERNAL_LIBS) -ldevmapper -laio
@@ -37,3 +37,5 @@ test/unit/run: $(UNIT_OBJECTS) libdm/libdevmapper.$(LIB_SUFFIX) lib/liblvm-inter
 unit-test: test/unit/run
 	@echo Running unit tests
 	LD_LIBRARY_PATH=libdm test/unit/run
+
+-include $(UNIT_DEPENDS)
