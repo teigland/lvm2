@@ -28,14 +28,14 @@ UNIT_OBJECTS=$(UNIT_SOURCE:%.c=%.o)
 
 UNIT_LDLIBS += $(LVMINTERNAL_LIBS) -ldevmapper -laio
 
-test/unit/run: $(UNIT_OBJECTS) libdm/libdevmapper.$(LIB_SUFFIX) lib/liblvm-internal.a
+test/unit/unit-test: $(UNIT_OBJECTS) libdm/libdevmapper.$(LIB_SUFFIX) lib/liblvm-internal.a
 	@echo "    [LD] $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) -L$(top_builddir)/libdm \
 	      -o $@ $(UNIT_OBJECTS) $(UNIT_LDLIBS)
 
 .PHONEY: unit-test
-unit-test: test/unit/run
+unit-test: test/unit/unit-test
 	@echo Running unit tests
-	LD_LIBRARY_PATH=libdm test/unit/run
+	LD_LIBRARY_PATH=libdm test/unit/unit-test run
 
 -include $(UNIT_DEPENDS)

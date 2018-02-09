@@ -550,31 +550,47 @@ static void test_multiple_files(void * context)
 /*----------------------------------------------------------------
  * Top level
  *--------------------------------------------------------------*/
-#define TEST(path, desc, fn) register_test(ts, path, desc, fn, NULL, NULL)
-#define TEST_S(path, desc, fn) register_test(ts, path, desc, fn, _small_fixture_init, _small_fixture_exit)
-#define TEST_L(path, desc, fn) register_test(ts, path, desc, fn, _large_fixture_init, _large_fixture_exit)
+#define T(path, desc, fn) register_test(ts, "/device/bcache/" path, desc, fn)
 
-struct test_suite *bcache_tests(void)
+static struct test_suite *_register_small_tests(void)
 {
-	struct test_suite *ts = test_suite_create("device/bcache");
+	struct test_suite *ts = test_suite_create(_small_fixture_init, _small_fixture_exit);
 	if (!ts) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	TEST("create-destroy", "simple create/destroy", test_create);
-	TEST("cache-blocks-positive", "nr cache blocks must be positive", test_nr_cache_blocks_must_be_positive);
-	TEST("block-size-positive", "block size must be positive", test_block_size_must_be_positive);
-	TEST("block-size-multiple-page", "block size must be a multiple of page size", test_block_size_must_be_multiple_of_page_size);
-	TEST_S("get-reads", "bcache_get() triggers read", test_get_triggers_read);
-	TEST_S("reads-cached", "repeated reads are cached", test_repeated_reads_are_cached);
-	TEST_S("blocks-get-evicted", "block get evicted with many reads", test_block_gets_evicted_with_many_reads);
-	TEST_S("prefetch-reads", "prefetch issues a read", test_prefetch_issues_a_read);
-	TEST_S("prefetch-never-waits", "too many prefetches does not trigger a wait", test_too_many_prefetches_does_not_trigger_a_wait);
-	TEST_S("writeback-occurs", "dirty data gets written back", test_dirty_data_gets_written_back);
-	TEST_S("zero-flag-dirties", "zeroed data counts as dirty", test_zeroed_data_counts_as_dirty);
-	TEST_L("flush waits for all dirty", "flush waits for all dirty", test_flush_waits_for_all_dirty);
-	TEST_S("read-multiple-files", "read from multiple files", test_multiple_files);
+	T("create-destroy", "simple create/destroy", test_create);
+	T("cache-blocks-positive", "nr cache blocks must be positive", test_nr_cache_blocks_must_be_positive);
+	T("block-size-positive", "block size must be positive", test_block_size_must_be_positive);
+	T("block-size-multiple-page", "block size must be a multiple of page size", test_block_size_must_be_multiple_of_page_size);
+	T("get-reads", "bcache_get() triggers read", test_get_triggers_read);
+	T("reads-cached", "repeated reads are cached", test_repeated_reads_are_cached);
+	T("blocks-get-evicted", "block get evicted with many reads", test_block_gets_evicted_with_many_reads);
+	T("prefetch-reads", "prefetch issues a read", test_prefetch_issues_a_read);
+	T("prefetch-never-waits", "too many prefetches does not trigger a wait", test_too_many_prefetches_does_not_trigger_a_wait);
+	T("writeback-occurs", "dirty data gets written back", test_dirty_data_gets_written_back);
+	T("zero-flag-dirties", "zeroed data counts as dirty", test_zeroed_data_counts_as_dirty);
+	T("read-multiple-files", "read from multiple files", test_multiple_files);
 
 	return ts;
+}
+
+static struct test_suite *_register_large_tests(void)
+{
+	struct test_suite *ts = test_suite_create(_large_fixture_init, _large_fixture_exit);
+	if (!ts) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	T("flush-waits", "flush waits for all dirty", test_flush_waits_for_all_dirty);
+
+	return ts;
+}
+
+void bcache_tests(struct dm_list *all_tests)
+{
+	dm_list_add(all_tests, &_register_small_tests()->list);
+	dm_list_add(all_tests, &_register_large_tests()->list);
 }

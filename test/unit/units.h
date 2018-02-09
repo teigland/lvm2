@@ -19,7 +19,14 @@
 
 //-----------------------------------------------------------------
 
-struct test_suite *bcache_tests(void);
+// Declare the function that adds tests suites here ...
+void bcache_tests(struct dm_list *suites);
+
+// ... and call it in here.
+static inline void register_all_tests(struct dm_list *suites)
+{
+	bcache_tests(suites);
+}
 
 //-----------------------------------------------------------------
 #endif
