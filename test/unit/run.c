@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include <unistd.h>
 
 //-----------------------------------------------------------------
 
@@ -160,7 +161,22 @@ static void _destroy_tests(struct dm_list *suites)
 		test_suite_destroy(ts);
 }
 
-static void _run_test(struct test_details *t, unsigned *passed, unsigned *total)
+static const char *red(bool c)
+{
+	return c ? "\x1B[31m" : "";
+}
+
+static const char *green(bool c)
+{
+	return c ? "\x1B[32m" : "";
+}
+
+static const char *normal(bool c)
+{
+	return c ? "\x1B[0m" : "";
+}
+
+static void _run_test(struct test_details *t, bool use_colour, unsigned *passed, unsigned *total)
 {
 	void *fixture;
 	struct test_suite *ts = t->parent;
@@ -168,7 +184,7 @@ static void _run_test(struct test_details *t, unsigned *passed, unsigned *total)
 
 	(*total)++;
 	if (setjmp(test_k))
-		fprintf(stderr, "[   FAIL] %s\n", t->path);
+		fprintf(stderr, "%s[   FAIL]%s %s\n", red(use_colour), normal(use_colour), t->path);
 	else {
 		if (ts->fixture_init)
 			fixture = ts->fixture_init();
@@ -181,16 +197,17 @@ static void _run_test(struct test_details *t, unsigned *passed, unsigned *total)
 			ts->fixture_exit(fixture);
 
 		(*passed)++;
-		fprintf(stderr, "[     OK] %s\n\n", t->path);
+		fprintf(stderr, "%s[     OK]%s\n", green(use_colour), normal(use_colour));
 	}
 }
 
 static bool _run_tests(struct test_details **tests, unsigned nr)
 {
+	bool use_colour = isatty(fileno(stderr));
 	unsigned i, passed = 0, total = 0;
 
 	for (i = 0; i < nr; i++)
-		_run_test(tests[i], &passed, &total);
+		_run_test(tests[i], use_colour, &passed, &total);
 
 	fprintf(stderr, "\n%u/%u tests passed\n", passed, total);
 
