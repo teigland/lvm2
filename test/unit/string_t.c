@@ -18,37 +18,39 @@
 #include <stdio.h>
 #include <string.h>
 
-static struct dm_pool *mem = NULL;
-
-int string_init(void)
+#if 0
+static int _mem_init(void)
 {
-	mem = dm_pool_create("string test", 1024);
+	struct dm_pool *mem = dm_pool_create("string test", 1024);
+	if (!mem) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 
-	return (mem == NULL);
+	return mem;
 }
 
-int string_fini(void)
+static void _mem_exit(void *mem)
 {
 	dm_pool_destroy(mem);
-
-	return 0;
 }
 
 /* TODO: Add more string unit tests here */
+#endif
 
-static void test_strncpy(void)
+static void test_strncpy(void *fixture)
 {
 	const char st[] = "1234567890";
 	char buf[sizeof(st)];
 
-	CU_ASSERT_EQUAL(dm_strncpy(buf, st, sizeof(buf)), 1);
-	CU_ASSERT_EQUAL(strcmp(buf, st), 0);
+	T_ASSERT_EQUAL(dm_strncpy(buf, st, sizeof(buf)), 1);
+	T_ASSERT_EQUAL(strcmp(buf, st), 0);
 
-	CU_ASSERT_EQUAL(dm_strncpy(buf, st, sizeof(buf) - 1), 0);
-	CU_ASSERT_EQUAL(strlen(buf) + 1, sizeof(buf) - 1);
+	T_ASSERT_EQUAL(dm_strncpy(buf, st, sizeof(buf) - 1), 0);
+	T_ASSERT_EQUAL(strlen(buf) + 1, sizeof(buf) - 1);
 }
 
-static void test_asprint(void)
+static void test_asprint(void *fixture)
 {
 	const char st0[] = "";
 	const char st1[] = "12345678901";
@@ -57,23 +59,33 @@ static void test_asprint(void)
 	int a;
 
 	a = dm_asprintf(&buf, "%s", st0);
-	CU_ASSERT_EQUAL(strcmp(buf, st0), 0);
-	CU_ASSERT_EQUAL(a, sizeof(st0));
+	T_ASSERT_EQUAL(strcmp(buf, st0), 0);
+	T_ASSERT_EQUAL(a, sizeof(st0));
 	free(buf);
 
 	a = dm_asprintf(&buf, "%s", st1);
-	CU_ASSERT_EQUAL(strcmp(buf, st1), 0);
-	CU_ASSERT_EQUAL(a, sizeof(st1));
+	T_ASSERT_EQUAL(strcmp(buf, st1), 0);
+	T_ASSERT_EQUAL(a, sizeof(st1));
 	free(buf);
 
 	a = dm_asprintf(&buf, "%s", st2);
-	CU_ASSERT_EQUAL(a, sizeof(st2));
-	CU_ASSERT_EQUAL(strcmp(buf, st2), 0);
+	T_ASSERT_EQUAL(a, sizeof(st2));
+	T_ASSERT_EQUAL(strcmp(buf, st2), 0);
 	free(buf);
 }
 
-CU_TestInfo string_list[] = {
-	{ (char*)"asprint", test_asprint },
-	{ (char*)"strncpy", test_strncpy },
-	CU_TEST_INFO_NULL
-};
+#define T(path, desc, fn) register_test(ts, "/base/data-struct/string/" path, desc, fn)
+
+void string_tests(struct dm_list *all_tests)
+{
+	struct test_suite *ts = test_suite_create(NULL, NULL);
+	if (!ts) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	T("asprint", "tests asprint", test_asprint);
+	T("strncpy", "tests string copying", test_strncpy);
+
+	dm_list_add(all_tests, &ts->list);
+}

@@ -15,59 +15,70 @@
 #include "units.h"
 #include "libdevmapper.h"
 
-static struct dm_pool *_mem;
-
-int dmstatus_init(void)
+static void *_mem_init(void)
 {
-	_mem = dm_pool_create("dmstatus test", 1024);
-	return (_mem == NULL);
+	struct dm_pool *mem = dm_pool_create("dmstatus test", 1024);
+	if (!mem) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	return mem;
 }
 
-int dmstatus_fini(void)
+static void _mem_exit(void *mem)
 {
-	dm_pool_destroy(_mem);
-	return 0;
+	dm_pool_destroy(mem);
 }
 
-static void _test_mirror_status(void)
+static void _test_mirror_status(void *fixture)
 {
+	struct dm_pool *mem = fixture;
 	struct dm_status_mirror *s = NULL;
 
-	CU_ASSERT(dm_get_status_mirror(_mem,
+	T_ASSERT(dm_get_status_mirror(mem,
 				       "2 253:1 253:2 80/81 1 AD 3 disk 253:0 A",
 				       &s));
 	if (s) {
-		CU_ASSERT_EQUAL(s->total_regions, 81);
-		CU_ASSERT_EQUAL(s->insync_regions, 80);
-		CU_ASSERT_EQUAL(s->dev_count, 2);
-		CU_ASSERT_EQUAL(s->devs[0].health, 'A');
-		CU_ASSERT_EQUAL(s->devs[0].major, 253);
-		CU_ASSERT_EQUAL(s->devs[0].minor, 1);
-		CU_ASSERT_EQUAL(s->devs[1].health, 'D');
-		CU_ASSERT_EQUAL(s->devs[1].major, 253);
-		CU_ASSERT_EQUAL(s->devs[1].minor, 2);
-		CU_ASSERT_EQUAL(s->log_count, 1);
-		CU_ASSERT_EQUAL(s->logs[0].major, 253);
-		CU_ASSERT_EQUAL(s->logs[0].minor, 0);
-		CU_ASSERT_EQUAL(s->logs[0].health, 'A');
-		CU_ASSERT(!strcmp(s->log_type, "disk"));
+		T_ASSERT_EQUAL(s->total_regions, 81);
+		T_ASSERT_EQUAL(s->insync_regions, 80);
+		T_ASSERT_EQUAL(s->dev_count, 2);
+		T_ASSERT_EQUAL(s->devs[0].health, 'A');
+		T_ASSERT_EQUAL(s->devs[0].major, 253);
+		T_ASSERT_EQUAL(s->devs[0].minor, 1);
+		T_ASSERT_EQUAL(s->devs[1].health, 'D');
+		T_ASSERT_EQUAL(s->devs[1].major, 253);
+		T_ASSERT_EQUAL(s->devs[1].minor, 2);
+		T_ASSERT_EQUAL(s->log_count, 1);
+		T_ASSERT_EQUAL(s->logs[0].major, 253);
+		T_ASSERT_EQUAL(s->logs[0].minor, 0);
+		T_ASSERT_EQUAL(s->logs[0].health, 'A');
+		T_ASSERT(!strcmp(s->log_type, "disk"));
 	}
 
-	CU_ASSERT(dm_get_status_mirror(_mem,
+	T_ASSERT(dm_get_status_mirror(mem,
 				       "4 253:1 253:2 253:3 253:4 10/10 1 ADFF 1 core",
 				       &s));
 	if (s) {
-		CU_ASSERT_EQUAL(s->total_regions, 10);
-		CU_ASSERT_EQUAL(s->insync_regions, 10);
-		CU_ASSERT_EQUAL(s->dev_count, 4);
-		CU_ASSERT_EQUAL(s->devs[3].minor, 4);
-		CU_ASSERT_EQUAL(s->devs[3].health, 'F');
-		CU_ASSERT_EQUAL(s->log_count, 0);
-		CU_ASSERT(!strcmp(s->log_type, "core"));
+		T_ASSERT_EQUAL(s->total_regions, 10);
+		T_ASSERT_EQUAL(s->insync_regions, 10);
+		T_ASSERT_EQUAL(s->dev_count, 4);
+		T_ASSERT_EQUAL(s->devs[3].minor, 4);
+		T_ASSERT_EQUAL(s->devs[3].health, 'F');
+		T_ASSERT_EQUAL(s->log_count, 0);
+		T_ASSERT(!strcmp(s->log_type, "core"));
 	}
 }
 
-CU_TestInfo dmstatus_list[] = {
-	{ (char*)"mirror_status", _test_mirror_status },
-	CU_TEST_INFO_NULL
-};
+void dm_status_tests(struct dm_list *all_tests)
+{
+	struct test_suite *ts = test_suite_create(_mem_init, _mem_exit);
+	if (!ts) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	register_test(ts, "/dm/target/mirror/status", "parsing mirror status", _test_mirror_status);
+	dm_list_add(all_tests, &ts->list);
+}
+

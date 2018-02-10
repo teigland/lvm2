@@ -550,9 +550,9 @@ static void test_multiple_files(void * context)
 /*----------------------------------------------------------------
  * Top level
  *--------------------------------------------------------------*/
-#define T(path, desc, fn) register_test(ts, "/device/bcache/" path, desc, fn)
+#define T(path, desc, fn) register_test(ts, "/base/device/bcache/" path, desc, fn)
 
-static struct test_suite *_register_small_tests(void)
+static struct test_suite *_small_tests(void)
 {
 	struct test_suite *ts = test_suite_create(_small_fixture_init, _small_fixture_exit);
 	if (!ts) {
@@ -576,7 +576,7 @@ static struct test_suite *_register_small_tests(void)
 	return ts;
 }
 
-static struct test_suite *_register_large_tests(void)
+static struct test_suite *_large_tests(void)
 {
 	struct test_suite *ts = test_suite_create(_large_fixture_init, _large_fixture_exit);
 	if (!ts) {
@@ -591,6 +591,6 @@ static struct test_suite *_register_large_tests(void)
 
 void bcache_tests(struct dm_list *all_tests)
 {
-	dm_list_add(all_tests, &_register_small_tests()->list);
-	dm_list_add(all_tests, &_register_large_tests()->list);
+	dm_list_add(all_tests, &_small_tests()->list);
+	dm_list_add(all_tests, &_large_tests()->list);
 }

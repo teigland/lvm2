@@ -38,6 +38,8 @@ void test_fail(const char *fmt, ...)
 	__attribute__((noreturn, format (printf, 1, 2)));
 
 #define T_ASSERT(e) do {if (!(e)) {test_fail("assertion failed: '%s'", # e);} } while(0)
+#define T_ASSERT_EQUAL(x, y) T_ASSERT((x) == (y))
+#define T_ASSERT_NOT_EQUAL(x, y) T_ASSERT((x) != (y))
 
 extern jmp_buf test_k;
 #define TEST_FAILED 1
