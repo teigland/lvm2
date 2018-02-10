@@ -184,8 +184,10 @@ static bool _async_issue(struct io_engine *ioe, enum dir d, int fd,
 	cb->cb.aio_lio_opcode = (d == DIR_READ) ? IO_CMD_PREAD : IO_CMD_PWRITE;
 
 	cb_array[0] = &cb->cb;
-	// FIXME: handle EAGAIN here
-	r = io_submit(e->aio_context, 1, cb_array);
+	do {
+		r = io_submit(e->aio_context, 1, cb_array);
+	} while (r == -EAGAIN);
+
 	if (r < 0) {
 		log_sys_warn("io_submit");
 		_cb_free(e->cbs, cb);
@@ -206,7 +208,10 @@ static bool _async_wait(struct io_engine *ioe, io_complete_fn fn)
 	struct async_engine *e = _to_async(ioe);
 
 	memset(&event, 0, sizeof(event));
-	r = io_getevents(e->aio_context, 1, MAX_EVENT, event, NULL);
+	do {
+		r = io_getevents(e->aio_context, 1, MAX_EVENT, event, NULL);
+	} while (r == -EINTR);
+
 	if (r < 0) {
 		log_sys_warn("io_getevents");
 		return false;
@@ -234,6 +239,11 @@ static bool _async_wait(struct io_engine *ioe, io_complete_fn fn)
 	return true;
 }
 
+static unsigned _async_max_io(struct io_engine *e)
+{
+	return MAX_IO;
+}
+
 struct io_engine *create_async_io_engine(unsigned max_io)
 {
 	int r;
@@ -245,6 +255,7 @@ struct io_engine *create_async_io_engine(unsigned max_io)
 	e->e.destroy = _async_destroy;
 	e->e.issue = _async_issue;
 	e->e.wait = _async_wait;
+	e->e.max_io = _async_max_io;
 
 	e->aio_context = 0;
 	r = io_setup(max_io, &e->aio_context);
