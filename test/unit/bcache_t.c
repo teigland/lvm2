@@ -12,6 +12,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -48,6 +49,8 @@ struct mock_call {
 	enum dir d;
 	int fd;
 	block_address b;
+	bool issue_r;
+	bool wait_r;
 };
 
 struct mock_io {
@@ -57,6 +60,7 @@ struct mock_io {
 	sector_t se;
 	void *data;
 	void *context;
+	bool r;
 };
 
 static const char *_show_method(enum method m)
@@ -91,6 +95,8 @@ static void _expect_read(struct mock_engine *e, int fd, block_address b)
 	mc->d = DIR_READ;
 	mc->fd = fd;
 	mc->b = b;
+	mc->issue_r = true;
+	mc->wait_r = true;
 	dm_list_add(&e->expected_calls, &mc->list);
 }
 
@@ -102,6 +108,60 @@ static void _expect_write(struct mock_engine *e, int fd, block_address b)
 	mc->d = DIR_WRITE;
 	mc->fd = fd;
 	mc->b = b;
+	mc->issue_r = true;
+	mc->wait_r = true;
+	dm_list_add(&e->expected_calls, &mc->list);
+}
+
+static void _expect_read_bad_issue(struct mock_engine *e, int fd, block_address b)
+{
+	struct mock_call *mc = malloc(sizeof(*mc));
+	mc->m = E_ISSUE;
+	mc->match_args = true;
+	mc->d = DIR_READ;
+	mc->fd = fd;
+	mc->b = b;
+	mc->issue_r = false;
+	mc->wait_r = true;
+	dm_list_add(&e->expected_calls, &mc->list);
+}
+
+static void _expect_write_bad_issue(struct mock_engine *e, int fd, block_address b)
+{
+	struct mock_call *mc = malloc(sizeof(*mc));
+	mc->m = E_ISSUE;
+	mc->match_args = true;
+	mc->d = DIR_WRITE;
+	mc->fd = fd;
+	mc->b = b;
+	mc->issue_r = false;
+	mc->wait_r = true;
+	dm_list_add(&e->expected_calls, &mc->list);
+}
+
+static void _expect_read_bad_wait(struct mock_engine *e, int fd, block_address b)
+{
+	struct mock_call *mc = malloc(sizeof(*mc));
+	mc->m = E_ISSUE;
+	mc->match_args = true;
+	mc->d = DIR_READ;
+	mc->fd = fd;
+	mc->b = b;
+	mc->issue_r = true;
+	mc->wait_r = false;
+	dm_list_add(&e->expected_calls, &mc->list);
+}
+
+static void _expect_write_bad_wait(struct mock_engine *e, int fd, block_address b)
+{
+	struct mock_call *mc = malloc(sizeof(*mc));
+	mc->m = E_ISSUE;
+	mc->match_args = true;
+	mc->d = DIR_WRITE;
+	mc->fd = fd;
+	mc->b = b;
+	mc->issue_r = true;
+	mc->wait_r = false;
 	dm_list_add(&e->expected_calls, &mc->list);
 }
 
@@ -161,6 +221,7 @@ static void _mock_destroy(struct io_engine *e)
 static bool _mock_issue(struct io_engine *e, enum dir d, int fd,
 	      		sector_t sb, sector_t se, void *data, void *context)
 {
+	bool r, wait_r;
 	struct mock_io *io;
 	struct mock_call *mc;
 	struct mock_engine *me = _to_mock(e);
@@ -172,20 +233,26 @@ static bool _mock_issue(struct io_engine *e, enum dir d, int fd,
 		T_ASSERT(sb == mc->b * me->block_size);
 		T_ASSERT(se == (mc->b + 1) * me->block_size);
 	}
+	r = mc->issue_r;
+	wait_r = mc->wait_r;
 	free(mc);
 
-	io = malloc(sizeof(*io));
-	if (!io)
-		abort();
+	if (r) {
+		io = malloc(sizeof(*io));
+		if (!io)
+			abort();
 
-	io->fd = fd;
-	io->sb = sb;
-	io->se = se;
-	io->data = data;
-	io->context = context;
+		io->fd = fd;
+		io->sb = sb;
+		io->se = se;
+		io->data = data;
+		io->context = context;
+		io->r = wait_r;
 
-	dm_list_add(&me->issued_io, &io->list);
-	return true;
+		dm_list_add(&me->issued_io, &io->list);
+	}
+
+	return r;
 }
 
 static bool _mock_wait(struct io_engine *e, io_complete_fn fn)
@@ -199,7 +266,9 @@ static bool _mock_wait(struct io_engine *e, io_complete_fn fn)
 	T_ASSERT(!dm_list_empty(&me->issued_io));
 	io = dm_list_item(me->issued_io.n, struct mock_io);
 	dm_list_del(&io->list);
-	fn(io->context, 0);
+	fn(io->context, io->r ? 0 : -EIO);
+	free(io);
+
 	return true;
 }
 
@@ -523,7 +592,7 @@ static void test_flush_waits_for_all_dirty(void *context)
 	_no_outstanding_expectations(me);
 }
 
-static void test_multiple_files(void * context)
+static void test_multiple_files(void *context)
 {
 	static int _fds[] = {1, 128, 345, 678, 890};
 
@@ -540,6 +609,104 @@ static void test_multiple_files(void * context)
 		T_ASSERT(bcache_get(cache, _fds[i], 0, 0, &b));
 		bcache_put(b);
 	}
+}
+
+static void test_read_bad_issue(void *context)
+{
+	struct fixture *f = context;
+	struct mock_engine *me = f->me;
+	struct bcache *cache = f->cache;
+	struct block *b;
+
+	_expect_read_bad_issue(me, 17, 0);
+	T_ASSERT(!bcache_get(cache, 17, 0, 0, &b));
+}
+
+static void test_read_bad_issue_intermittent(void *context)
+{
+	struct fixture *f = context;
+	struct mock_engine *me = f->me;
+	struct bcache *cache = f->cache;
+	struct block *b;
+	int fd = 17;
+
+	_expect_read_bad_issue(me, fd, 0);
+	T_ASSERT(!bcache_get(cache, fd, 0, 0, &b));
+
+	_expect_read(me, fd, 0);
+	_expect(me, E_WAIT);
+	T_ASSERT(bcache_get(cache, fd, 0, 0, &b));
+	bcache_put(b);
+}
+
+static void test_read_bad_wait(void *context)
+{
+	struct fixture *f = context;
+	struct mock_engine *me = f->me;
+	struct bcache *cache = f->cache;
+	struct block *b;
+	int fd = 17;
+
+	_expect_read_bad_wait(me, fd, 0);
+	_expect(me, E_WAIT);
+	T_ASSERT(!bcache_get(cache, fd, 0, 0, &b));
+}
+
+static void test_read_bad_wait_intermittent(void *context)
+{
+	struct fixture *f = context;
+	struct mock_engine *me = f->me;
+	struct bcache *cache = f->cache;
+	struct block *b;
+	int fd = 17;
+
+	_expect_read_bad_wait(me, fd, 0);
+	_expect(me, E_WAIT);
+	T_ASSERT(!bcache_get(cache, fd, 0, 0, &b));
+
+	_expect_read(me, fd, 0);
+	_expect(me, E_WAIT);
+	T_ASSERT(bcache_get(cache, fd, 0, 0, &b));
+	bcache_put(b);
+}
+
+static void test_write_bad_issue_stops_flush(void *context)
+{
+	struct fixture *f = context;
+	struct mock_engine *me = f->me;
+	struct bcache *cache = f->cache;
+	struct block *b;
+	int fd = 17;
+
+	T_ASSERT(bcache_get(cache, fd, 0, GF_ZERO, &b));
+	_expect_write_bad_issue(me, fd, 0);
+	bcache_put(b);
+	T_ASSERT(!bcache_flush(cache));
+
+	// we'll let it succeed the second time
+	_expect_write(me, fd, 0);
+	_expect(me, E_WAIT);
+	T_ASSERT(bcache_flush(cache));
+}
+
+static void test_write_bad_io_stops_flush(void *context)
+{
+	struct fixture *f = context;
+	struct mock_engine *me = f->me;
+	struct bcache *cache = f->cache;
+	struct block *b;
+	int fd = 17;
+
+	T_ASSERT(bcache_get(cache, fd, 0, GF_ZERO, &b));
+	_expect_write_bad_wait(me, fd, 0);
+	_expect(me, E_WAIT);
+	bcache_put(b);
+	T_ASSERT(!bcache_flush(cache));
+
+	// we'll let it succeed the second time
+	_expect_write(me, fd, 0);
+	_expect(me, E_WAIT);
+	T_ASSERT(bcache_flush(cache));
 }
 
 // Tests to be written
@@ -572,6 +739,12 @@ static struct test_suite *_small_tests(void)
 	T("writeback-occurs", "dirty data gets written back", test_dirty_data_gets_written_back);
 	T("zero-flag-dirties", "zeroed data counts as dirty", test_zeroed_data_counts_as_dirty);
 	T("read-multiple-files", "read from multiple files", test_multiple_files);
+	T("read-bad-issue", "read fails if io engine unable to issue", test_read_bad_issue);
+	T("read-bad-issue-intermittent", "failed issue, followed by succes", test_read_bad_issue_intermittent);
+	T("read-bad-io", "read issued ok, but io fails", test_read_bad_wait);
+	T("read-bad-io-intermittent", "failed io, followed by success", test_read_bad_wait_intermittent);
+	T("write-bad-issue-stops-flush", "flush fails temporarily if any block fails to write", test_write_bad_issue_stops_flush);
+	T("write-bad-io-stops-flush", "flush fails temporarily if any block fails to write", test_write_bad_io_stops_flush);
 
 	return ts;
 }

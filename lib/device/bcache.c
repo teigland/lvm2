@@ -184,6 +184,7 @@ static bool _async_issue(struct io_engine *ioe, enum dir d, int fd,
 	cb->cb.aio_lio_opcode = (d == DIR_READ) ? IO_CMD_PREAD : IO_CMD_PWRITE;
 
 	cb_array[0] = &cb->cb;
+	// FIXME: handle EAGAIN here
 	r = io_submit(e->aio_context, 1, cb_array);
 	if (r < 0) {
 		log_sys_warn("io_submit");
@@ -521,10 +522,17 @@ static void _complete_io(void *context, int err)
 	 */
 	dm_list_del(&b->list);
 
-	if (b->error)
-		dm_list_add(&cache->errored, &b->list);
+	if (b->error) {
+		if (b->io_dir == DIR_READ) {
+			// We can just forget about this block, since there's
+			// no dirty data to be written back.
+			_hash_remove(b);
+			dm_list_add(&cache->free, &b->list);
 
-	else {
+		} else
+			dm_list_add(&cache->errored, &b->list);
+
+	} else {
 		_clear_flags(b, BF_DIRTY);
 		_link_block(b);
 	}
@@ -534,35 +542,34 @@ static void _complete_io(void *context, int err)
  * |b->list| should be valid (either pointing to itself, on one of the other
  * lists.
  */
-static bool _issue_low_level(struct block *b, enum dir d)
+static void _issue_low_level(struct block *b, enum dir d)
 {
 	struct bcache *cache = b->cache;
 	sector_t sb = b->index * cache->block_sectors;
 	sector_t se = sb + cache->block_sectors;
 
 	if (_test_flags(b, BF_IO_PENDING))
-		return false;
+		return;
 
+	b->io_dir = d;
 	_set_flags(b, BF_IO_PENDING);
 	dm_list_add(&cache->io_pending, &b->list);
 
 	if (!cache->engine->issue(cache->engine, d, b->fd, sb, se, b->data, b)) {
 		_complete_io(b, -EIO);
-		return false;
+		return;
 	}
 
-	return true;
-
 }
 
-static inline bool _issue_read(struct block *b)
+static inline void _issue_read(struct block *b)
 {
-	return _issue_low_level(b, DIR_READ);
+	_issue_low_level(b, DIR_READ);
 }
 
-static inline bool _issue_write(struct block *b)
+static inline void _issue_write(struct block *b)
 {
-	return _issue_low_level(b, DIR_WRITE);
+	_issue_low_level(b, DIR_WRITE);
 }
 
 static bool _wait_io(struct bcache *cache)
@@ -889,8 +896,13 @@ void bcache_put(struct block *b)
 		_preemptive_writeback(b->cache);
 }
 
-int bcache_flush(struct bcache *cache)
+bool bcache_flush(struct bcache *cache)
 {
+	// Only dirty data is on the errored list, since bad read blocks get
+	// recycled straight away.  So we put these back on the dirty list, and
+	// try and rewrite everything.
+	dm_list_splice(&cache->dirty, &cache->errored);
+
 	while (!dm_list_empty(&cache->dirty)) {
 		struct block *b = dm_list_item(_list_pop(&cache->dirty), struct block);
 		if (b->ref_count || _test_flags(b, BF_IO_PENDING)) {
@@ -903,7 +915,7 @@ int bcache_flush(struct bcache *cache)
 
 	_wait_all(cache);
 
-	return dm_list_empty(&cache->errored) ? 0 : -EIO;
+	return dm_list_empty(&cache->errored);
 }
 
 static void _recycle_block(struct bcache *cache, struct block *b)
