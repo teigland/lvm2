@@ -1,14 +1,14 @@
 Building unit tests
 ===================
 
-  make test/unit/unit-test
+  make unit-unit/unit-test
 
 
 Running unit tests
 ==================
 
 The tests leave no artifacts at the moment, so you can just run
-test/unit/unit-test from wherever you want.
+unit-test/unit-test from wherever you want.
 
   ./unit-test <list|run> [pattern]
 
@@ -20,7 +20,7 @@ are split into components separated by '/'s.  The 'list' command will show you
 a tree of these tests, along with some description text.
 
 
-ejt@devel-vm1:~/lvm2/test/unit$ ./unit-test list
+ejt@devel-vm1:~/lvm2/unit-test/$ ./unit-test list
 base
   data-struct
     bitset
@@ -70,7 +70,7 @@ This pattern is a posix regex and does a substring match, so you will need to
 use anchors if you particularly want the match at the beginning or end of the
 string.
 
-ejt@devel-vm1:~/lvm2/test/unit$ ./unit-test list data-struct
+ejt@devel-vm1:~/lvm2/unit-test/$ ./unit-test list data-struct
 base
   data-struct
     bitset
@@ -83,7 +83,7 @@ base
       asprint  .............................................  tests asprint
       strncpy  .............................................  tests string copying
 
-ejt@devel-vm1:~/lvm2/test/unit$ ./unit-test list s$
+ejt@devel-vm1:~/lvm2/unit-test/$ ./unit-test list s$
 base
   device
     bcache
@@ -105,14 +105,14 @@ dm
 Running tests
 =============
 
-'make unit-test' from the top level will run all unit tests.  But I tend to run
-it by hand to I can select just the tests I'm working on.
+'make run-unit-test' from the top level will run all unit tests.  But I tend to
+run it by hand to I can select just the tests I'm working on.
 
 Use the 'run' command to run the tests.  Currently all logging goes to stderr,
 so the test runner prints a line at the start of the test and a line
 indicating success or failure at the end.
 
-ejt@devel-vm1:~/lvm2/test/unit$ ./unit-test run bcache/block-size
+ejt@devel-vm1:~/lvm2/unit-test/$ ./unit-test run bcache/block-size
 [RUN    ] /base/device/bcache/block-size-multiple-page
 bcache block size must be a multiple of page size
 bcache block size must be a multiple of page size
@@ -128,7 +128,7 @@ bcache must have a non zero block size
 2/2 tests passed
 
 
-ejt@devel-vm1:~/lvm2/test/unit$ ./unit-test run data-struct
+ejt@devel-vm1:~/lvm2/unit-test/$ ./unit-test run data-struct
 [RUN    ] /base/data-struct/bitset/and
 [     OK] /base/data-struct/bitset/and
 
@@ -154,7 +154,7 @@ ejt@devel-vm1:~/lvm2/test/unit$ ./unit-test run data-struct
 Writing tests
 =============
 
-[See test/unit/framework.h and test/unit/units.h for the details]
+[See unit-test/framework.h and unit-test/units.h for the details]
 
 Tests are grouped together into 'suites', all tests in a suite share a
 'fixture'.  A fixture is a void * to any object you want; use it to set up any
@@ -163,7 +163,7 @@ common environment that you need for the tests to run (eg, creating a dm_pool).
 Test suites have nothing to do with the test paths, you can have tests from
 different suites with similar paths, the runner sorts things for you.
 
-Put your tests in a file in test/unit, with '_t' at the end of the name
+Put your tests in a file in unit-test/, with '_t' at the end of the name
 (convention only, nothing relies on this).
 
 #include "units.h"

@@ -1,3 +1,9 @@
+Version 2.03.000 - <unreleased>
+===============================
+
+  Unit tests no longer rely on CUnit third party library.
+  --enable-testing switch for ./configure has been removed.
+
 Version 2.02.178 - 
 =====================================
   Avoid non-exclusive activation of exclusive segment types.
