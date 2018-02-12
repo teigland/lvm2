@@ -706,7 +706,9 @@ FSADM
 ELDFLAGS
 DM_LIB_PATCHLEVEL
 DMEVENTD_PATH
+AIO_LIBS
 DL_LIBS
+AIO
 DEVMAPPER
 DEFAULT_USE_LVMLOCKD
 DEFAULT_USE_LVMPOLLD
@@ -946,6 +948,7 @@ with_optimisation
 enable_profiling
 enable_valgrind_pool
 enable_devmapper
+enable_aio
 enable_lvmetad
 enable_lvmpolld
 enable_lvmlockd_sanlock
@@ -1692,6 +1695,7 @@ Optional Features:
   --enable-profiling      gather gcov profiling data
   --enable-valgrind-pool  enable valgrind awareness of pools
   --disable-devmapper     disable LVM2 device-mapper interaction
+  --disable-aio           disable asynchronous I/O
   --enable-lvmetad        enable the LVM Metadata Daemon
   --enable-lvmpolld       enable the LVM Polling Daemon
   --enable-lvmlockd-sanlock
@@ -3170,6 +3174,7 @@ case "$host_os" in
 		LDDEPS="$LDDEPS .export.sym"
 		LIB_SUFFIX=so
 		DEVMAPPER=yes
+		AIO=yes
 		BUILD_LVMETAD=no
 		BUILD_LVMPOLLD=no
 		LOCKDSANLOCK=no
@@ -3189,6 +3194,7 @@ case "$host_os" in
 		CLDNOWHOLEARCHIVE=
 		LIB_SUFFIX=dylib
 		DEVMAPPER=yes
+		AIO=no
 		ODIRECT=no
 		DM_IOCTLS=no
 		SELINUX=no
@@ -4360,6 +4366,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 CFLAGS=$save_CFLAGS
 CXXFLAGS=$save_CXXFLAGS
+PATH_SBIN="$PATH:/usr/sbin:/sbin"
 
 
 ac_ext=c
@@ -8564,7 +8571,6 @@ fi
 
 # Test if necessary thin tools are available
 # if not - use plain defaults and warn user
-# Empty means a config way to ignore thin checking
 if test "$THIN_CHECK_CMD" = "autodetect"; then
 	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}thin_check", so it can be a program name with args.
@@ -8580,7 +8586,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -8623,7 +8629,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -8688,6 +8694,338 @@ $as_echo "$as_me: WARNING: $THIN_CHECK_CMD: Old version \"$THIN_CHECK_VSN\" foun
 		THIN_CHECK_NEEDS_CHECK=no
 	fi
 fi
+# Empty means a config way to ignore thin dumping
+if test "$THIN_DUMP_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}thin_dump", so it can be a program name with args.
+set dummy ${ac_tool_prefix}thin_dump; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_THIN_DUMP_CMD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $THIN_DUMP_CMD in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_THIN_DUMP_CMD="$THIN_DUMP_CMD" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH_SBIN
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_THIN_DUMP_CMD="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+THIN_DUMP_CMD=$ac_cv_path_THIN_DUMP_CMD
+if test -n "$THIN_DUMP_CMD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN_DUMP_CMD" >&5
+$as_echo "$THIN_DUMP_CMD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_THIN_DUMP_CMD"; then
+  ac_pt_THIN_DUMP_CMD=$THIN_DUMP_CMD
+  # Extract the first word of "thin_dump", so it can be a program name with args.
+set dummy thin_dump; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_THIN_DUMP_CMD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_THIN_DUMP_CMD in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_THIN_DUMP_CMD="$ac_pt_THIN_DUMP_CMD" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH_SBIN
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_THIN_DUMP_CMD="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_THIN_DUMP_CMD=$ac_cv_path_ac_pt_THIN_DUMP_CMD
+if test -n "$ac_pt_THIN_DUMP_CMD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_THIN_DUMP_CMD" >&5
+$as_echo "$ac_pt_THIN_DUMP_CMD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_THIN_DUMP_CMD" = x; then
+    THIN_DUMP_CMD=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    THIN_DUMP_CMD=$ac_pt_THIN_DUMP_CMD
+  fi
+else
+  THIN_DUMP_CMD="$ac_cv_path_THIN_DUMP_CMD"
+fi
+
+	test -z "$THIN_DUMP_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_dump not found in path $PATH" >&5
+$as_echo "$as_me: WARNING: thin_dump not found in path $PATH" >&2;}
+		THIN_DUMP_CMD=/usr/sbin/thin_dump
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin repairing
+if test "$THIN_REPAIR_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}thin_repair", so it can be a program name with args.
+set dummy ${ac_tool_prefix}thin_repair; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_THIN_REPAIR_CMD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $THIN_REPAIR_CMD in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_THIN_REPAIR_CMD="$THIN_REPAIR_CMD" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH_SBIN
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_THIN_REPAIR_CMD="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+THIN_REPAIR_CMD=$ac_cv_path_THIN_REPAIR_CMD
+if test -n "$THIN_REPAIR_CMD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN_REPAIR_CMD" >&5
+$as_echo "$THIN_REPAIR_CMD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_THIN_REPAIR_CMD"; then
+  ac_pt_THIN_REPAIR_CMD=$THIN_REPAIR_CMD
+  # Extract the first word of "thin_repair", so it can be a program name with args.
+set dummy thin_repair; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_THIN_REPAIR_CMD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_THIN_REPAIR_CMD in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_THIN_REPAIR_CMD="$ac_pt_THIN_REPAIR_CMD" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH_SBIN
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_THIN_REPAIR_CMD="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_THIN_REPAIR_CMD=$ac_cv_path_ac_pt_THIN_REPAIR_CMD
+if test -n "$ac_pt_THIN_REPAIR_CMD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_THIN_REPAIR_CMD" >&5
+$as_echo "$ac_pt_THIN_REPAIR_CMD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_THIN_REPAIR_CMD" = x; then
+    THIN_REPAIR_CMD=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    THIN_REPAIR_CMD=$ac_pt_THIN_REPAIR_CMD
+  fi
+else
+  THIN_REPAIR_CMD="$ac_cv_path_THIN_REPAIR_CMD"
+fi
+
+	test -z "$THIN_REPAIR_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_repair not found in path $PATH" >&5
+$as_echo "$as_me: WARNING: thin_repair not found in path $PATH" >&2;}
+		THIN_REPAIR_CMD=/usr/sbin/thin_repair
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin restoring
+if test "$THIN_RESTORE_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}thin_restore", so it can be a program name with args.
+set dummy ${ac_tool_prefix}thin_restore; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_THIN_RESTORE_CMD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $THIN_RESTORE_CMD in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_THIN_RESTORE_CMD="$THIN_RESTORE_CMD" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH_SBIN
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_THIN_RESTORE_CMD="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+THIN_RESTORE_CMD=$ac_cv_path_THIN_RESTORE_CMD
+if test -n "$THIN_RESTORE_CMD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN_RESTORE_CMD" >&5
+$as_echo "$THIN_RESTORE_CMD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_THIN_RESTORE_CMD"; then
+  ac_pt_THIN_RESTORE_CMD=$THIN_RESTORE_CMD
+  # Extract the first word of "thin_restore", so it can be a program name with args.
+set dummy thin_restore; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_THIN_RESTORE_CMD+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_THIN_RESTORE_CMD in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_THIN_RESTORE_CMD="$ac_pt_THIN_RESTORE_CMD" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH_SBIN
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_THIN_RESTORE_CMD="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_THIN_RESTORE_CMD=$ac_cv_path_ac_pt_THIN_RESTORE_CMD
+if test -n "$ac_pt_THIN_RESTORE_CMD"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_THIN_RESTORE_CMD" >&5
+$as_echo "$ac_pt_THIN_RESTORE_CMD" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_THIN_RESTORE_CMD" = x; then
+    THIN_RESTORE_CMD=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    THIN_RESTORE_CMD=$ac_pt_THIN_RESTORE_CMD
+  fi
+else
+  THIN_RESTORE_CMD="$ac_cv_path_THIN_RESTORE_CMD"
+fi
+
+	test -z "$THIN_RESTORE_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_restore not found in path $PATH" >&5
+$as_echo "$as_me: WARNING: thin_restore not found in path $PATH" >&2;}
+		THIN_RESTORE_CMD=/usr/sbin/thin_restore
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether thin_check supports the needs-check flag" >&5
+$as_echo_n "checking whether thin_check supports the needs-check flag... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN_CHECK_NEEDS_CHECK" >&5
+$as_echo "$THIN_CHECK_NEEDS_CHECK" >&6; }
+if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
+
+$as_echo "#define THIN_CHECK_NEEDS_CHECK 1" >>confdefs.h
+
+fi
+
 # Empty means a config way to ignore thin dumping
 if test "$THIN_DUMP_CMD" = "autodetect"; then
 	if test -n "$ac_tool_prefix"; then
@@ -9094,7 +9432,6 @@ fi
 
 # Test if necessary cache tools are available
 # if not - use plain defaults and warn user
-# Empty means a config way to ignore cache checking
 if test "$CACHE_CHECK_CMD" = "autodetect"; then
 	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cache_check", so it can be a program name with args.
@@ -9110,7 +9447,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9153,7 +9490,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9206,28 +9543,28 @@ if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
 	read -r CACHE_CHECK_VSN < conftest.tmp
 	IFS=.- read -r CACHE_CHECK_VSN_MAJOR CACHE_CHECK_VSN_MINOR CACHE_CHECK_VSN_PATCH LEFTOVER < conftest.tmp
 	rm -f conftest.tmp
+fi
 
-	# Require version >= 0.5.4 for --clear-needs-check-flag
-	if test -z "$CACHE_CHECK_VSN_MAJOR" \
-		|| test -z "$CACHE_CHECK_VSN_MINOR" \
-		|| test -z "$CACHE_CHECK_VSN_PATCH"; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Bad version \"$CACHE_CHECK_VSN\" found" >&5
+# Require version >= 0.5.4 for --clear-needs-check-flag
+if test -z "$CACHE_CHECK_VSN_MAJOR" \
+	|| test -z "$CACHE_CHECK_VSN_MINOR" \
+	|| test -z "$CACHE_CHECK_VSN_PATCH"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Bad version \"$CACHE_CHECK_VSN\" found" >&5
 $as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Bad version \"$CACHE_CHECK_VSN\" found" >&2;}
+	CACHE_CHECK_VERSION_WARN=y
+	CACHE_CHECK_NEEDS_CHECK=no
+elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
+	if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
+		|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&5
+$as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&2;}
 		CACHE_CHECK_VERSION_WARN=y
 		CACHE_CHECK_NEEDS_CHECK=no
-	elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
-		if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
-			|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&5
-$as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&2;}
-			CACHE_CHECK_VERSION_WARN=y
-			CACHE_CHECK_NEEDS_CHECK=no
-		fi
-		if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" does not support new cache format V2" >&5
+	fi
+	if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" does not support new cache format V2" >&5
 $as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" does not support new cache format V2" >&2;}
-			CACHE_CHECK_VERSION_WARN=y
-		fi
+		CACHE_CHECK_VERSION_WARN=y
 	fi
 fi
 # Empty means a config way to ignore cache dumping
@@ -9246,7 +9583,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9289,7 +9626,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9353,7 +9690,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9396,7 +9733,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9460,7 +9797,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -9503,7 +9840,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -11601,6 +11938,67 @@ $as_echo "$DEVMAPPER" >&6; }
 if test "$DEVMAPPER" = yes; then
 
 $as_echo "#define DEVMAPPER_SUPPORT 1" >>confdefs.h
+
+fi
+
+################################################################################
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use asynchronous I/O" >&5
+$as_echo_n "checking whether to use asynchronous I/O... " >&6; }
+# Check whether --enable-aio was given.
+if test "${enable_aio+set}" = set; then :
+  enableval=$enable_aio; AIO=$enableval
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $AIO" >&5
+$as_echo "$AIO" >&6; }
+
+if test "$AIO" = yes; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for io_setup in -laio" >&5
+$as_echo_n "checking for io_setup in -laio... " >&6; }
+if ${ac_cv_lib_aio_io_setup+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-laio  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char io_setup ();
+int
+main ()
+{
+return io_setup ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_aio_io_setup=yes
+else
+  ac_cv_lib_aio_io_setup=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_aio_io_setup" >&5
+$as_echo "$ac_cv_lib_aio_io_setup" >&6; }
+if test "x$ac_cv_lib_aio_io_setup" = xyes; then :
+
+$as_echo "#define AIO_SUPPORT 1" >>confdefs.h
+
+		AIO_LIBS="-laio"
+		AIO_SUPPORT=yes
+else
+  AIO_LIBS=
+		AIO_SUPPORT=no
+fi
 
 fi
 
@@ -15089,7 +15487,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -15132,7 +15530,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
+for as_dir in $PATH_SBIN
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -15393,6 +15791,8 @@ _ACEOF
 
 
 ################################################################################
+
+
 
 
 

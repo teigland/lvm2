@@ -1099,9 +1099,15 @@ next:
 }
 
 /* Track the number of outstanding label reads */
+/* FIXME Switch to struct and also track failed */
 static void _process_label_data(int failed, unsigned ioflags, void *context, const void *data)
 {
 	int *nr_labels_outstanding = context;
+
+	if (!*nr_labels_outstanding) {
+		log_error(INTERNAL_ERROR "_process_label_data called too many times");
+		return;
+	}
 
 	(*nr_labels_outstanding)--;
 }
@@ -1155,13 +1161,20 @@ int lvmcache_label_scan(struct cmd_context *cmd)
 	_destroy_duplicate_device_list(&_found_duplicate_devs);
 
 	while ((dev = dev_iter_get(iter))) {
+		log_debug_io("Scanning device %s", dev_name(dev));
 		nr_labels_outstanding++;
-		if (!label_read_callback(dev, UINT64_C(0), 0, _process_label_data, &nr_labels_outstanding))
+		if (!label_read_callback(dev, UINT64_C(0), AIO_SUPPORTED_CODE_PATH, _process_label_data, &nr_labels_outstanding))
 			nr_labels_outstanding--;
 		dev_count++;
 	}
 
 	dev_iter_destroy(iter);
+
+	while (nr_labels_outstanding) {
+		log_very_verbose("Scanned %d device labels (%d outstanding)", dev_count, nr_labels_outstanding);
+		if (!dev_async_getevents())
+			return_0;
+	}
 
 	log_very_verbose("Scanned %d device labels (%d outstanding)", dev_count, nr_labels_outstanding);
 

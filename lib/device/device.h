@@ -32,6 +32,11 @@
 #define DEV_ASSUMED_FOR_LV	0x00000200	/* Is device assumed for an LV */
 #define DEV_NOT_O_NOATIME	0x00000400	/* Don't use O_NOATIME */
 
+/* ioflags */
+#define AIO_SUPPORTED_CODE_PATH	0x00000001	/* Set if the code path supports AIO */
+
+#define aio_supported_code_path(ioflags)       (((ioflags) & AIO_SUPPORTED_CODE_PATH) ? 1 : 0)
+
 /*
  * Standard format for callback functions.
  * When provided, callback functions are called exactly once.
@@ -92,6 +97,10 @@ struct device_buffer {
 	struct device_area where;	/* Location of buf */
 	dev_io_reason_t reason;
 	unsigned write:1;	/* 1 if write; 0 if read */
+
+	lvm_callback_fn_t dev_read_callback_fn;
+	void *dev_read_callback_context;
+	struct dm_list aio_queued;	/* Queue of async I/O waiting to be issued */
 };
 
 /*
@@ -175,9 +184,9 @@ const char *dev_read(struct device *dev, uint64_t offset, size_t len, dev_io_rea
 const char *dev_read_circular(struct device *dev, uint64_t offset, size_t len,
 			      uint64_t offset2, size_t len2, dev_io_reason_t reason);
 
-/* Passes the data to dev_read_callback_fn */
-int dev_read_callback(struct device *dev, uint64_t offset, size_t len, dev_io_reason_t reason,
-		      unsigned ioflags, lvm_callback_fn_t dev_read_callback_fn, void *callback_context);
+/* Passes the data (or error) to dev_read_callback_fn */
+void dev_read_callback(struct device *dev, uint64_t offset, size_t len, dev_io_reason_t reason,
+		       unsigned ioflags, lvm_callback_fn_t dev_read_callback_fn, void *callback_context);
 
 /* Read data and copy it into a supplied private buffer. */
 /* Only use for tiny reads or on unimportant code paths. */
@@ -196,5 +205,11 @@ void devbufs_release(struct device *dev);
 
 /* Return a valid device name from the alias list; NULL otherwise */
 const char *dev_name_confirmed(struct device *dev, int quiet);
+
+struct cmd_context;
+int dev_async_getevents(void);
+int dev_async_setup(struct cmd_context *cmd);
+void dev_async_exit(void);
+int dev_async_reset(struct cmd_context *cmd);
 
 #endif

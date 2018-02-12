@@ -39,6 +39,7 @@ case "$host_os" in
 		LDDEPS="$LDDEPS .export.sym"
 		LIB_SUFFIX=so
 		DEVMAPPER=yes
+		AIO=yes
 		BUILD_LVMETAD=no
 		BUILD_LVMPOLLD=no
 		LOCKDSANLOCK=no
@@ -58,6 +59,7 @@ case "$host_os" in
 		CLDNOWHOLEARCHIVE=
 		LIB_SUFFIX=dylib
 		DEVMAPPER=yes
+		AIO=no
 		ODIRECT=no
 		DM_IOCTLS=no
 		SELINUX=no
@@ -77,6 +79,7 @@ AC_PROG_CC
 AC_PROG_CXX
 CFLAGS=$save_CFLAGS
 CXXFLAGS=$save_CXXFLAGS
+PATH_SBIN="$PATH:/usr/sbin:/sbin"
 
 dnl probably no longer needed in 2008, but...
 AC_PROG_GCC_TRADITIONAL
@@ -407,9 +410,8 @@ AC_ARG_ENABLE(thin_check_needs_check,
 
 # Test if necessary thin tools are available
 # if not - use plain defaults and warn user
-# Empty means a config way to ignore thin checking
 if test "$THIN_CHECK_CMD" = "autodetect"; then
-	AC_PATH_TOOL(THIN_CHECK_CMD, thin_check)
+	AC_PATH_TOOL(THIN_CHECK_CMD, thin_check, [], [$PATH_SBIN])
 	if test -z "$THIN_CHECK_CMD"; then
 		AC_MSG_WARN([thin_check not found in path $PATH])
 		THIN_CHECK_CMD=/usr/sbin/thin_check
@@ -431,6 +433,40 @@ if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
 		THIN_CHECK_NEEDS_CHECK=no
 	fi
 fi
+# Empty means a config way to ignore thin dumping
+if test "$THIN_DUMP_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_DUMP_CMD, thin_dump, [], [$PATH_SBIN])
+	test -z "$THIN_DUMP_CMD" && {
+		AC_MSG_WARN(thin_dump not found in path $PATH)
+		THIN_DUMP_CMD=/usr/sbin/thin_dump
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin repairing
+if test "$THIN_REPAIR_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_REPAIR_CMD, thin_repair, [], [$PATH_SBIN])
+	test -z "$THIN_REPAIR_CMD" && {
+		AC_MSG_WARN(thin_repair not found in path $PATH)
+		THIN_REPAIR_CMD=/usr/sbin/thin_repair
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin restoring
+if test "$THIN_RESTORE_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_RESTORE_CMD, thin_restore, [], [$PATH_SBIN])
+	test -z "$THIN_RESTORE_CMD" && {
+		AC_MSG_WARN(thin_restore not found in path $PATH)
+		THIN_RESTORE_CMD=/usr/sbin/thin_restore
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+
+AC_MSG_CHECKING([whether thin_check supports the needs-check flag])
+AC_MSG_RESULT([$THIN_CHECK_NEEDS_CHECK])
+if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
+	AC_DEFINE([THIN_CHECK_NEEDS_CHECK], 1, [Define to 1 if the external 'thin_check' tool requires the --clear-needs-check-flag option])
+fi
+
 # Empty means a config way to ignore thin dumping
 if test "$THIN_DUMP_CMD" = "autodetect"; then
 	AC_PATH_TOOL(THIN_DUMP_CMD, thin_dump)
@@ -507,9 +543,8 @@ AC_ARG_ENABLE(cache_check_needs_check,
 
 # Test if necessary cache tools are available
 # if not - use plain defaults and warn user
-# Empty means a config way to ignore cache checking
 if test "$CACHE_CHECK_CMD" = "autodetect"; then
-	AC_PATH_TOOL(CACHE_CHECK_CMD, cache_check)
+	AC_PATH_TOOL(CACHE_CHECK_CMD, cache_check, [], [$PATH_SBIN])
 	if test -z "$CACHE_CHECK_CMD"; then
 		AC_MSG_WARN([cache_check not found in path $PATH])
 		CACHE_CHECK_CMD=/usr/sbin/cache_check
@@ -521,30 +556,30 @@ if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
 	read -r CACHE_CHECK_VSN < conftest.tmp
 	IFS=.- read -r CACHE_CHECK_VSN_MAJOR CACHE_CHECK_VSN_MINOR CACHE_CHECK_VSN_PATCH LEFTOVER < conftest.tmp
 	rm -f conftest.tmp
+fi
 
-	# Require version >= 0.5.4 for --clear-needs-check-flag
-	if test -z "$CACHE_CHECK_VSN_MAJOR" \
-		|| test -z "$CACHE_CHECK_VSN_MINOR" \
-		|| test -z "$CACHE_CHECK_VSN_PATCH"; then
-		AC_MSG_WARN([$CACHE_CHECK_CMD: Bad version "$CACHE_CHECK_VSN" found])
+# Require version >= 0.5.4 for --clear-needs-check-flag
+if test -z "$CACHE_CHECK_VSN_MAJOR" \
+	|| test -z "$CACHE_CHECK_VSN_MINOR" \
+	|| test -z "$CACHE_CHECK_VSN_PATCH"; then
+	AC_MSG_WARN([$CACHE_CHECK_CMD: Bad version "$CACHE_CHECK_VSN" found])
+	CACHE_CHECK_VERSION_WARN=y
+	CACHE_CHECK_NEEDS_CHECK=no
+elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
+	if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
+		|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
+		AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" found])
 		CACHE_CHECK_VERSION_WARN=y
 		CACHE_CHECK_NEEDS_CHECK=no
-	elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
-		if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
-			|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
-			AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" found])
-			CACHE_CHECK_VERSION_WARN=y
-			CACHE_CHECK_NEEDS_CHECK=no
-		fi
-		if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
-			AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" does not support new cache format V2])
-			CACHE_CHECK_VERSION_WARN=y
-		fi
+	fi
+	if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
+		AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" does not support new cache format V2])
+		CACHE_CHECK_VERSION_WARN=y
 	fi
 fi
 # Empty means a config way to ignore cache dumping
 if test "$CACHE_DUMP_CMD" = "autodetect"; then
-	AC_PATH_TOOL(CACHE_DUMP_CMD, cache_dump)
+	AC_PATH_TOOL(CACHE_DUMP_CMD, cache_dump, [], [$PATH_SBIN])
 	test -z "$CACHE_DUMP_CMD" && {
 		AC_MSG_WARN(cache_dump not found in path $PATH)
 		CACHE_DUMP_CMD=/usr/sbin/cache_dump
@@ -553,7 +588,7 @@ if test "$CACHE_DUMP_CMD" = "autodetect"; then
 fi
 # Empty means a config way to ignore cache repairing
 if test "$CACHE_REPAIR_CMD" = "autodetect"; then
-	AC_PATH_TOOL(CACHE_REPAIR_CMD, cache_repair)
+	AC_PATH_TOOL(CACHE_REPAIR_CMD, cache_repair, [], [$PATH_SBIN])
 	test -z "$CACHE_REPAIR_CMD" && {
 		AC_MSG_WARN(cache_repair not found in path $PATH)
 		CACHE_REPAIR_CMD=/usr/sbin/cache_repair
@@ -562,7 +597,7 @@ if test "$CACHE_REPAIR_CMD" = "autodetect"; then
 fi
 # Empty means a config way to ignore cache restoring
 if test "$CACHE_RESTORE_CMD" = "autodetect"; then
-	AC_PATH_TOOL(CACHE_RESTORE_CMD, cache_restore)
+	AC_PATH_TOOL(CACHE_RESTORE_CMD, cache_restore, [], [$PATH_SBIN])
 	test -z "$CACHE_RESTORE_CMD" && {
 		AC_MSG_WARN(cache_restore not found in path $PATH)
 		CACHE_RESTORE_CMD=/usr/sbin/cache_restore
@@ -1030,6 +1065,24 @@ AC_MSG_RESULT($DEVMAPPER)
 
 if test "$DEVMAPPER" = yes; then
 	AC_DEFINE([DEVMAPPER_SUPPORT], 1, [Define to 1 to enable LVM2 device-mapper interaction.])
+fi
+
+################################################################################
+dnl -- Disable aio
+AC_MSG_CHECKING(whether to use asynchronous I/O)
+AC_ARG_ENABLE(aio,
+	      AC_HELP_STRING([--disable-aio],
+			     [disable asynchronous I/O]),
+	      AIO=$enableval)
+AC_MSG_RESULT($AIO)
+
+if test "$AIO" = yes; then
+	AC_CHECK_LIB(aio, io_setup,
+		[AC_DEFINE([AIO_SUPPORT], 1, [Define to 1 if aio is available.])
+		AIO_LIBS="-laio"
+		AIO_SUPPORT=yes],
+		[AIO_LIBS=
+		AIO_SUPPORT=no ])
 fi
 
 ################################################################################
@@ -1781,7 +1834,7 @@ if test "$BUILD_DMFILEMAPD" = yes; then
 fi
 
 ################################################################################
-AC_PATH_TOOL(MODPROBE_CMD, modprobe)
+AC_PATH_TOOL(MODPROBE_CMD, modprobe, [], [$PATH_SBIN])
 
 if test -n "$MODPROBE_CMD"; then
 	AC_DEFINE_UNQUOTED([MODPROBE_CMD], ["$MODPROBE_CMD"], [The path to 'modprobe', if available.])
@@ -1971,9 +2024,11 @@ AC_SUBST(DEFAULT_USE_LVMETAD)
 AC_SUBST(DEFAULT_USE_LVMPOLLD)
 AC_SUBST(DEFAULT_USE_LVMLOCKD)
 AC_SUBST(DEVMAPPER)
+AC_SUBST(AIO)
 AC_SUBST(DLM_CFLAGS)
 AC_SUBST(DLM_LIBS)
 AC_SUBST(DL_LIBS)
+AC_SUBST(AIO_LIBS)
 AC_SUBST(DMEVENTD_PATH)
 AC_SUBST(DM_LIB_PATCHLEVEL)
 AC_SUBST(ELDFLAGS)

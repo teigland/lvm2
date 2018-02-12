@@ -46,6 +46,7 @@
 
 #include <locale.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/utsname.h>
 #include <syslog.h>
 #include <time.h>
@@ -634,6 +635,16 @@ static int _process_config(struct cmd_context *cmd)
 	 * If udev is disabled globally, set fallback mode immediately.
 	 */
 	cmd->default_settings.udev_fallback = udev_disabled ? 1 : -1;
+
+#ifdef AIO_SUPPORT
+	cmd->use_aio = find_config_tree_bool(cmd, devices_use_aio_CFG, NULL);
+#else
+	cmd->use_aio = 0;
+#endif
+	if (cmd->use_aio && !dev_async_setup(cmd))
+		cmd->use_aio = 0;
+
+	log_debug_io("%ssing asynchronous I/O.", cmd->use_aio ? "U" : "Not u");
 
 	init_retry_deactivation(find_config_tree_bool(cmd, activation_retry_deactivation_CFG, NULL));
 
@@ -1873,7 +1884,13 @@ struct cmd_context *create_toolcontext(unsigned is_long_lived,
 
 #ifndef VALGRIND_POOL
 	/* Set in/out stream buffering before glibc */
-	if (set_buffering) {
+	if (set_buffering
+#ifdef SYS_gettid
+	    /* For threaded programs no changes of streams */
+            /* On linux gettid() is implemented only via syscall */
+	    && (syscall(SYS_gettid) == getpid())
+#endif
+	   ) {
 		/* Allocate 2 buffers */
 		if (!(cmd->linebuffer = dm_malloc(2 * _linebuffer_size))) {
 			log_error("Failed to allocate line buffer.");
@@ -1904,7 +1921,7 @@ struct cmd_context *create_toolcontext(unsigned is_long_lived,
 			}
 		}
 		/* Buffers are used for lines without '\n' */
-	} else
+	} else if (!set_buffering)
 		/* Without buffering, must not use stdin/stdout */
 		init_silent(1);
 #endif
