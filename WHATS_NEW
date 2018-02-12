@@ -1,6 +1,11 @@
 Version 2.03.000 - <unreleased>
 ===============================
 
+  --with-snapshots switch for ./configure has been removed.
+  --with-mirrors switch for ./configure has been removed.
+  --with-raid switch for ./configure has been removed.
+  --with-thin switch for ./configure has been removed.
+  --with-cache switch for ./configure has been removed.
   Unit tests no longer rely on CUnit third party library.
   --enable-testing switch for ./configure has been removed.
 

@@ -917,19 +917,14 @@ enable_lvm1_fallback
 with_lvm1
 with_pool
 with_cluster
-with_snapshots
-with_mirrors
-with_raid
 with_default_mirror_segtype
 with_default_raid10_segtype
 with_default_sparse_segtype
-with_thin
 with_thin_check
 with_thin_dump
 with_thin_repair
 with_thin_restore
 enable_thin_check_needs_check
-with_cache
 with_cache_check
 with_cache_dump
 with_cache_repair
@@ -1756,23 +1751,17 @@ Optional Packages:
                           [internal]
   --with-cluster=TYPE     cluster LVM locking support: internal/shared/none
                           [internal]
-  --with-snapshots=TYPE   snapshot support: internal/shared/none [internal]
-  --with-mirrors=TYPE     mirror support: internal/shared/none [internal]
-  --with-raid=TYPE        raid support: internal/shared/none [internal]
   --with-default-mirror-segtype=TYPE
                           default mirror segtype: raid1/mirror [raid1]
   --with-default-raid10-segtype=TYPE
                           default mirror segtype: raid10/mirror [raid10]
   --with-default-sparse-segtype=TYPE
                           default sparse segtype: thin/snapshot [thin]
-  --with-thin=TYPE        thin provisioning support: internal/shared/none
-                          [internal]
   --with-thin-check=PATH  thin_check tool: [autodetect]
   --with-thin-dump=PATH   thin_dump tool: [autodetect]
   --with-thin-repair=PATH thin_repair tool: [autodetect]
   --with-thin-restore=PATH
                           thin_restore tool: [autodetect]
-  --with-cache=TYPE       cache support: internal/shared/none [internal]
   --with-cache-check=PATH cache_check tool: [autodetect]
   --with-cache-dump=PATH  cache_dump tool: [autodetect]
   --with-cache-repair=PATH
@@ -8479,63 +8468,8 @@ $as_echo "#define CLUSTER_LOCKING_INTERNAL 1" >>confdefs.h
 esac
 
 ################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include snapshots" >&5
-$as_echo_n "checking whether to include snapshots... " >&6; }
-
-# Check whether --with-snapshots was given.
-if test "${with_snapshots+set}" = set; then :
-  withval=$with_snapshots; SNAPSHOTS=$withval
-else
-  SNAPSHOTS=internal
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $SNAPSHOTS" >&5
-$as_echo "$SNAPSHOTS" >&6; }
-
-case "$SNAPSHOTS" in
-  none|shared) ;;
-  internal)
-$as_echo "#define SNAPSHOT_INTERNAL 1" >>confdefs.h
- ;;
-  *) as_fn_error $? "--with-snapshots parameter invalid" "$LINENO" 5 ;;
-esac
-
-################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include mirrors" >&5
-$as_echo_n "checking whether to include mirrors... " >&6; }
-
-# Check whether --with-mirrors was given.
-if test "${with_mirrors+set}" = set; then :
-  withval=$with_mirrors; MIRRORS=$withval
-else
-  MIRRORS=internal
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $MIRRORS" >&5
-$as_echo "$MIRRORS" >&6; }
-
-case "$MIRRORS" in
-  none|shared) ;;
-  internal)
-$as_echo "#define MIRRORED_INTERNAL 1" >>confdefs.h
- ;;
-  *) as_fn_error $? "--with-mirrors parameter invalid" "$LINENO" 5 ;;
-esac
-
-################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include raid" >&5
-$as_echo_n "checking whether to include raid... " >&6; }
-
-# Check whether --with-raid was given.
-if test "${with_raid+set}" = set; then :
-  withval=$with_raid; RAID=$withval
-else
-  RAID=internal
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $RAID" >&5
-$as_echo "$RAID" >&6; }
-
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking raid configuration" >&5
+$as_echo_n "checking raid configuration... " >&6; }
 
 # Check whether --with-default-mirror-segtype was given.
 if test "${with_default_mirror_segtype+set}" = set; then :
@@ -8552,15 +8486,8 @@ else
   DEFAULT_RAID10_SEGTYPE="raid10"
 fi
 
-case "$RAID" in
-  none)  test "$DEFAULT_MIRROR_SEGTYPE" = "raid1" && DEFAULT_MIRROR_SEGTYPE="mirror"
-	test "$DEFAULT_RAID10_SEGTYPE" = "raid10" && DEFAULT_RAID10_SEGTYPE="mirror" ;;
-  shared) ;;
-  internal)
-$as_echo "#define RAID_INTERNAL 1" >>confdefs.h
- ;;
-  *) as_fn_error $? "--with-raid parameter invalid" "$LINENO" 5 ;;
-esac
+test "$DEFAULT_MIRROR_SEGTYPE" = "raid1" && DEFAULT_MIRROR_SEGTYPE="mirror"
+test "$DEFAULT_RAID10_SEGTYPE" = "raid10" && DEFAULT_RAID10_SEGTYPE="mirror"
 
 
 cat >>confdefs.h <<_ACEOF
@@ -8585,16 +8512,8 @@ fi
 
 
 ################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include thin provisioning" >&5
-$as_echo_n "checking whether to include thin provisioning... " >&6; }
-
-# Check whether --with-thin was given.
-if test "${with_thin+set}" = set; then :
-  withval=$with_thin; THIN=$withval
-else
-  THIN=internal
-fi
-
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking thin provisioning configuration" >&5
+$as_echo_n "checking thin provisioning configuration... " >&6; }
 
 # Check whether --with-thin-check was given.
 if test "${with_thin_check+set}" = set; then :
@@ -8628,18 +8547,7 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN" >&5
-$as_echo "$THIN" >&6; }
-
-case "$THIN" in
-  none)  test "$DEFAULT_SPARSE_SEGTYPE" = "thin" && DEFAULT_SPARSE_SEGTYPE="snapshot" ;;
-  shared) ;;
-  internal)
-$as_echo "#define THIN_INTERNAL 1" >>confdefs.h
- ;;
-  *) as_fn_error $? "--with-thin parameter invalid ($THIN)" "$LINENO" 5 ;;
-esac
-
+test "$DEFAULT_SPARSE_SEGTYPE" = "thin" && DEFAULT_SPARSE_SEGTYPE="snapshot"
 
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_SPARSE_SEGTYPE "$DEFAULT_SPARSE_SEGTYPE"
@@ -8656,11 +8564,9 @@ fi
 
 # Test if necessary thin tools are available
 # if not - use plain defaults and warn user
-case "$THIN" in
-  internal|shared)
-	# Empty means a config way to ignore thin checking
-	if test "$THIN_CHECK_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+# Empty means a config way to ignore thin checking
+if test "$THIN_CHECK_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}thin_check", so it can be a program name with args.
 set dummy ${ac_tool_prefix}thin_check; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -8758,33 +8664,33 @@ else
   THIN_CHECK_CMD="$ac_cv_path_THIN_CHECK_CMD"
 fi
 
-		if test -z "$THIN_CHECK_CMD"; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_check not found in path $PATH" >&5
+	if test -z "$THIN_CHECK_CMD"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_check not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: thin_check not found in path $PATH" >&2;}
-			THIN_CHECK_CMD=/usr/sbin/thin_check
-			THIN_CONFIGURE_WARN=y
-		fi
+		THIN_CHECK_CMD=/usr/sbin/thin_check
+		THIN_CONFIGURE_WARN=y
 	fi
-	if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
-		THIN_CHECK_VSN=`"$THIN_CHECK_CMD" -V 2>/dev/null`
-		THIN_CHECK_VSN_MAJOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $1}'`
-		THIN_CHECK_VSN_MINOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $2}'`
+fi
+if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
+	THIN_CHECK_VSN=`"$THIN_CHECK_CMD" -V 2>/dev/null`
+	THIN_CHECK_VSN_MAJOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $1}'`
+	THIN_CHECK_VSN_MINOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $2}'`
 
-		if test -z "$THIN_CHECK_VSN_MAJOR" -o -z "$THIN_CHECK_VSN_MINOR"; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $THIN_CHECK_CMD: Bad version \"$THIN_CHECK_VSN\" found" >&5
+	if test -z "$THIN_CHECK_VSN_MAJOR" -o -z "$THIN_CHECK_VSN_MINOR"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $THIN_CHECK_CMD: Bad version \"$THIN_CHECK_VSN\" found" >&5
 $as_echo "$as_me: WARNING: $THIN_CHECK_CMD: Bad version \"$THIN_CHECK_VSN\" found" >&2;}
-			THIN_CHECK_VERSION_WARN=y
-			THIN_CHECK_NEEDS_CHECK=no
-		elif test "$THIN_CHECK_VSN_MAJOR" -eq 0 -a "$THIN_CHECK_VSN_MINOR" -lt 3; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $THIN_CHECK_CMD: Old version \"$THIN_CHECK_VSN\" found" >&5
+		THIN_CHECK_VERSION_WARN=y
+		THIN_CHECK_NEEDS_CHECK=no
+	elif test "$THIN_CHECK_VSN_MAJOR" -eq 0 -a "$THIN_CHECK_VSN_MINOR" -lt 3; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $THIN_CHECK_CMD: Old version \"$THIN_CHECK_VSN\" found" >&5
 $as_echo "$as_me: WARNING: $THIN_CHECK_CMD: Old version \"$THIN_CHECK_VSN\" found" >&2;}
-			THIN_CHECK_VERSION_WARN=y
-			THIN_CHECK_NEEDS_CHECK=no
-		fi
+		THIN_CHECK_VERSION_WARN=y
+		THIN_CHECK_NEEDS_CHECK=no
 	fi
-	# Empty means a config way to ignore thin dumping
-	if test "$THIN_DUMP_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+fi
+# Empty means a config way to ignore thin dumping
+if test "$THIN_DUMP_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}thin_dump", so it can be a program name with args.
 set dummy ${ac_tool_prefix}thin_dump; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -8882,16 +8788,16 @@ else
   THIN_DUMP_CMD="$ac_cv_path_THIN_DUMP_CMD"
 fi
 
-		test -z "$THIN_DUMP_CMD" && {
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_dump not found in path $PATH" >&5
+	test -z "$THIN_DUMP_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_dump not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: thin_dump not found in path $PATH" >&2;}
-			THIN_DUMP_CMD=/usr/sbin/thin_dump
-			THIN_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore thin repairing
-	if test "$THIN_REPAIR_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+		THIN_DUMP_CMD=/usr/sbin/thin_dump
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin repairing
+if test "$THIN_REPAIR_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}thin_repair", so it can be a program name with args.
 set dummy ${ac_tool_prefix}thin_repair; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -8989,16 +8895,16 @@ else
   THIN_REPAIR_CMD="$ac_cv_path_THIN_REPAIR_CMD"
 fi
 
-		test -z "$THIN_REPAIR_CMD" && {
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_repair not found in path $PATH" >&5
+	test -z "$THIN_REPAIR_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_repair not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: thin_repair not found in path $PATH" >&2;}
-			THIN_REPAIR_CMD=/usr/sbin/thin_repair
-			THIN_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore thin restoring
-	if test "$THIN_RESTORE_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+		THIN_REPAIR_CMD=/usr/sbin/thin_repair
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin restoring
+if test "$THIN_RESTORE_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}thin_restore", so it can be a program name with args.
 set dummy ${ac_tool_prefix}thin_restore; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9096,26 +9002,23 @@ else
   THIN_RESTORE_CMD="$ac_cv_path_THIN_RESTORE_CMD"
 fi
 
-		test -z "$THIN_RESTORE_CMD" && {
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_restore not found in path $PATH" >&5
+	test -z "$THIN_RESTORE_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: thin_restore not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: thin_restore not found in path $PATH" >&2;}
-			THIN_RESTORE_CMD=/usr/sbin/thin_restore
-			THIN_CONFIGURE_WARN=y
-		}
-	fi
+		THIN_RESTORE_CMD=/usr/sbin/thin_restore
+		THIN_CONFIGURE_WARN=y
+	}
+fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether thin_check supports the needs-check flag" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether thin_check supports the needs-check flag" >&5
 $as_echo_n "checking whether thin_check supports the needs-check flag... " >&6; }
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN_CHECK_NEEDS_CHECK" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $THIN_CHECK_NEEDS_CHECK" >&5
 $as_echo "$THIN_CHECK_NEEDS_CHECK" >&6; }
-	if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
+if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
 
 $as_echo "#define THIN_CHECK_NEEDS_CHECK 1" >>confdefs.h
 
-	fi
-
-	;;
-esac
+fi
 
 
 cat >>confdefs.h <<_ACEOF
@@ -9142,16 +9045,8 @@ _ACEOF
 
 
 ################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include cache" >&5
-$as_echo_n "checking whether to include cache... " >&6; }
-
-# Check whether --with-cache was given.
-if test "${with_cache+set}" = set; then :
-  withval=$with_cache; CACHE=$withval
-else
-  CACHE="internal"
-fi
-
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking cache configuration" >&5
+$as_echo_n "checking cache configuration... " >&6; }
 
 # Check whether --with-cache-check was given.
 if test "${with_cache_check+set}" = set; then :
@@ -9184,16 +9079,10 @@ else
   CACHE_RESTORE_CMD="autodetect"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CACHE" >&5
-$as_echo "$CACHE" >&6; }
 
-case "$CACHE" in
- none|shared) ;;
- internal)
+
 $as_echo "#define CACHE_INTERNAL 1" >>confdefs.h
- ;;
- *) as_fn_error $? "--with-cache parameter invalid" "$LINENO" 5 ;;
-esac
+
 
 # Check whether --enable-cache_check_needs_check was given.
 if test "${enable_cache_check_needs_check+set}" = set; then :
@@ -9205,11 +9094,9 @@ fi
 
 # Test if necessary cache tools are available
 # if not - use plain defaults and warn user
-case "$CACHE" in
-  internal|shared)
-	# Empty means a config way to ignore cache checking
-	if test "$CACHE_CHECK_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+# Empty means a config way to ignore cache checking
+if test "$CACHE_CHECK_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cache_check", so it can be a program name with args.
 set dummy ${ac_tool_prefix}cache_check; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9307,45 +9194,45 @@ else
   CACHE_CHECK_CMD="$ac_cv_path_CACHE_CHECK_CMD"
 fi
 
-		if test -z "$CACHE_CHECK_CMD"; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_check not found in path $PATH" >&5
+	if test -z "$CACHE_CHECK_CMD"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_check not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: cache_check not found in path $PATH" >&2;}
-			CACHE_CHECK_CMD=/usr/sbin/cache_check
-			CACHE_CONFIGURE_WARN=y
-		fi
+		CACHE_CHECK_CMD=/usr/sbin/cache_check
+		CACHE_CONFIGURE_WARN=y
 	fi
-	if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
-		$CACHE_CHECK_CMD -V 2>/dev/null >conftest.tmp
-		read -r CACHE_CHECK_VSN < conftest.tmp
-		IFS=.- read -r CACHE_CHECK_VSN_MAJOR CACHE_CHECK_VSN_MINOR CACHE_CHECK_VSN_PATCH LEFTOVER < conftest.tmp
-		rm -f conftest.tmp
+fi
+if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
+	$CACHE_CHECK_CMD -V 2>/dev/null >conftest.tmp
+	read -r CACHE_CHECK_VSN < conftest.tmp
+	IFS=.- read -r CACHE_CHECK_VSN_MAJOR CACHE_CHECK_VSN_MINOR CACHE_CHECK_VSN_PATCH LEFTOVER < conftest.tmp
+	rm -f conftest.tmp
 
-		# Require version >= 0.5.4 for --clear-needs-check-flag
-		if test -z "$CACHE_CHECK_VSN_MAJOR" \
-			|| test -z "$CACHE_CHECK_VSN_MINOR" \
-			|| test -z "$CACHE_CHECK_VSN_PATCH"; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Bad version \"$CACHE_CHECK_VSN\" found" >&5
+	# Require version >= 0.5.4 for --clear-needs-check-flag
+	if test -z "$CACHE_CHECK_VSN_MAJOR" \
+		|| test -z "$CACHE_CHECK_VSN_MINOR" \
+		|| test -z "$CACHE_CHECK_VSN_PATCH"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Bad version \"$CACHE_CHECK_VSN\" found" >&5
 $as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Bad version \"$CACHE_CHECK_VSN\" found" >&2;}
+		CACHE_CHECK_VERSION_WARN=y
+		CACHE_CHECK_NEEDS_CHECK=no
+	elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
+		if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
+			|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&5
+$as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&2;}
 			CACHE_CHECK_VERSION_WARN=y
 			CACHE_CHECK_NEEDS_CHECK=no
-		elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
-			if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
-				|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&5
-$as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" found" >&2;}
-				CACHE_CHECK_VERSION_WARN=y
-				CACHE_CHECK_NEEDS_CHECK=no
-			fi
-			if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" does not support new cache format V2" >&5
+		fi
+		if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" does not support new cache format V2" >&5
 $as_echo "$as_me: WARNING: $CACHE_CHECK_CMD: Old version \"$CACHE_CHECK_VSN\" does not support new cache format V2" >&2;}
-				CACHE_CHECK_VERSION_WARN=y
-			fi
+			CACHE_CHECK_VERSION_WARN=y
 		fi
 	fi
-	# Empty means a config way to ignore cache dumping
-	if test "$CACHE_DUMP_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+fi
+# Empty means a config way to ignore cache dumping
+if test "$CACHE_DUMP_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cache_dump", so it can be a program name with args.
 set dummy ${ac_tool_prefix}cache_dump; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9443,16 +9330,16 @@ else
   CACHE_DUMP_CMD="$ac_cv_path_CACHE_DUMP_CMD"
 fi
 
-		test -z "$CACHE_DUMP_CMD" && {
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_dump not found in path $PATH" >&5
+	test -z "$CACHE_DUMP_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_dump not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: cache_dump not found in path $PATH" >&2;}
-			CACHE_DUMP_CMD=/usr/sbin/cache_dump
-			CACHE_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore cache repairing
-	if test "$CACHE_REPAIR_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+		CACHE_DUMP_CMD=/usr/sbin/cache_dump
+		CACHE_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore cache repairing
+if test "$CACHE_REPAIR_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cache_repair", so it can be a program name with args.
 set dummy ${ac_tool_prefix}cache_repair; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9550,16 +9437,16 @@ else
   CACHE_REPAIR_CMD="$ac_cv_path_CACHE_REPAIR_CMD"
 fi
 
-		test -z "$CACHE_REPAIR_CMD" && {
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_repair not found in path $PATH" >&5
+	test -z "$CACHE_REPAIR_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_repair not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: cache_repair not found in path $PATH" >&2;}
-			CACHE_REPAIR_CMD=/usr/sbin/cache_repair
-			CACHE_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore cache restoring
-	if test "$CACHE_RESTORE_CMD" = "autodetect"; then
-		if test -n "$ac_tool_prefix"; then
+		CACHE_REPAIR_CMD=/usr/sbin/cache_repair
+		CACHE_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore cache restoring
+if test "$CACHE_RESTORE_CMD" = "autodetect"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cache_restore", so it can be a program name with args.
 set dummy ${ac_tool_prefix}cache_restore; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -9657,25 +9544,23 @@ else
   CACHE_RESTORE_CMD="$ac_cv_path_CACHE_RESTORE_CMD"
 fi
 
-		test -z "$CACHE_RESTORE_CMD" && {
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_restore not found in path $PATH" >&5
+	test -z "$CACHE_RESTORE_CMD" && {
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cache_restore not found in path $PATH" >&5
 $as_echo "$as_me: WARNING: cache_restore not found in path $PATH" >&2;}
-			CACHE_RESTORE_CMD=/usr/sbin/cache_restore
-			CACHE_CONFIGURE_WARN=y
-		}
-	fi
+		CACHE_RESTORE_CMD=/usr/sbin/cache_restore
+		CACHE_CONFIGURE_WARN=y
+	}
+fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether cache_check supports the needs-check flag" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether cache_check supports the needs-check flag" >&5
 $as_echo_n "checking whether cache_check supports the needs-check flag... " >&6; }
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CACHE_CHECK_NEEDS_CHECK" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CACHE_CHECK_NEEDS_CHECK" >&5
 $as_echo "$CACHE_CHECK_NEEDS_CHECK" >&6; }
-	if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
+if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
 
 $as_echo "#define CACHE_CHECK_NEEDS_CHECK 1" >>confdefs.h
 
-	fi
-	;;
-esac
+fi
 
 
 cat >>confdefs.h <<_ACEOF
@@ -15671,7 +15556,7 @@ _ACEOF
 
 
 ################################################################################
-ac_config_files="$ac_config_files Makefile make.tmpl daemons/Makefile daemons/clvmd/Makefile daemons/cmirrord/Makefile daemons/dmeventd/Makefile daemons/dmeventd/libdevmapper-event.pc daemons/dmeventd/plugins/Makefile daemons/dmeventd/plugins/lvm2/Makefile daemons/dmeventd/plugins/raid/Makefile daemons/dmeventd/plugins/mirror/Makefile daemons/dmeventd/plugins/snapshot/Makefile daemons/dmeventd/plugins/thin/Makefile daemons/dmfilemapd/Makefile daemons/lvmdbusd/Makefile daemons/lvmdbusd/lvmdbusd daemons/lvmdbusd/lvmdb.py daemons/lvmdbusd/lvm_shell_proxy.py daemons/lvmdbusd/path.py daemons/lvmetad/Makefile daemons/lvmpolld/Makefile daemons/lvmlockd/Makefile conf/Makefile conf/example.conf conf/lvmlocal.conf conf/command_profile_template.profile conf/metadata_profile_template.profile include/.symlinks include/Makefile lib/Makefile lib/format1/Makefile lib/format_pool/Makefile lib/locking/Makefile lib/mirror/Makefile include/lvm-version.h lib/raid/Makefile lib/snapshot/Makefile lib/thin/Makefile lib/cache_segtype/Makefile libdaemon/Makefile libdaemon/client/Makefile libdaemon/server/Makefile libdm/Makefile libdm/libdevmapper.pc liblvm/Makefile liblvm/liblvm2app.pc man/Makefile po/Makefile python/Makefile python/setup.py scripts/blkdeactivate.sh scripts/blk_availability_init_red_hat scripts/blk_availability_systemd_red_hat.service scripts/clvmd_init_red_hat scripts/cmirrord_init_red_hat scripts/com.redhat.lvmdbus1.service scripts/dm_event_systemd_red_hat.service scripts/dm_event_systemd_red_hat.socket scripts/lvm2_cluster_activation_red_hat.sh scripts/lvm2_cluster_activation_systemd_red_hat.service scripts/lvm2_clvmd_systemd_red_hat.service scripts/lvm2_cmirrord_systemd_red_hat.service scripts/lvm2_lvmdbusd_systemd_red_hat.service scripts/lvm2_lvmetad_init_red_hat scripts/lvm2_lvmetad_systemd_red_hat.service scripts/lvm2_lvmetad_systemd_red_hat.socket scripts/lvm2_lvmpolld_init_red_hat scripts/lvm2_lvmpolld_systemd_red_hat.service scripts/lvm2_lvmpolld_systemd_red_hat.socket scripts/lvm2_lvmlockd_systemd_red_hat.service scripts/lvm2_lvmlocking_systemd_red_hat.service scripts/lvm2_monitoring_init_red_hat scripts/lvm2_monitoring_systemd_red_hat.service scripts/lvm2_pvscan_systemd_red_hat@.service scripts/lvm2_tmpfiles_red_hat.conf scripts/lvmdump.sh scripts/Makefile test/Makefile test/api/Makefile unit-test/Makefile tools/Makefile udev/Makefile"
+ac_config_files="$ac_config_files Makefile make.tmpl daemons/Makefile daemons/clvmd/Makefile daemons/cmirrord/Makefile daemons/dmeventd/Makefile daemons/dmeventd/libdevmapper-event.pc daemons/dmeventd/plugins/Makefile daemons/dmeventd/plugins/lvm2/Makefile daemons/dmeventd/plugins/raid/Makefile daemons/dmeventd/plugins/mirror/Makefile daemons/dmeventd/plugins/snapshot/Makefile daemons/dmeventd/plugins/thin/Makefile daemons/dmfilemapd/Makefile daemons/lvmdbusd/Makefile daemons/lvmdbusd/lvmdbusd daemons/lvmdbusd/lvmdb.py daemons/lvmdbusd/lvm_shell_proxy.py daemons/lvmdbusd/path.py daemons/lvmetad/Makefile daemons/lvmpolld/Makefile daemons/lvmlockd/Makefile conf/Makefile conf/example.conf conf/lvmlocal.conf conf/command_profile_template.profile conf/metadata_profile_template.profile include/.symlinks include/Makefile lib/Makefile lib/format1/Makefile lib/format_pool/Makefile lib/locking/Makefile include/lvm-version.h libdaemon/Makefile libdaemon/client/Makefile libdaemon/server/Makefile libdm/Makefile libdm/libdevmapper.pc liblvm/Makefile liblvm/liblvm2app.pc man/Makefile po/Makefile python/Makefile python/setup.py scripts/blkdeactivate.sh scripts/blk_availability_init_red_hat scripts/blk_availability_systemd_red_hat.service scripts/clvmd_init_red_hat scripts/cmirrord_init_red_hat scripts/com.redhat.lvmdbus1.service scripts/dm_event_systemd_red_hat.service scripts/dm_event_systemd_red_hat.socket scripts/lvm2_cluster_activation_red_hat.sh scripts/lvm2_cluster_activation_systemd_red_hat.service scripts/lvm2_clvmd_systemd_red_hat.service scripts/lvm2_cmirrord_systemd_red_hat.service scripts/lvm2_lvmdbusd_systemd_red_hat.service scripts/lvm2_lvmetad_init_red_hat scripts/lvm2_lvmetad_systemd_red_hat.service scripts/lvm2_lvmetad_systemd_red_hat.socket scripts/lvm2_lvmpolld_init_red_hat scripts/lvm2_lvmpolld_systemd_red_hat.service scripts/lvm2_lvmpolld_systemd_red_hat.socket scripts/lvm2_lvmlockd_systemd_red_hat.service scripts/lvm2_lvmlocking_systemd_red_hat.service scripts/lvm2_monitoring_init_red_hat scripts/lvm2_monitoring_systemd_red_hat.service scripts/lvm2_pvscan_systemd_red_hat@.service scripts/lvm2_tmpfiles_red_hat.conf scripts/lvmdump.sh scripts/Makefile test/Makefile test/api/Makefile unit-test/Makefile tools/Makefile udev/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -16399,12 +16284,7 @@ do
     "lib/format1/Makefile") CONFIG_FILES="$CONFIG_FILES lib/format1/Makefile" ;;
     "lib/format_pool/Makefile") CONFIG_FILES="$CONFIG_FILES lib/format_pool/Makefile" ;;
     "lib/locking/Makefile") CONFIG_FILES="$CONFIG_FILES lib/locking/Makefile" ;;
-    "lib/mirror/Makefile") CONFIG_FILES="$CONFIG_FILES lib/mirror/Makefile" ;;
     "include/lvm-version.h") CONFIG_FILES="$CONFIG_FILES include/lvm-version.h" ;;
-    "lib/raid/Makefile") CONFIG_FILES="$CONFIG_FILES lib/raid/Makefile" ;;
-    "lib/snapshot/Makefile") CONFIG_FILES="$CONFIG_FILES lib/snapshot/Makefile" ;;
-    "lib/thin/Makefile") CONFIG_FILES="$CONFIG_FILES lib/thin/Makefile" ;;
-    "lib/cache_segtype/Makefile") CONFIG_FILES="$CONFIG_FILES lib/cache_segtype/Makefile" ;;
     "libdaemon/Makefile") CONFIG_FILES="$CONFIG_FILES libdaemon/Makefile" ;;
     "libdaemon/client/Makefile") CONFIG_FILES="$CONFIG_FILES libdaemon/client/Makefile" ;;
     "libdaemon/server/Makefile") CONFIG_FILES="$CONFIG_FILES libdaemon/server/Makefile" ;;

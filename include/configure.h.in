@@ -656,9 +656,6 @@
    <sysmacros.h>. */
 #undef MAJOR_IN_SYSMACROS
 
-/* Define to 1 to include built-in support for mirrors. */
-#undef MIRRORED_INTERNAL
-
 /* The path to 'modprobe', if available. */
 #undef MODPROBE_CMD
 
@@ -689,9 +686,6 @@
 /* Define to 1 to include built-in support for GFS pool metadata. */
 #undef POOL_INTERNAL
 
-/* Define to 1 to include built-in support for raid. */
-#undef RAID_INTERNAL
-
 /* Define to 1 to include the LVM readline shell. */
 #undef READLINE_SUPPORT
 
@@ -706,9 +700,6 @@
 
 /* Define to the type of arg 5 for `select'. */
 #undef SELECT_TYPE_ARG5
-
-/* Define to 1 to include built-in support for snapshots. */
-#undef SNAPSHOT_INTERNAL
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -736,9 +727,6 @@
 
 /* The path to 'thin_dump', if available. */
 #undef THIN_DUMP_CMD
-
-/* Define to 1 to include built-in support for thin provisioning. */
-#undef THIN_INTERNAL
 
 /* The path to 'thin_repair', if available. */
 #undef THIN_REPAIR_CMD

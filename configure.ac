@@ -350,46 +350,8 @@ case "$CLUSTER" in
 esac
 
 ################################################################################
-dnl -- snapshots inclusion type
-AC_MSG_CHECKING(whether to include snapshots)
-AC_ARG_WITH(snapshots,
-	    AC_HELP_STRING([--with-snapshots=TYPE],
-			   [snapshot support: internal/shared/none [internal]]),
-	    SNAPSHOTS=$withval, SNAPSHOTS=internal)
-AC_MSG_RESULT($SNAPSHOTS)
-
-case "$SNAPSHOTS" in
-  none|shared) ;;
-  internal) AC_DEFINE([SNAPSHOT_INTERNAL], 1,
-		      [Define to 1 to include built-in support for snapshots.]) ;;
-  *) AC_MSG_ERROR([--with-snapshots parameter invalid]) ;;
-esac
-
-################################################################################
-dnl -- mirrors inclusion type
-AC_MSG_CHECKING(whether to include mirrors)
-AC_ARG_WITH(mirrors,
-	    AC_HELP_STRING([--with-mirrors=TYPE],
-			   [mirror support: internal/shared/none [internal]]),
-	    MIRRORS=$withval, MIRRORS=internal)
-AC_MSG_RESULT($MIRRORS)
-
-case "$MIRRORS" in
-  none|shared) ;;
-  internal) AC_DEFINE([MIRRORED_INTERNAL], 1,
-		      [Define to 1 to include built-in support for mirrors.]) ;;
-  *) AC_MSG_ERROR([--with-mirrors parameter invalid]) ;;
-esac
-
-################################################################################
 dnl -- raid inclusion type
-AC_MSG_CHECKING(whether to include raid)
-AC_ARG_WITH(raid,
-	    AC_HELP_STRING([--with-raid=TYPE],
-			   [raid support: internal/shared/none [internal]]),
-	    RAID=$withval, RAID=internal)
-AC_MSG_RESULT($RAID)
-
+AC_MSG_CHECKING(raid configuration)
 AC_ARG_WITH(default-mirror-segtype,
 	    AC_HELP_STRING([--with-default-mirror-segtype=TYPE],
 			   [default mirror segtype: raid1/mirror [raid1]]),
@@ -398,14 +360,8 @@ AC_ARG_WITH(default-raid10-segtype,
 	    AC_HELP_STRING([--with-default-raid10-segtype=TYPE],
 			   [default mirror segtype: raid10/mirror [raid10]]),
 			   DEFAULT_RAID10_SEGTYPE=$withval, DEFAULT_RAID10_SEGTYPE="raid10")
-case "$RAID" in
-  none)  test "$DEFAULT_MIRROR_SEGTYPE" = "raid1" && DEFAULT_MIRROR_SEGTYPE="mirror"
-	test "$DEFAULT_RAID10_SEGTYPE" = "raid10" && DEFAULT_RAID10_SEGTYPE="mirror" ;;
-  shared) ;;
-  internal) AC_DEFINE([RAID_INTERNAL], 1,
-		      [Define to 1 to include built-in support for raid.]) ;;
-  *) AC_MSG_ERROR([--with-raid parameter invalid]) ;;
-esac
+test "$DEFAULT_MIRROR_SEGTYPE" = "raid1" && DEFAULT_MIRROR_SEGTYPE="mirror"
+test "$DEFAULT_RAID10_SEGTYPE" = "raid10" && DEFAULT_RAID10_SEGTYPE="mirror"
 
 AC_DEFINE_UNQUOTED([DEFAULT_MIRROR_SEGTYPE], ["$DEFAULT_MIRROR_SEGTYPE"],
 		   [Default segtype used for mirror volumes.])
@@ -421,11 +377,7 @@ AC_ARG_WITH(default-sparse-segtype,
 
 ################################################################################
 dnl -- thin provisioning
-AC_MSG_CHECKING(whether to include thin provisioning)
-AC_ARG_WITH(thin,
-	    AC_HELP_STRING([--with-thin=TYPE],
-			   [thin provisioning support: internal/shared/none [internal]]),
-	    THIN=$withval, THIN=internal)
+AC_MSG_CHECKING(thin provisioning configuration)
 AC_ARG_WITH(thin-check,
 	    AC_HELP_STRING([--with-thin-check=PATH],
 			   [thin_check tool: [autodetect]]),
@@ -443,16 +395,7 @@ AC_ARG_WITH(thin-restore,
 			   [thin_restore tool: [autodetect]]),
 			   THIN_RESTORE_CMD=$withval, THIN_RESTORE_CMD="autodetect")
 
-AC_MSG_RESULT($THIN)
-
-case "$THIN" in
-  none)  test "$DEFAULT_SPARSE_SEGTYPE" = "thin" && DEFAULT_SPARSE_SEGTYPE="snapshot" ;;
-  shared) ;;
-  internal) AC_DEFINE([THIN_INTERNAL], 1,
-		      [Define to 1 to include built-in support for thin provisioning.]) ;;
-  *) AC_MSG_ERROR([--with-thin parameter invalid ($THIN)]) ;;
-esac
-
+test "$DEFAULT_SPARSE_SEGTYPE" = "thin" && DEFAULT_SPARSE_SEGTYPE="snapshot"
 AC_DEFINE_UNQUOTED([DEFAULT_SPARSE_SEGTYPE], ["$DEFAULT_SPARSE_SEGTYPE"],
 		   [Default segtype used for sparse volumes.])
 
@@ -464,68 +407,63 @@ AC_ARG_ENABLE(thin_check_needs_check,
 
 # Test if necessary thin tools are available
 # if not - use plain defaults and warn user
-case "$THIN" in
-  internal|shared)
-	# Empty means a config way to ignore thin checking
-	if test "$THIN_CHECK_CMD" = "autodetect"; then
-		AC_PATH_TOOL(THIN_CHECK_CMD, thin_check)
-		if test -z "$THIN_CHECK_CMD"; then
-			AC_MSG_WARN([thin_check not found in path $PATH])
-			THIN_CHECK_CMD=/usr/sbin/thin_check
-			THIN_CONFIGURE_WARN=y
-		fi
+# Empty means a config way to ignore thin checking
+if test "$THIN_CHECK_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_CHECK_CMD, thin_check)
+	if test -z "$THIN_CHECK_CMD"; then
+		AC_MSG_WARN([thin_check not found in path $PATH])
+		THIN_CHECK_CMD=/usr/sbin/thin_check
+		THIN_CONFIGURE_WARN=y
 	fi
-	if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
-		THIN_CHECK_VSN=`"$THIN_CHECK_CMD" -V 2>/dev/null`
-		THIN_CHECK_VSN_MAJOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $1}'`
-		THIN_CHECK_VSN_MINOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $2}'`
+fi
+if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
+	THIN_CHECK_VSN=`"$THIN_CHECK_CMD" -V 2>/dev/null`
+	THIN_CHECK_VSN_MAJOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $1}'`
+	THIN_CHECK_VSN_MINOR=`echo "$THIN_CHECK_VSN" | $AWK -F '.' '{print $2}'`
 
-		if test -z "$THIN_CHECK_VSN_MAJOR" -o -z "$THIN_CHECK_VSN_MINOR"; then
-			AC_MSG_WARN([$THIN_CHECK_CMD: Bad version "$THIN_CHECK_VSN" found])
-			THIN_CHECK_VERSION_WARN=y
-			THIN_CHECK_NEEDS_CHECK=no
-		elif test "$THIN_CHECK_VSN_MAJOR" -eq 0 -a "$THIN_CHECK_VSN_MINOR" -lt 3; then
-			AC_MSG_WARN([$THIN_CHECK_CMD: Old version "$THIN_CHECK_VSN" found])
-			THIN_CHECK_VERSION_WARN=y
-			THIN_CHECK_NEEDS_CHECK=no
-		fi
+	if test -z "$THIN_CHECK_VSN_MAJOR" -o -z "$THIN_CHECK_VSN_MINOR"; then
+		AC_MSG_WARN([$THIN_CHECK_CMD: Bad version "$THIN_CHECK_VSN" found])
+		THIN_CHECK_VERSION_WARN=y
+		THIN_CHECK_NEEDS_CHECK=no
+	elif test "$THIN_CHECK_VSN_MAJOR" -eq 0 -a "$THIN_CHECK_VSN_MINOR" -lt 3; then
+		AC_MSG_WARN([$THIN_CHECK_CMD: Old version "$THIN_CHECK_VSN" found])
+		THIN_CHECK_VERSION_WARN=y
+		THIN_CHECK_NEEDS_CHECK=no
 	fi
-	# Empty means a config way to ignore thin dumping
-	if test "$THIN_DUMP_CMD" = "autodetect"; then
-		AC_PATH_TOOL(THIN_DUMP_CMD, thin_dump)
-		test -z "$THIN_DUMP_CMD" && {
-			AC_MSG_WARN(thin_dump not found in path $PATH)
-			THIN_DUMP_CMD=/usr/sbin/thin_dump
-			THIN_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore thin repairing
-	if test "$THIN_REPAIR_CMD" = "autodetect"; then
-		AC_PATH_TOOL(THIN_REPAIR_CMD, thin_repair)
-		test -z "$THIN_REPAIR_CMD" && {
-			AC_MSG_WARN(thin_repair not found in path $PATH)
-			THIN_REPAIR_CMD=/usr/sbin/thin_repair
-			THIN_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore thin restoring
-	if test "$THIN_RESTORE_CMD" = "autodetect"; then
-		AC_PATH_TOOL(THIN_RESTORE_CMD, thin_restore)
-		test -z "$THIN_RESTORE_CMD" && {
-			AC_MSG_WARN(thin_restore not found in path $PATH)
-			THIN_RESTORE_CMD=/usr/sbin/thin_restore
-			THIN_CONFIGURE_WARN=y
-		}
-	fi
+fi
+# Empty means a config way to ignore thin dumping
+if test "$THIN_DUMP_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_DUMP_CMD, thin_dump)
+	test -z "$THIN_DUMP_CMD" && {
+		AC_MSG_WARN(thin_dump not found in path $PATH)
+		THIN_DUMP_CMD=/usr/sbin/thin_dump
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin repairing
+if test "$THIN_REPAIR_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_REPAIR_CMD, thin_repair)
+	test -z "$THIN_REPAIR_CMD" && {
+		AC_MSG_WARN(thin_repair not found in path $PATH)
+		THIN_REPAIR_CMD=/usr/sbin/thin_repair
+		THIN_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore thin restoring
+if test "$THIN_RESTORE_CMD" = "autodetect"; then
+	AC_PATH_TOOL(THIN_RESTORE_CMD, thin_restore)
+	test -z "$THIN_RESTORE_CMD" && {
+		AC_MSG_WARN(thin_restore not found in path $PATH)
+		THIN_RESTORE_CMD=/usr/sbin/thin_restore
+		THIN_CONFIGURE_WARN=y
+	}
+fi
 
-	AC_MSG_CHECKING([whether thin_check supports the needs-check flag])
-	AC_MSG_RESULT([$THIN_CHECK_NEEDS_CHECK])
-	if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
-		AC_DEFINE([THIN_CHECK_NEEDS_CHECK], 1, [Define to 1 if the external 'thin_check' tool requires the --clear-needs-check-flag option])
-	fi
-
-	;;
-esac
+AC_MSG_CHECKING([whether thin_check supports the needs-check flag])
+AC_MSG_RESULT([$THIN_CHECK_NEEDS_CHECK])
+if test "$THIN_CHECK_NEEDS_CHECK" = yes; then
+	AC_DEFINE([THIN_CHECK_NEEDS_CHECK], 1, [Define to 1 if the external 'thin_check' tool requires the --clear-needs-check-flag option])
+fi
 
 AC_DEFINE_UNQUOTED([THIN_CHECK_CMD], ["$THIN_CHECK_CMD"],
 		   [The path to 'thin_check', if available.])
@@ -541,11 +479,7 @@ AC_DEFINE_UNQUOTED([THIN_RESTORE_CMD], ["$THIN_RESTORE_CMD"],
 
 ################################################################################
 dnl -- cache inclusion type
-AC_MSG_CHECKING(whether to include cache)
-AC_ARG_WITH(cache,
-	    AC_HELP_STRING([--with-cache=TYPE],
-			   [cache support: internal/shared/none [internal]]),
-			   CACHE=$withval, CACHE="internal")
+AC_MSG_CHECKING(cache configuration)
 AC_ARG_WITH(cache-check,
 	    AC_HELP_STRING([--with-cache-check=PATH],
 			   [cache_check tool: [autodetect]]),
@@ -562,13 +496,8 @@ AC_ARG_WITH(cache-restore,
 	    AC_HELP_STRING([--with-cache-restore=PATH],
 			   [cache_restore tool: [autodetect]]),
 			   CACHE_RESTORE_CMD=$withval, CACHE_RESTORE_CMD="autodetect")
-AC_MSG_RESULT($CACHE)
 
-case "$CACHE" in
- none|shared) ;;
- internal) AC_DEFINE([CACHE_INTERNAL], 1, [Define to 1 to include built-in support for cache.]) ;;
- *) AC_MSG_ERROR([--with-cache parameter invalid]) ;;
-esac
+AC_DEFINE([CACHE_INTERNAL], 1, [Define to 1 to include built-in support for cache.])
 
 dnl -- cache_check needs-check flag
 AC_ARG_ENABLE(cache_check_needs_check,
@@ -578,78 +507,74 @@ AC_ARG_ENABLE(cache_check_needs_check,
 
 # Test if necessary cache tools are available
 # if not - use plain defaults and warn user
-case "$CACHE" in
-  internal|shared)
-	# Empty means a config way to ignore cache checking
-	if test "$CACHE_CHECK_CMD" = "autodetect"; then
-		AC_PATH_TOOL(CACHE_CHECK_CMD, cache_check)
-		if test -z "$CACHE_CHECK_CMD"; then
-			AC_MSG_WARN([cache_check not found in path $PATH])
-			CACHE_CHECK_CMD=/usr/sbin/cache_check
-			CACHE_CONFIGURE_WARN=y
-		fi
+# Empty means a config way to ignore cache checking
+if test "$CACHE_CHECK_CMD" = "autodetect"; then
+	AC_PATH_TOOL(CACHE_CHECK_CMD, cache_check)
+	if test -z "$CACHE_CHECK_CMD"; then
+		AC_MSG_WARN([cache_check not found in path $PATH])
+		CACHE_CHECK_CMD=/usr/sbin/cache_check
+		CACHE_CONFIGURE_WARN=y
 	fi
-	if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
-		$CACHE_CHECK_CMD -V 2>/dev/null >conftest.tmp
-		read -r CACHE_CHECK_VSN < conftest.tmp
-		IFS=.- read -r CACHE_CHECK_VSN_MAJOR CACHE_CHECK_VSN_MINOR CACHE_CHECK_VSN_PATCH LEFTOVER < conftest.tmp
-		rm -f conftest.tmp
+fi
+if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
+	$CACHE_CHECK_CMD -V 2>/dev/null >conftest.tmp
+	read -r CACHE_CHECK_VSN < conftest.tmp
+	IFS=.- read -r CACHE_CHECK_VSN_MAJOR CACHE_CHECK_VSN_MINOR CACHE_CHECK_VSN_PATCH LEFTOVER < conftest.tmp
+	rm -f conftest.tmp
 
-		# Require version >= 0.5.4 for --clear-needs-check-flag
-		if test -z "$CACHE_CHECK_VSN_MAJOR" \
-			|| test -z "$CACHE_CHECK_VSN_MINOR" \
-			|| test -z "$CACHE_CHECK_VSN_PATCH"; then
-			AC_MSG_WARN([$CACHE_CHECK_CMD: Bad version "$CACHE_CHECK_VSN" found])
+	# Require version >= 0.5.4 for --clear-needs-check-flag
+	if test -z "$CACHE_CHECK_VSN_MAJOR" \
+		|| test -z "$CACHE_CHECK_VSN_MINOR" \
+		|| test -z "$CACHE_CHECK_VSN_PATCH"; then
+		AC_MSG_WARN([$CACHE_CHECK_CMD: Bad version "$CACHE_CHECK_VSN" found])
+		CACHE_CHECK_VERSION_WARN=y
+		CACHE_CHECK_NEEDS_CHECK=no
+	elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
+		if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
+			|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
+			AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" found])
 			CACHE_CHECK_VERSION_WARN=y
 			CACHE_CHECK_NEEDS_CHECK=no
-		elif test "$CACHE_CHECK_VSN_MAJOR" -eq 0 ; then
-			if test "$CACHE_CHECK_VSN_MINOR" -lt 5 \
-				|| test "$CACHE_CHECK_VSN_MINOR" -eq 5 -a "$CACHE_CHECK_VSN_PATCH" -lt 4; then
-				AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" found])
-				CACHE_CHECK_VERSION_WARN=y
-				CACHE_CHECK_NEEDS_CHECK=no
-			fi
-			if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
-				AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" does not support new cache format V2])
-				CACHE_CHECK_VERSION_WARN=y
-			fi
+		fi
+		if test "$CACHE_CHECK_VSN_MINOR" -lt 7 ; then
+			AC_MSG_WARN([$CACHE_CHECK_CMD: Old version "$CACHE_CHECK_VSN" does not support new cache format V2])
+			CACHE_CHECK_VERSION_WARN=y
 		fi
 	fi
-	# Empty means a config way to ignore cache dumping
-	if test "$CACHE_DUMP_CMD" = "autodetect"; then
-		AC_PATH_TOOL(CACHE_DUMP_CMD, cache_dump)
-		test -z "$CACHE_DUMP_CMD" && {
-			AC_MSG_WARN(cache_dump not found in path $PATH)
-			CACHE_DUMP_CMD=/usr/sbin/cache_dump
-			CACHE_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore cache repairing
-	if test "$CACHE_REPAIR_CMD" = "autodetect"; then
-		AC_PATH_TOOL(CACHE_REPAIR_CMD, cache_repair)
-		test -z "$CACHE_REPAIR_CMD" && {
-			AC_MSG_WARN(cache_repair not found in path $PATH)
-			CACHE_REPAIR_CMD=/usr/sbin/cache_repair
-			CACHE_CONFIGURE_WARN=y
-		}
-	fi
-	# Empty means a config way to ignore cache restoring
-	if test "$CACHE_RESTORE_CMD" = "autodetect"; then
-		AC_PATH_TOOL(CACHE_RESTORE_CMD, cache_restore)
-		test -z "$CACHE_RESTORE_CMD" && {
-			AC_MSG_WARN(cache_restore not found in path $PATH)
-			CACHE_RESTORE_CMD=/usr/sbin/cache_restore
-			CACHE_CONFIGURE_WARN=y
-		}
-	fi
+fi
+# Empty means a config way to ignore cache dumping
+if test "$CACHE_DUMP_CMD" = "autodetect"; then
+	AC_PATH_TOOL(CACHE_DUMP_CMD, cache_dump)
+	test -z "$CACHE_DUMP_CMD" && {
+		AC_MSG_WARN(cache_dump not found in path $PATH)
+		CACHE_DUMP_CMD=/usr/sbin/cache_dump
+		CACHE_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore cache repairing
+if test "$CACHE_REPAIR_CMD" = "autodetect"; then
+	AC_PATH_TOOL(CACHE_REPAIR_CMD, cache_repair)
+	test -z "$CACHE_REPAIR_CMD" && {
+		AC_MSG_WARN(cache_repair not found in path $PATH)
+		CACHE_REPAIR_CMD=/usr/sbin/cache_repair
+		CACHE_CONFIGURE_WARN=y
+	}
+fi
+# Empty means a config way to ignore cache restoring
+if test "$CACHE_RESTORE_CMD" = "autodetect"; then
+	AC_PATH_TOOL(CACHE_RESTORE_CMD, cache_restore)
+	test -z "$CACHE_RESTORE_CMD" && {
+		AC_MSG_WARN(cache_restore not found in path $PATH)
+		CACHE_RESTORE_CMD=/usr/sbin/cache_restore
+		CACHE_CONFIGURE_WARN=y
+	}
+fi
 
-	AC_MSG_CHECKING([whether cache_check supports the needs-check flag])
-	AC_MSG_RESULT([$CACHE_CHECK_NEEDS_CHECK])
-	if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
-		AC_DEFINE([CACHE_CHECK_NEEDS_CHECK], 1, [Define to 1 if the external 'cache_check' tool requires the --clear-needs-check-flag option])
-	fi
-	;;
-esac
+AC_MSG_CHECKING([whether cache_check supports the needs-check flag])
+AC_MSG_RESULT([$CACHE_CHECK_NEEDS_CHECK])
+if test "$CACHE_CHECK_NEEDS_CHECK" = yes; then
+	AC_DEFINE([CACHE_CHECK_NEEDS_CHECK], 1, [Define to 1 if the external 'cache_check' tool requires the --clear-needs-check-flag option])
+fi
 
 AC_DEFINE_UNQUOTED([CACHE_CHECK_CMD], ["$CACHE_CHECK_CMD"],
 		   [The path to 'cache_check', if available.])
@@ -2189,12 +2114,7 @@ lib/Makefile
 lib/format1/Makefile
 lib/format_pool/Makefile
 lib/locking/Makefile
-lib/mirror/Makefile
 include/lvm-version.h
-lib/raid/Makefile
-lib/snapshot/Makefile
-lib/thin/Makefile
-lib/cache_segtype/Makefile
 libdaemon/Makefile
 libdaemon/client/Makefile
 libdaemon/server/Makefile
