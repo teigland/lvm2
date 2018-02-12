@@ -15,7 +15,7 @@ test/unit/unit-test from wherever you want.
 Listing tests
 -------------
 
-Every test has a symbolic path associated with it.  Must like file paths they
+Every test has a symbolic path associated with it.  Just like file paths they
 are split into components separated by '/'s.  The 'list' command will show you
 a tree of these tests, along with some description text.
 
@@ -253,6 +253,5 @@ static inline void register_all_tests(struct dm_list *suites)
 	...
 }
 
-Finally add your test file to the Makefile.in and rerun configure (with
---enable-testing of course).
+Finally add your test file to the Makefile.in and rerun configure.
 
