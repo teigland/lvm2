@@ -36,14 +36,6 @@
 #include "sharedlib.h"
 #endif
 
-#ifdef LVM1_INTERNAL
-#include "format1.h"
-#endif
-
-#ifdef POOL_INTERNAL
-#include "format_pool.h"
-#endif
-
 #include <locale.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>

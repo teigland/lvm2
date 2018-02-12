@@ -304,39 +304,6 @@ AC_DEFINE_UNQUOTED(DEFAULT_FALLBACK_TO_LVM1, [$DEFAULT_FALLBACK_TO_LVM1],
 		   [Fall back to LVM1 by default if device-mapper is missing from the kernel.])
 
 ################################################################################
-dnl -- format1 inclusion type
-AC_MSG_CHECKING(whether to include support for lvm1 metadata)
-AC_ARG_WITH(lvm1,
-	    AC_HELP_STRING([--with-lvm1=TYPE],
-			   [LVM1 metadata support: internal/shared/none [internal]]),
-	    LVM1=$withval, LVM1=internal)
-
-AC_MSG_RESULT($LVM1)
-
-case "$LVM1" in
-  none|shared) ;;
-  internal) AC_DEFINE([LVM1_INTERNAL], 1,
-		      [Define to 1 to include built-in support for LVM1 metadata.]) ;;
-  *) AC_MSG_ERROR([--with-lvm1 parameter invalid]) ;;
-esac
-
-################################################################################
-dnl -- format_pool inclusion type
-AC_MSG_CHECKING(whether to include support for GFS pool metadata)
-AC_ARG_WITH(pool,
-	    AC_HELP_STRING([--with-pool=TYPE],
-			   [GFS pool read-only support: internal/shared/none [internal]]),
-	    POOL=$withval, POOL=internal)
-AC_MSG_RESULT($POOL)
-
-case "$POOL" in
-  none|shared) ;;
-  internal) AC_DEFINE([POOL_INTERNAL], 1,
-		      [Define to 1 to include built-in support for GFS pool metadata.]) ;;
-  *) AC_MSG_ERROR([--with-pool parameter invalid])
-esac
-
-################################################################################
 dnl -- cluster_locking inclusion type
 AC_MSG_CHECKING(whether to include support for cluster locking)
 AC_ARG_WITH(cluster,
@@ -2166,8 +2133,6 @@ conf/metadata_profile_template.profile
 include/.symlinks
 include/Makefile
 lib/Makefile
-lib/format1/Makefile
-lib/format_pool/Makefile
 lib/locking/Makefile
 include/lvm-version.h
 libdaemon/Makefile

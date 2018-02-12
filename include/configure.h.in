@@ -624,9 +624,6 @@
    device-mapper is missing from the kernel */
 #undef LVM1_FALLBACK
 
-/* Define to 1 to include built-in support for LVM1 metadata. */
-#undef LVM1_INTERNAL
-
 /* Path to lvmetad pidfile. */
 #undef LVMETAD_PIDFILE
 
@@ -685,9 +682,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* Define to 1 to include built-in support for GFS pool metadata. */
-#undef POOL_INTERNAL
 
 /* Define to 1 to include the LVM readline shell. */
 #undef READLINE_SUPPORT

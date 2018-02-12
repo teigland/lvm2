@@ -23,7 +23,6 @@
 
 #include "stub.h"
 #include "last-path-component.h"
-#include "format1.h"
 
 #include <signal.h>
 #include <sys/stat.h>
@@ -2902,13 +2901,6 @@ int lvm_run_command(struct cmd_context *cmd, int argc, char **argv)
 		if (ret != ECMD_PROCESSED)
 			stack;
 		goto out;
-	}
-
-	if (!strcmp(cmd->fmt->name, FMT_LVM1_NAME) && lvmetad_used()) {
-		log_warn("WARNING: Disabling lvmetad cache which does not support obsolete metadata.");
-		lvmetad_set_disabled(cmd, LVMETAD_DISABLE_REASON_LVM1);
-		log_warn("WARNING: Not using lvmetad because lvm1 format is used.");
-		lvmetad_make_unused(cmd);
 	}
 
 	if (cmd->command->command_enum == lvconvert_repair_CMD) {

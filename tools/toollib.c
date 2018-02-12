@@ -14,7 +14,6 @@
  */
 
 #include "tools.h"
-#include "format1.h"
 #include "format-text.h"
 
 #include <sys/stat.h>
@@ -5065,10 +5064,7 @@ static int _pvcreate_check_single(struct cmd_context *cmd,
 			pd->is_orphan_pv = 1;
 		}
 
-		if (!strcmp(vg->name, FMT_LVM1_ORPHAN_VG_NAME))
-			pp->orphan_vg_name = FMT_LVM1_ORPHAN_VG_NAME;
-		else
-			pp->orphan_vg_name = FMT_TEXT_ORPHAN_VG_NAME;
+		pp->orphan_vg_name = FMT_TEXT_ORPHAN_VG_NAME;
 	} else {
 		log_debug("Found pvcreate arg %s: device is not a PV.", pd->name);
 		/* Device is not a PV. */
@@ -5314,10 +5310,7 @@ static int _pvremove_check_single(struct cmd_context *cmd,
 			pd->is_orphan_pv = 1;
 		}
 
-		if (!strcmp(vg->name, FMT_LVM1_ORPHAN_VG_NAME))
-			pp->orphan_vg_name = FMT_LVM1_ORPHAN_VG_NAME;
-		else
-			pp->orphan_vg_name = FMT_TEXT_ORPHAN_VG_NAME;
+		pp->orphan_vg_name = FMT_TEXT_ORPHAN_VG_NAME;
 	} else {
 		log_debug("Found pvremove arg %s: device is not a PV.", pd->name);
 		/* Device is not a PV. */

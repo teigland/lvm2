@@ -1,6 +1,8 @@
 Version 2.03.000 - <unreleased>
 ===============================
 
+  Removed support for LVM1 format metadata.
+  Removed support for GFS pool format metadata.
   --with-snapshots switch for ./configure has been removed.
   --with-mirrors switch for ./configure has been removed.
   --with-raid switch for ./configure has been removed.
