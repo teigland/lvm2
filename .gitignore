@@ -33,6 +33,8 @@ make.tmpl
 /tags
 /tmp/
 
+include/configure.h
+include/lvm-version.h
 
 tools/man-generator
 tools/man-generator.c
