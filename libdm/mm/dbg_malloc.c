@@ -18,14 +18,13 @@
 #ifdef VALGRIND_POOL
 #include "memcheck.h"
 #endif
+
 #include <assert.h>
 #include <stdarg.h>
 
 void *dm_malloc_aux(size_t s, const char *file, int line)
         __attribute__((__malloc__)) __attribute__((__warn_unused_result__));
 void *dm_malloc_aux_debug(size_t s, const char *file, int line)
-        __attribute__((__malloc__)) __attribute__((__warn_unused_result__));
-static void *_dm_malloc_aligned_aux(size_t s, size_t a, const char *file, int line)
         __attribute__((__malloc__)) __attribute__((__warn_unused_result__));
 void *dm_zalloc_aux(size_t s, const char *file, int line)
         __attribute__((__malloc__)) __attribute__((__warn_unused_result__));
@@ -287,30 +286,6 @@ void *dm_malloc_aux(size_t s, const char *file __attribute__((unused)),
 	return malloc(s);
 }
 
-/* Allocate size s with alignment a (or page size if 0) */
-static void *_dm_malloc_aligned_aux(size_t s, size_t a, const char *file __attribute__((unused)),
-				    int line __attribute__((unused)))
-{
-	void *memptr;
-	int r;
-
-	if (!a)
-		a = getpagesize();
-
-	if (s > 50000000) {
-		log_error("Huge memory allocation (size %" PRIsize_t
-			  ") rejected - metadata corruption?", s);
-		return 0;
-	}
-
-	if ((r = posix_memalign(&memptr, a, s))) {
-		log_error("Failed to allocate %" PRIsize_t " bytes aligned to %" PRIsize_t ": %s", s, a, strerror(r));
-		return 0;
-	}
-
-	return memptr;
-}
-
 void *dm_zalloc_aux(size_t s, const char *file, int line)
 {
 	void *ptr = dm_malloc_aux(s, file, line);
@@ -326,12 +301,6 @@ void *dm_zalloc_aux(size_t s, const char *file, int line)
 void *dm_malloc_wrapper(size_t s, const char *file, int line)
 {
 	return dm_malloc_aux_debug(s, file, line);
-}
-
-void *dm_malloc_aligned_wrapper(size_t s, size_t a, const char *file, int line)
-{
-	/* FIXME Implement alignment when debugging - currently just ignored */
-	return _dm_malloc_aux_debug(s, file, line);
 }
 
 void *dm_zalloc_wrapper(size_t s, const char *file, int line)
@@ -369,11 +338,6 @@ void dm_bounds_check_wrapper(void)
 void *dm_malloc_wrapper(size_t s, const char *file, int line)
 {
 	return dm_malloc_aux(s, file, line);
-}
-
-void *dm_malloc_aligned_wrapper(size_t s, size_t a, const char *file, int line)
-{
-	return _dm_malloc_aligned_aux(s, a, file, line);
 }
 
 void *dm_zalloc_wrapper(size_t s, const char *file, int line)

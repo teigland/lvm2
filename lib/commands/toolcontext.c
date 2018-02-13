@@ -628,16 +628,6 @@ static int _process_config(struct cmd_context *cmd)
 	 */
 	cmd->default_settings.udev_fallback = udev_disabled ? 1 : -1;
 
-#ifdef AIO_SUPPORT
-	cmd->use_aio = find_config_tree_bool(cmd, devices_use_aio_CFG, NULL);
-#else
-	cmd->use_aio = 0;
-#endif
-	if (cmd->use_aio && !dev_async_setup(cmd))
-		cmd->use_aio = 0;
-
-	log_debug_io("%ssing asynchronous I/O.", cmd->use_aio ? "U" : "Not u");
-
 	init_retry_deactivation(find_config_tree_bool(cmd, activation_retry_deactivation_CFG, NULL));
 
 	init_activation_checks(find_config_tree_bool(cmd, activation_checks_CFG, NULL));
@@ -1290,7 +1280,7 @@ int init_filters(struct cmd_context *cmd, unsigned load_persistent_cache)
 		lvm_stat_ctim(&ts, &st);
 		cts = config_file_timestamp(cmd->cft);
 		if (timespeccmp(&ts, &cts, >) &&
-		    !persistent_filter_load(cmd->mem, cmd->filter, NULL))
+		    !persistent_filter_load(cmd->filter, NULL))
 			log_verbose("Failed to load existing device cache from %s",
 				    dev_cache);
 	}
@@ -2147,8 +2137,6 @@ int refresh_toolcontext(struct cmd_context *cmd)
 
 	cmd->lib_dir = NULL;
 
-	label_init();
-
 	if (!_init_lvm_conf(cmd))
 		return_0;
 
@@ -2236,7 +2224,7 @@ void destroy_toolcontext(struct cmd_context *cmd)
 	int flags;
 
 	if (cmd->dump_filter && cmd->filter && cmd->filter->dump &&
-	    !cmd->filter->dump(cmd->filter, cmd->mem, 1))
+	    !cmd->filter->dump(cmd->filter, 1))
 		stack;
 
 	archive_exit(cmd);
