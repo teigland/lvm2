@@ -5076,16 +5076,6 @@ static int _pvcreate_check_single(struct cmd_context *cmd,
 	log_debug("Checking pvcreate arg %s which has existing PVID: %.32s.",
 		  pv_dev_name(pv), pv->dev->pvid[0] ? pv->dev->pvid : "<none>");
 
-	/*
-	 * This test will fail if the device belongs to an MD array.
-	 */
-	if (!dev_test_excl(pv->dev)) {
-		/* FIXME Detect whether device-mapper itself is still using it */
-		log_error("Can't open %s exclusively.  Mounted filesystem?",
-			  pv_dev_name(pv));
-		dm_list_move(&pp->arg_fail, &pd->list);
-		return 1;
-	}
 
 	/*
 	 * Don't allow using a device with duplicates.
@@ -5214,14 +5204,6 @@ static int _pv_confirm_single(struct cmd_context *cmd,
 	if (!found)
 		return 1;
 
-	/* Repeat the same from check_single. */
-	if (!dev_test_excl(pv->dev)) {
-		/* FIXME Detect whether device-mapper itself is still using it */
-		log_error("Can't open %s exclusively.  Mounted filesystem?",
-			  pv_dev_name(pv));
-		goto fail;
-	}
-
 	/*
 	 * What kind of device is this: an orphan PV, an uninitialized/unused
 	 * device, a PV used in a VG.
@@ -5314,16 +5296,6 @@ static int _pvremove_check_single(struct cmd_context *cmd,
 	log_debug("Checking device %s for pvremove %.32s.",
 		  pv_dev_name(pv), pv->dev->pvid[0] ? pv->dev->pvid : "");
 
-	/*
-	 * This test will fail if the device belongs to an MD array.
-	 */
-	if (!dev_test_excl(pv->dev)) {
-		/* FIXME Detect whether device-mapper itself is still using it */
-		log_error("Can't open %s exclusively.  Mounted filesystem?",
-			  pv_dev_name(pv));
-		dm_list_move(&pp->arg_fail, &pd->list);
-		return 1;
-	}
 
 	/*
 	 * Is there a pv here already?
@@ -5446,8 +5418,10 @@ int pvcreate_each_device(struct cmd_context *cmd,
 	struct volume_group *orphan_vg;
 	struct dm_list remove_duplicates;
 	struct dm_list arg_sort;
+	struct dm_list rescan_devs;
 	struct pv_list *pvl;
 	struct pv_list *vgpvl;
+	struct device_list *devl;
 	const char *pv_name;
 	int consistent = 0;
 	int must_use_all = (cmd->cname->flags & MUST_USE_ALL_ARGS);
@@ -5458,6 +5432,7 @@ int pvcreate_each_device(struct cmd_context *cmd,
 
 	dm_list_init(&remove_duplicates);
 	dm_list_init(&arg_sort);
+	dm_list_init(&rescan_devs);
 
 	handle->custom_handle = pp;
 
@@ -5702,6 +5677,19 @@ int pvcreate_each_device(struct cmd_context *cmd,
 	}
 
 do_command:
+
+	dm_list_iterate_items(pd, &pp->arg_process) {
+		if (!(devl = dm_pool_zalloc(cmd->mem, sizeof(*devl))))
+			goto bad;
+		devl->dev = pd->dev;
+		dm_list_add(&rescan_devs, &devl->list);
+	}
+
+	log_debug("Rescanning devices with exclusive open");
+	if (!label_scan_devs_excl(&rescan_devs)) {
+		log_debug("Failed to rescan devs excl");
+		goto bad;
+	}
 
 	/*
 	 * Reorder arg_process entries to match the original order of args.
