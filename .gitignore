@@ -37,7 +37,6 @@ make.tmpl
 tools/man-generator
 tools/man-generator.c
 
-test/lib/*
 test/lib/lvchange
 test/lib/lvconvert
 test/lib/lvcreate

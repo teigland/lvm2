@@ -228,7 +228,12 @@ static bool _async_wait(struct io_engine *ioe, io_complete_fn fn)
 		else if ((int) ev->res < 0)
 			fn(cb->context, (int) ev->res);
 
-		else {
+		// FIXME: dct added this. a short read is ok?!
+		else if (ev->res >= (1 << SECTOR_SHIFT)) {
+			/* minimum acceptable read is 1 sector */
+			fn((void *) cb->context, 0);
+
+		} else {
 			log_warn("short io");
 			fn(cb->context, -ENODATA);
 		}
@@ -1010,7 +1015,7 @@ void bcache_prefetch_bytes(struct bcache *cache, int fd, off_t start, size_t len
 
 static off_t _min(off_t lhs, off_t rhs)
 {
-	if (rhs > lhs)
+	if (rhs < lhs)
 		return rhs;
 
 	return lhs;
@@ -1022,14 +1027,17 @@ bool bcache_read_bytes(struct bcache *cache, int fd, off_t start, size_t len, vo
 	block_address bb, be, i;
 	unsigned char *udata = data;
 	off_t block_size = cache->block_sectors << SECTOR_SHIFT;
+	int errors = 0;
 
 	byte_range_to_block_range(cache, start, len, &bb, &be);
 	for (i = bb; i < be; i++)
 		bcache_prefetch(cache, fd, i);
 
 	for (i = bb; i < be; i++) {
-		if (!bcache_get(cache, fd, i, 0, &b))
-			return false;
+		if (!bcache_get(cache, fd, i, 0, &b)) {
+			errors++;
+			continue;
+		}
 
 		if (i == bb) {
 			off_t block_offset = start % block_size;
@@ -1043,9 +1051,11 @@ bool bcache_read_bytes(struct bcache *cache, int fd, off_t start, size_t len, vo
 			len -= blen;
 			udata += blen;
 		}
+
+		bcache_put(b);
 	}
 
-	return true;
+	return errors ? false : true;
 }
 
 //----------------------------------------------------------------

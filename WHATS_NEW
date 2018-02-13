@@ -1,4 +1,4 @@
-Version 2.03.000 - <unreleased>
+Version 2.02.178 - 
 ===============================
 
   Removed support for LVM1 format metadata.
@@ -10,9 +10,6 @@ Version 2.03.000 - <unreleased>
   --with-cache switch for ./configure has been removed.
   Unit tests no longer rely on CUnit third party library.
   --enable-testing switch for ./configure has been removed.
-
-Version 2.02.178 - 
-=====================================
   Configure ensures /usr/bin dir is checked for dmpd tools.
   Restore pvmove support for wide-clustered active volumes (2.02.177).
   Avoid non-exclusive activation of exclusive segment types.

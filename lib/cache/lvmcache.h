@@ -74,6 +74,7 @@ void lvmcache_destroy(struct cmd_context *cmd, int retain_orphans, int reset);
  */
 void lvmcache_force_next_label_scan(void);
 int lvmcache_label_scan(struct cmd_context *cmd);
+int lvmcache_label_rescan_vg(struct cmd_context *cmd, const char *vgname, const char *vgid);
 
 /* Add/delete a device */
 struct lvmcache_info *lvmcache_add(struct labeller *labeller, const char *pvid,
@@ -105,10 +106,8 @@ struct lvmcache_vginfo *lvmcache_vginfo_from_vgid(const char *vgid);
 struct lvmcache_info *lvmcache_info_from_pvid(const char *pvid, struct device *dev, int valid_only);
 const char *lvmcache_vgname_from_vgid(struct dm_pool *mem, const char *vgid);
 const char *lvmcache_vgid_from_vgname(struct cmd_context *cmd, const char *vgname);
-struct device *lvmcache_device_from_pvid(struct cmd_context *cmd, const struct id *pvid,
-				unsigned *scan_done_once, uint64_t *label_sector);
-const char *lvmcache_pvid_from_devname(struct cmd_context *cmd,
-				       const char *devname);
+struct device *lvmcache_device_from_pvid(struct cmd_context *cmd, const struct id *pvid, uint64_t *label_sector);
+const char *lvmcache_pvid_from_devname(struct cmd_context *cmd, const char *devname);
 char *lvmcache_vgname_from_pvid(struct cmd_context *cmd, const char *pvid);
 const char *lvmcache_vgname_from_info(struct lvmcache_info *info);
 const struct format_type *lvmcache_fmt_from_info(struct lvmcache_info *info);
@@ -134,9 +133,6 @@ int lvmcache_get_vgnameids(struct cmd_context *cmd, int include_internal,
 struct dm_list *lvmcache_get_pvids(struct cmd_context *cmd, const char *vgname,
 				const char *vgid);
 
-/* Returns cached volume group metadata. */
-struct volume_group *lvmcache_get_vg(struct cmd_context *cmd, const char *vgname,
-				     const char *vgid, unsigned precommitted);
 void lvmcache_drop_metadata(const char *vgname, int drop_precommitted);
 void lvmcache_commit_metadata(const char *vgname);
 
@@ -146,8 +142,8 @@ int lvmcache_fid_add_mdas(struct lvmcache_info *info, struct format_instance *fi
 int lvmcache_fid_add_mdas_pv(struct lvmcache_info *info, struct format_instance *fid);
 int lvmcache_fid_add_mdas_vg(struct lvmcache_vginfo *vginfo, struct format_instance *fid);
 int lvmcache_populate_pv_fields(struct lvmcache_info *info,
-				struct physical_volume *pv,
-				int scan_label_only);
+				struct volume_group *vg,
+				struct physical_volume *pv);
 int lvmcache_check_format(struct lvmcache_info *info, const struct format_type *fmt);
 void lvmcache_del_mdas(struct lvmcache_info *info);
 void lvmcache_del_das(struct lvmcache_info *info);
@@ -164,6 +160,8 @@ uint32_t lvmcache_ext_flags(struct lvmcache_info *info);
 
 const struct format_type *lvmcache_fmt(struct lvmcache_info *info);
 struct label *lvmcache_get_label(struct lvmcache_info *info);
+struct label *lvmcache_get_dev_label(struct device *dev);
+int lvmcache_has_dev_info(struct device *dev);
 
 void lvmcache_update_pv(struct lvmcache_info *info, struct physical_volume *pv,
 			const struct format_type *fmt);
@@ -214,5 +212,14 @@ int lvmcache_dev_is_unchosen_duplicate(struct device *dev);
 void lvmcache_remove_unchosen_duplicate(struct device *dev);
 
 int lvmcache_pvid_in_unchosen_duplicates(const char *pvid);
+
+int lvmcache_get_vg_devs(struct cmd_context *cmd,
+			 struct lvmcache_vginfo *vginfo,
+			 struct dm_list *devs);
+void lvmcache_set_independent_location(const char *vgname);
+
+void lvmcache_save_suspended_vg(struct volume_group *vg, int precommitted);
+struct volume_group *lvmcache_get_suspended_vg(const char *vgid);
+void lvmcache_drop_suspended_vg(struct volume_group *vg);
 
 #endif
