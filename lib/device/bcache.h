@@ -47,7 +47,7 @@ struct io_engine {
 	unsigned (*max_io)(struct io_engine *e);
 };
 
-struct io_engine *create_async_io_engine(unsigned max_io);
+struct io_engine *create_async_io_engine(void);
 
 /*----------------------------------------------------------------*/
 

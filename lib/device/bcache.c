@@ -249,7 +249,7 @@ static unsigned _async_max_io(struct io_engine *e)
 	return MAX_IO;
 }
 
-struct io_engine *create_async_io_engine(unsigned max_io)
+struct io_engine *create_async_io_engine(void)
 {
 	int r;
 	struct async_engine *e = dm_malloc(sizeof(*e));
@@ -263,14 +263,14 @@ struct io_engine *create_async_io_engine(unsigned max_io)
 	e->e.max_io = _async_max_io;
 
 	e->aio_context = 0;
-	r = io_setup(max_io, &e->aio_context);
+	r = io_setup(MAX_IO, &e->aio_context);
 	if (r < 0) {
 		log_warn("io_setup failed");
 		dm_free(e);
 		return NULL;
 	}
 
-	e->cbs = _cb_set_create(max_io);
+	e->cbs = _cb_set_create(MAX_IO);
 	if (!e->cbs) {
 		log_warn("couldn't create control block set");
 		dm_free(e);

@@ -561,7 +561,7 @@ int label_scan(struct cmd_context *cmd)
 		 * possible, i.e, the number of devices that can be read at
 		 * once.  Should this be configurable?
 		 */
-		if (!(ioe = create_async_io_engine(100)))
+		if (!(ioe = create_async_io_engine()))
 			return 0;
 
 		/*
