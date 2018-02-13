@@ -18,7 +18,7 @@ top_builddir = @top_builddir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 
-SUBDIRS = conf daemons include lib libdaemon libdm man scripts tools
+SUBDIRS = conf daemons lib libdaemon libdm man scripts tools
 
 ifeq ("@UDEV_RULES@", "yes")
   SUBDIRS += udev
@@ -41,7 +41,7 @@ ifeq ($(MAKECMDGOALS),clean)
 endif
 # FIXME Should use intermediate Makefiles here!
 ifeq ($(MAKECMDGOALS),distclean)
-  SUBDIRS = conf include man test scripts \
+  SUBDIRS = conf man test scripts \
     libdaemon lib tools daemons libdm \
     udev po liblvm python
 tools.distclean: test.distclean
@@ -51,8 +51,6 @@ DISTCLEAN_TARGETS += config.cache config.log config.status make.tmpl
 
 include make.tmpl
 
-libdm: include
-libdaemon: include
 lib: libdm libdaemon
 liblvm: lib
 daemons: lib libdaemon tools
@@ -62,16 +60,11 @@ man: tools
 all_man: tools
 scripts: liblvm libdm
 
-lib.device-mapper: include.device-mapper
-libdm.device-mapper: include.device-mapper
-liblvm.device-mapper: include.device-mapper
 daemons.device-mapper: libdm.device-mapper
 tools.device-mapper: libdm.device-mapper
-scripts.device-mapper: include.device-mapper
 device-mapper: tools.device-mapper daemons.device-mapper man.device-mapper
 
 ifeq ("@INTL@", "yes")
-lib.pofile: include.pofile
 tools.pofile: lib.pofile
 daemons.pofile: lib.pofile
 po.pofile: tools.pofile daemons.pofile
@@ -85,7 +78,6 @@ endif
 ifneq ("$(CFLOW_CMD)", "")
 tools.cflow: libdm.cflow lib.cflow
 daemons.cflow: tools.cflow
-cflow: include.cflow
 endif
 
 ifneq ("@CSCOPE_CMD@", "")

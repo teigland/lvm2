@@ -2108,8 +2108,6 @@ conf/example.conf
 conf/lvmlocal.conf
 conf/command_profile_template.profile
 conf/metadata_profile_template.profile
-include/.symlinks
-include/Makefile
 lib/Makefile
 lib/locking/Makefile
 include/lvm-version.h
