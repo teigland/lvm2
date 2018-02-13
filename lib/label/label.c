@@ -258,6 +258,8 @@ struct bcache *scan_bcache;
 
 static bool _in_bcache(struct device *dev)
 {
+	if (!dev)
+		return NULL;
 	return (dev->flags & DEV_IN_BCACHE) ? true : false;
 }
 
@@ -402,6 +404,9 @@ static int _scan_dev_open(struct device *dev)
 	const char *name;
 	int flags = 0;
 	int fd;
+
+	if (!dev)
+		return 0;
 
 	if (dev->flags & DEV_IN_BCACHE) {
 		log_error("scan_dev_open %s DEV_IN_BCACHE already set", dev_name(dev));
