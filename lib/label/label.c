@@ -568,6 +568,8 @@ static int _scan_list(struct dm_list *devs, int *failed)
 	if (failed)
 		*failed = scan_failed_count;
 
+	dm_list_splice(devs, &done_devs);
+
 	return 1;
 }
 
