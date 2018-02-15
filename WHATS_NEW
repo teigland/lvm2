@@ -1,6 +1,7 @@
 Version 2.02.178 - 
 ===============================
 
+  --with-cluster switch for ./configure has lost the 'shared' option
   Removed support for LVM1 format metadata.
   Removed support for GFS pool format metadata.
   --with-snapshots switch for ./configure has been removed.

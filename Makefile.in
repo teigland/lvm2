@@ -18,7 +18,7 @@ top_builddir = @top_builddir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 
-SUBDIRS = conf daemons lib libdaemon libdm man scripts tools
+SUBDIRS = conf scripts
 
 ifeq ("@UDEV_RULES@", "yes")
   SUBDIRS += udev
@@ -41,8 +41,7 @@ ifeq ($(MAKECMDGOALS),clean)
 endif
 # FIXME Should use intermediate Makefiles here!
 ifeq ($(MAKECMDGOALS),distclean)
-  SUBDIRS = conf man test scripts \
-    libdaemon lib tools daemons libdm \
+  SUBDIRS = conf test scripts \
     udev po liblvm python
 tools.distclean: test.distclean
 endif
@@ -50,19 +49,26 @@ DISTCLEAN_DIRS += lcov_reports*
 DISTCLEAN_TARGETS += config.cache config.log config.status make.tmpl
 
 include make.tmpl
+include libdm/Makefile
+include lib/Makefile
+include tools/Makefile
+include man/Makefile
+include libdaemon/Makefile
+include daemons/clvmd/Makefile
+include daemons/lvmetad/Makefile
 
-lib: libdm libdaemon
-liblvm: lib
-daemons: lib libdaemon tools
-tools: lib libdaemon device-mapper
-po: tools daemons
-man: tools
-all_man: tools
-scripts: liblvm libdm
+#lib: lib/liblvm-internal.a libdm libdaemon
+#liblvm: lib/liblvm-internal.a
+#daemons: lib/liblvm-internal.a libdaemon tools
+#tools: lib/liblvm-internal.a libdaemon device-mapper
+#po: tools daemons
+#man: tools
+#all_man: tools
+#scripts: liblvm libdm
 
-daemons.device-mapper: libdm.device-mapper
-tools.device-mapper: libdm.device-mapper
-device-mapper: tools.device-mapper daemons.device-mapper man.device-mapper
+#daemons.device-mapper: libdm.device-mapper
+#tools.device-mapper: libdm.device-mapper
+#device-mapper: tools.device-mapper daemons.device-mapper man.device-mapper
 
 ifeq ("@INTL@", "yes")
 tools.pofile: lib.pofile

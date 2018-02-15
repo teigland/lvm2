@@ -306,7 +306,7 @@ LIB_VERSION_DM := $(shell $(AWK) -F '.' '{printf "%s.%s",$$1,$$2}' $(top_srcdir)
 
 LIB_VERSION_APP := $(shell $(AWK) -F '[(). ]' '{printf "%s.%s",$$1,$$4}' $(top_srcdir)/VERSION)
 
-INCLUDES += -I$(srcdir) -I$(top_builddir)/include
+INCLUDES += -I. -I./include
 
 DEPS = $(top_builddir)/make.tmpl $(top_srcdir)/VERSION \
        $(top_builddir)/Makefile
@@ -493,6 +493,7 @@ install_dm_plugin: $(LIB_SHARED)
 	$(Q) $(INSTALL_PROGRAM) -D $< $(libdir)/device-mapper/$(<F)
 	$(Q) $(LN_S) -f device-mapper/$(<F) $(libdir)/$(<F)
 
+# FIXME: is this still needed
 install_lvm2_plugin: $(LIB_SHARED)
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_PROGRAM) -D $< $(libdir)/lvm2/$(<F)

@@ -306,12 +306,12 @@ dnl -- cluster_locking inclusion type
 AC_MSG_CHECKING(whether to include support for cluster locking)
 AC_ARG_WITH(cluster,
 	    AC_HELP_STRING([--with-cluster=TYPE],
-			   [cluster LVM locking support: internal/shared/none [internal]]),
+			   [cluster LVM locking support: internal/none [internal]]),
 	    CLUSTER=$withval)
 AC_MSG_RESULT($CLUSTER)
 
 case "$CLUSTER" in
-  none|shared) ;;
+  none) ;;
   internal) AC_DEFINE([CLUSTER_LOCKING_INTERNAL], 1,
 		      [Define to 1 to include built-in support for clustered LVM locking.]) ;;
   *) AC_MSG_ERROR([--with-cluster parameter invalid]) ;;
@@ -2083,7 +2083,6 @@ dnl -- keep utility scripts running properly
 AC_CONFIG_FILES([
 Makefile
 make.tmpl
-daemons/Makefile
 daemons/clvmd/Makefile
 daemons/cmirrord/Makefile
 daemons/dmeventd/Makefile
@@ -2109,11 +2108,8 @@ conf/lvmlocal.conf
 conf/command_profile_template.profile
 conf/metadata_profile_template.profile
 lib/Makefile
-lib/locking/Makefile
 include/lvm-version.h
 libdaemon/Makefile
-libdaemon/client/Makefile
-libdaemon/server/Makefile
 libdm/Makefile
 libdm/libdevmapper.pc
 liblvm/Makefile

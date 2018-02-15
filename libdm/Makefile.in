@@ -12,55 +12,56 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-top_builddir = @top_builddir@
+DM_SOURCES =\
+	libdm/datastruct/bitset.c \
+	libdm/datastruct/hash.c \
+	libdm/datastruct/list.c \
+	libdm/libdm-common.c \
+	libdm/libdm-config.c \
+	libdm/libdm-deptree.c \
+	libdm/libdm-file.c \
+	libdm/libdm-report.c \
+	libdm/libdm-stats.c \
+	libdm/libdm-string.c \
+	libdm/libdm-targets.c \
+	libdm/libdm-timestamp.c \
+	libdm/mm/dbg_malloc.c \
+	libdm/mm/pool.c \
+	libdm/regex/matcher.c \
+	libdm/regex/parse_rx.c \
+	libdm/regex/ttree.c \
+	libdm/ioctl/libdm-iface.c
+LIBDM_DEPENDS=$(subst .c,.d,$(LIBDM_SOURCE))
+LIBDM_OBJECTS=$(subst .c,.o,$(LIBDM_SOURCE))
+CLEAN_TARGETS+=$(LIBDM_DEPENDS) $(LIBDM_OBJECTS)
 
-SOURCES =\
-	datastruct/bitset.c \
-	datastruct/hash.c \
-	datastruct/list.c \
-	libdm-common.c \
-	libdm-config.c \
-	libdm-deptree.c \
-	libdm-file.c \
-	libdm-report.c \
-	libdm-stats.c \
-	libdm-string.c \
-	libdm-targets.c \
-	libdm-timestamp.c \
-	mm/dbg_malloc.c \
-	mm/pool.c \
-	regex/matcher.c \
-	regex/parse_rx.c \
-	regex/ttree.c \
-	$(interface)/libdm-iface.c
+$(DM_OBJECTS): INCLUDES += -Ilibdm/ioctl
 
-INCLUDES = -I$(srcdir)/$(interface)
+dm/ioctl/libdevmapper.a: $(LIBDM_OBJECTS)
+	@echo "    [AR] $@"
+	$(Q) $(RM) $@
+	$(Q) $(AR) rsv $@ $(OBJECTS) > /dev/null
 
-ifeq ("@STATIC_LINK@", "yes")
-LIB_STATIC = $(interface)/libdevmapper.a
-endif
+libdm/ioctl/libdevmapper.so.$(LIB_VERSION_DM): $(LIBDM_OBJECTS)
+	@echo "    [CC] $@"
+	$(Q) $(CC) -shared -Wl,-soname,$(notdir $@) \
+		$(CFLAGS) $(CLDFLAGS) $(LIBDM_OBJECTS) $(LIBS) -o $@
 
-LIB_SHARED = $(interface)/libdevmapper.$(LIB_SUFFIX)
-LIB_VERSION = $(LIB_VERSION_DM)
-TARGETS = libdevmapper.$(LIB_SUFFIX) libdevmapper.$(LIB_SUFFIX).$(LIB_VERSION)
+TARGETS += libdm/ioctl/libdevmapper.so libdm/ioctl/libdevmapper.so.$(LIB_VERSION)
+CLEAN_TARGETS += libdm/ioctl/libdevmapper.a libdm/ioctl/libdevmapper.so.$(LIB_VERSION)
+DISTCLEAN_TARGETS += libdevmapper.pc
 
-CFLOW_LIST = $(SOURCES)
-CFLOW_LIST_TARGET = libdevmapper.cflow
+#CFLOW_LIST = $(SOURCES)
+#CFLOW_LIST_TARGET = libdevmapper.cflow
 
-EXPORTED_HEADER = $(srcdir)/libdevmapper.h
+EXPORTED_HEADER = libdm/libdevmapper.h
 EXPORTED_FN_PREFIX = dm
-
-include $(top_builddir)/make.tmpl
 
 PROGS_CFLAGS = $(UDEV_CFLAGS)
 
 LIBS += $(RT_LIBS) $(SELINUX_LIBS) $(UDEV_LIBS) $(PTHREAD_LIBS) $(M_LIBS)
 
-device-mapper: all
-
-libdevmapper.$(LIB_SUFFIX) libdevmapper.$(LIB_SUFFIX).$(LIB_VERSION): $(LIB_SHARED)
+libdm/libdevmapper.$(LIB_SUFFIX) libdm/libdevmapper.$(LIB_SUFFIX).$(LIB_VERSION): libdm/ioctl/libdevmapper.so.$(LIB_VERSION_DM)
 	$(LN_S) -f $< $@
 
 .PHONY: install_dynamic install_static install_include \
@@ -84,9 +85,9 @@ install_device-mapper: install
 install_include: $(srcdir)/libdevmapper.h
 	$(INSTALL_DATA) -D $< $(includedir)/$(<F)
 
-install_dynamic: install_@interface@
+install_dynamic: install_ioctl
 
-install_static: install_@interface@_static
+install_static: install_ioctl_static
 
 install_ioctl: install_lib_shared
 
@@ -96,5 +97,3 @@ install_pkgconfig: libdevmapper.pc
 install_ioctl_static: $(LIB_STATIC)
 	$(INSTALL_DATA) -D $< $(usrlibdir)/$(<F)
 
-CLEAN_TARGETS += ioctl/libdevmapper.a
-DISTCLEAN_TARGETS += libdevmapper.pc

@@ -11,10 +11,6 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-top_builddir = @top_builddir@
-
 CMAN_LIBS = @CMAN_LIBS@
 CMAN_CFLAGS = @CMAN_CFLAGS@
 CMAP_LIBS = @CMAP_LIBS@
@@ -30,64 +26,66 @@ QUORUM_CFLAGS = @QUORUM_CFLAGS@
 SALCK_LIBS = @SALCK_LIBS@
 SALCK_CFLAGS = @SALCK_CFLAGS@
 
-SOURCES = \
-	clvmd-command.c\
-	clvmd.c\
-	lvm-functions.c\
-	refresh_clvmd.c
+CLVMD_SOURCE=\
+	daemons/clvmd/clvmd-command.c \
+	daemons/clvmd/clvmd.c \
+	daemons/clvmd/lvm-functions.c \
+	daemons/clvmd/refresh_clvmd.c
 
 ifneq (,$(findstring cman,, "@CLVMD@,"))
-	SOURCES += clvmd-cman.c
-	LMLIBS += $(CMAN_LIBS) $(CONFDB_LIBS) $(DLM_LIBS)
-	CFLAGS += $(CMAN_CFLAGS) $(CONFDB_CFLAGS) $(DLM_CFLAGS)
-	DEFS += -DUSE_CMAN
+	CLVMD_SOURCE += daemons/clvmd/clvmd-cman.c
 endif
 
 ifneq (,$(findstring openais,, "@CLVMD@,"))
-	SOURCES += clvmd-openais.c
-	LMLIBS += $(CONFDB_LIBS) $(CPG_LIBS) $(SALCK_LIBS)
-	CFLAGS += $(CONFDB_CFLAGS) $(CPG_CFLAGS) $(SALCK_CFLAGS)
-	DEFS += -DUSE_OPENAIS
+	CLVMD_SOURCE += daemons/clvmd/clvmd-openais.c
 endif
 
 ifneq (,$(findstring corosync,, "@CLVMD@,"))
-	SOURCES += clvmd-corosync.c
-	LMLIBS += $(CMAP_LIBS) $(CONFDB_LIBS) $(CPG_LIBS) $(DLM_LIBS) $(QUORUM_LIBS)
-	CFLAGS += $(CMAP_CFLAGS) $(CONFDB_CFLAGS) $(CPG_CFLAGS) $(DLM_CFLAGS) $(QUORUM_CFLAGS)
-	DEFS += -DUSE_COROSYNC
+	CLVMD_SOURCE += daemons/clvmd/clvmd-corosync.c
 endif
 
 ifneq (,$(findstring singlenode,, &quot;@CLVMD@,&quot;))
-	SOURCES += clvmd-singlenode.c
-	DEFS += -DUSE_SINGLENODE
+	CLVMD_SOURCE += daemons/clvmd/clvmd-singlenode.c
 endif
 
-ifeq ($(MAKECMDGOALS),distclean)
-	SOURCES += clvmd-cman.c
-	SOURCES += clvmd-openais.c
-	SOURCES += clvmd-corosync.c
-	SOURCES += clvmd-singlenode.c
+CLVMD_DEPENDS=$(subst .c,.d,$(CLVMD_SOURCE))
+CLVMD_OBJECTS=$(subst .c,.o,$(CLVMD_SOURCE))
+CLEAN_TARGETS+=daemons/clvmd/*.d daemons/clvmd/*.o
+
+ifneq (,$(findstring cman,, "@CLVMD@,"))
+daemons/clvmd/clvmd: LIBS += $(CMAN_LIBS) $(CONFDB_LIBS) $(DLM_LIBS)
+$(CLVMD_OBJECTS): CFLAGS += $(CMAN_CFLAGS) $(CONFDB_CFLAGS) $(DLM_CFLAGS) -DUSE_CMAN
 endif
 
-TARGETS = \
-	clvmd
+ifneq (,$(findstring openais,, "@CLVMD@,"))
+daemons/clvmd/clvmd: LIBS += $(CONFDB_LIBS) $(CPG_LIBS) $(SALCK_LIBS)
+$(CLVMD_OBJECTS): CFLAGS += $(CONFDB_CFLAGS) $(CPG_CFLAGS) $(SALCK_CFLAGS) -DUSE_OPENAIS
+endif
 
-include $(top_builddir)/make.tmpl
+ifneq (,$(findstring corosync,, "@CLVMD@,"))
+daemons/clvmd/clvmd: LIBS += $(CMAP_LIBS) $(CONFDB_LIBS) $(CPG_LIBS) $(DLM_LIBS) $(QUORUM_LIBS)
+$(CLVMD_OBJECTS): CFLAGS += $(CMAP_CFLAGS) $(CONFDB_CFLAGS) $(CPG_CFLAGS) $(DLM_CFLAGS) $(QUORUM_CFLAGS) -DUSE_COROSYNC
+endif
 
-LIBS += $(LVMINTERNAL_LIBS) -ldevmapper $(PTHREAD_LIBS) -laio
-CFLAGS += -fno-strict-aliasing $(EXTRA_EXEC_CFLAGS)
+ifneq (,$(findstring singlenode,, &quot;@CLVMD@,&quot;))
+$(CLVMD_OBJECTS): CFLAGS += -DUSE_SINGLENODE
+endif
+
+daemons/clvmd/clvmd: LIBS += $(LVMINTERNAL_LIBS) -ldevmapper $(PTHREAD_LIBS) -laio
+$(CLVMD_OBJECTS): CFLAGS += -fno-strict-aliasing $(EXTRA_EXEC_CFLAGS)
+
+daemons/clvmd/clvmd: $(CLVMD_OBJECTS) lib/liblvm-internal.a libdaemon/client/libdaemonclient.a
+	@echo [LD]  $@
+	$(Q) $(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) \
+	      -o daemons/clvmd/clvmd $(CLVMD_OBJECTS) $(LIBS)
+
+.PHONY: install_clvmd
 
 INSTALL_TARGETS = \
 	install_clvmd
 
-clvmd: $(OBJECTS) $(top_builddir)/lib/liblvm-internal.a
-	$(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) \
-	      -o clvmd $(OBJECTS) $(LMLIBS) $(LIBS)
-
-.PHONY: install_clvmd
-
-install_clvmd: $(TARGETS)
-	$(INSTALL_PROGRAM) -D clvmd $(usrsbindir)/clvmd
+install_clvmd: daemons/clvmd/clvmd
+	$(INSTALL_PROGRAM) -D daemons/clvmd/clvmd $(usrsbindir)/clvmd
 
 install: $(INSTALL_TARGETS)
 
