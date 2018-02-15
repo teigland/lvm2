@@ -24,7 +24,11 @@ DSERVER_SOURCE=\
 	libdaemon/server/daemon-log.c
 DSERVER_DEPENDS=$(subst .c,.d,$(DSERVER_SOURCE))
 DSERVER_OBJECTS=$(subst .c,.o,$(DSERVER_SOURCE))
-CLEAN_TARGETS+=$(DSERVER_DEPENDS) $(DSERVER_OBJECTS)
+CLEAN_TARGETS+=\
+	$(DSERVER_DEPENDS) \
+	$(DSERVER_OBJECTS) \
+	libdaemon/client/libdaemonclient.a \
+	libdaemon/server/libdaemonserver.a
 
 libdaemon/client/libdaemonclient.a: $(DCLIENT_OBJECTS)
 	@echo "    [AR] $@"
