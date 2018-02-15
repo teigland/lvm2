@@ -37,7 +37,7 @@ CLEAN_TARGETS+=$(LIBDM_DEPENDS) $(LIBDM_OBJECTS)
 
 $(DM_OBJECTS): INCLUDES += -Ilibdm/ioctl
 
-dm/ioctl/libdevmapper.a: $(LIBDM_OBJECTS)
+libdm/ioctl/libdevmapper.a: $(LIBDM_OBJECTS)
 	@echo "    [AR] $@"
 	$(Q) $(RM) $@
 	$(Q) $(AR) rsv $@ $(OBJECTS) > /dev/null
