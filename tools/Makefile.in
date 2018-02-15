@@ -151,7 +151,7 @@ INCLUDES += -I./tools
 
 -include tools/lvm.d
 
-tools/lvm: $(TOOLS_OBJECTS) tools/lvm.o lib/liblvm-internal.a
+tools/lvm: $(TOOLS_OBJECTS) tools/lvm.o lib/liblvm-internal.a libdaemon/client/libdaemonclient.a
 	@echo "    [CC] $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) -o $@ $(TOOLS_OBJECTS) tools/lvm.o \
 		$(LVMLIBS) $(READLINE_LIBS) $(LIBS)
