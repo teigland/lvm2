@@ -156,18 +156,17 @@ tools/lvm: $(TOOLS_OBJECTS) tools/lvm.o lib/liblvm-internal.a libdaemon/client/l
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) -o $@ $(TOOLS_OBJECTS) tools/lvm.o \
 		$(LVMLIBS) $(READLINE_LIBS) $(LIBS)
 
-DEFS_man-generator.o += -DMAN_PAGE_GENERATOR
-
 CLEAN_TARGETS+=tools/man-generator.c
 tools/man-generator.c: tools/command.c
 	@echo "    [LN] $@"
-	$(Q) $(LN_S) -f $< $@
+	$(Q) $(LN_S) -f command.c $@
+
+tools/man-generator.o: CFLAGS += -DMAN_PAGE_GENERATOR
+tools/man-generator: tools/man-generator.o
+	@echo "    [LD] $@"
+	$(Q) $(CC) $(CFLAGS) -o $@ $<
 
 -include tools/man-generator.d
-
-tools/man-generator: tools/man-generator.o
-	@echo "    [CC] $@"
-	$(CC) $(CFLAGS) -o $@ $<
 
 ifeq ("@BUILD_LVMETAD@", "yes")
 tools/lvm: $(top_builddir)/libdaemon/client/libdaemonclient.a
