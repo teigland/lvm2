@@ -727,6 +727,24 @@ void label_scan_invalidate(struct device *dev)
 }
 
 /*
+ * If a PV is stacked on an LV, then the LV is kept open
+ * in bcache, and needs to be closed so the open fd doesn't
+ * interfere with processing the LV.
+ */
+
+void label_scan_invalidate_lv(struct cmd_context *cmd, struct logical_volume *lv)
+{
+	struct lvinfo lvinfo;
+	struct device *dev;
+	dev_t devt;
+
+	lv_info(cmd, lv, 0, &lvinfo, 0, 0);
+	devt = MKDEV(lvinfo.major, lvinfo.minor);
+	if ((dev = dev_cache_get_by_devt(devt, cmd->filter)))
+		label_scan_invalidate(dev);
+}
+
+/*
  * Undo label_scan()
  *
  * Close devices that are open because bcache is holding blocks for them.
