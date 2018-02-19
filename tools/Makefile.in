@@ -172,7 +172,7 @@ ifeq ("@BUILD_LVMETAD@", "yes")
 tools/lvm: $(top_builddir)/libdaemon/client/libdaemonclient.a
 endif
 
-tools/lvm.static: $(TOOLS_OBJECTS) tools/lvm-static.o lib/liblvm-internal.a  $(interfacebuilddir)/libdevmapper.a
+tools/lvm.static: $(TOOLS_OBJECTS) tools/lvm-static.o lib/liblvm-internal.a libdm/ioctl/libdevmapper.a libdaemon/client/libdaemonclient.a
 	@echo "    [CC] $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) -static -L$(interfacebuilddir) -o $@ \
 	      $(TOOLS_OBJECTS) tools/lvm-static.o $(LVMLIBS) $(STATIC_LIBS) $(LIBS)

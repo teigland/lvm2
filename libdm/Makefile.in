@@ -12,7 +12,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-DM_SOURCES =\
+LIBDM_SOURCE =\
 	libdm/datastruct/bitset.c \
 	libdm/datastruct/hash.c \
 	libdm/datastruct/list.c \
@@ -35,12 +35,12 @@ LIBDM_DEPENDS=$(subst .c,.d,$(LIBDM_SOURCE))
 LIBDM_OBJECTS=$(subst .c,.o,$(LIBDM_SOURCE))
 CLEAN_TARGETS+=$(LIBDM_DEPENDS) $(LIBDM_OBJECTS)
 
-$(DM_OBJECTS): INCLUDES += -Ilibdm/ioctl
+$(LIBDM_OBJECTS): INCLUDES += -I./libdm -I./libdm/ioctl
 
 libdm/ioctl/libdevmapper.a: $(LIBDM_OBJECTS)
 	@echo "    [AR] $@"
 	$(Q) $(RM) $@
-	$(Q) $(AR) rsv $@ $(OBJECTS) > /dev/null
+	$(Q) $(AR) rsv $@ $(LIBDM_OBJECTS) > /dev/null
 
 libdm/ioctl/libdevmapper.so.$(LIB_VERSION_DM): $(LIBDM_OBJECTS)
 	@echo "    [CC] $@"
