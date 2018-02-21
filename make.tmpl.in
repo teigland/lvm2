@@ -513,6 +513,7 @@ $(LIB_STATIC): $(OBJECTS)
 	@echo "    [MSGFMT] $<"
 	$(Q) $(MSGFMT) -o $@ $<
 
+# FIXME: does SOURCES still exist?
 CLEAN_TARGETS += \
 	$(SOURCES:%.c=%.d) $(SOURCES:%.c=%.gcno) $(SOURCES:%.c=%.gcda) \
 	$(SOURCES2:%.c=%.o) $(SOURCES2:%.c=%.d) $(SOURCES2:%.c=%.gcno) $(SOURCES2:%.c=%.gcda) \
@@ -562,16 +563,4 @@ else
 	  done;\
 	  echo "Local {"; echo "	local:"; echo "		*;"; echo "};";\
 	) > $@
-endif
-
-ifeq ("@USE_TRACKING@","yes")
-ifeq (,$(findstring $(MAKECMDGOALS),cscope.out cflow clean distclean lcov \
- help check check_local check_cluster check_lvmetad check_lvmpolld))
-    ifdef SOURCES
-       -include $(SOURCES:.c=.d) $(CXXSOURCES:.cpp=.d)
-    endif
-    ifdef SOURCES2
-       -include $(SOURCES2:.c=.d)
-    endif
-endif
 endif

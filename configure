@@ -644,7 +644,6 @@ DMEVENTD_PIDFILE
 WRITE_INSTALL
 VALGRIND_POOL
 USRSBINDIR
-USE_TRACKING
 UDEV_HAS_BUILTIN_BLKID
 UDEV_RULE_EXEC_DETECTION
 UDEV_SYSTEMD_BACKGROUND_JOBS
@@ -904,7 +903,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_dependency_tracking
 enable_static_link
 with_user
 with_group
@@ -1671,8 +1669,6 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --disable-dependency-tracking
-                          speeds up one-time build.
   --enable-static_link    use this to link the tools to their libraries
                           statically (default is dynamic linking
   --enable-lvm1_fallback  use this to fall back and use LVM1 binaries if
@@ -8120,19 +8116,6 @@ fi
 done
 
 
-
-################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable dependency tracking" >&5
-$as_echo_n "checking whether to enable dependency tracking... " >&6; }
-# Check whether --enable-dependency-tracking was given.
-if test "${enable_dependency_tracking+set}" = set; then :
-  enableval=$enable_dependency_tracking; USE_TRACKING=$enableval
-else
-  USE_TRACKING=yes
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $USE_TRACKING" >&5
-$as_echo "$USE_TRACKING" >&6; }
 
 ################################################################################
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use static linking" >&5
@@ -15673,7 +15656,6 @@ _ACEOF
 
 
 ################################################################################
-
 
 
 
