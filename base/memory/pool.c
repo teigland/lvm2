@@ -17,38 +17,290 @@
 
 #include "base/data-struct/list.h"
 #include "base/log/log.h"
+#include "base/memory/zalloc.h"
+
+// FIXME: for PRIsize_t, remove
+#include "lib/misc/util.h"
 
 #include <sys/mman.h>
-#include <pthread.h>
+#include <stddef.h>
 
 static DM_LIST_INIT(_dm_pools);
-static pthread_mutex_t _dm_pools_mutex = PTHREAD_MUTEX_INITIALIZER;
 void dm_pools_check_leaks(void);
 
-#ifdef DEBUG_ENFORCE_POOL_LOCKING
-#ifdef DEBUG_POOL
-#error Do not use DEBUG_POOL with DEBUG_ENFORCE_POOL_LOCKING
+struct chunk {
+	char *begin, *end;
+	struct chunk *prev;
+} __attribute__((aligned(8)));
+
+struct dm_pool {
+	struct dm_list list;
+	struct chunk *chunk, *spare_chunk;	/* spare_chunk is a one entry free
+						   list to stop 'bobbling' */
+	const char *name;
+	size_t chunk_size;
+	size_t object_len;
+	unsigned object_alignment;
+	int locked;
+	long crc;
+};
+
+static void _align_chunk(struct chunk *c, unsigned alignment);
+static struct chunk *_new_chunk(struct dm_pool *p, size_t s);
+static void _free_chunk(struct chunk *c);
+
+/* by default things come out aligned for doubles */
+#define DEFAULT_ALIGNMENT __alignof__ (double)
+
+struct dm_pool *dm_pool_create(const char *name, size_t chunk_hint)
+{
+	size_t new_size = 1024;
+	struct dm_pool *p = zalloc(sizeof(*p));
+
+	if (!p) {
+		log_error("Couldn't create memory pool %s (size %"
+			  PRIsize_t ")", name, sizeof(*p));
+		return 0;
+	}
+
+	p->name = name;
+	/* round chunk_hint up to the next power of 2 */
+	p->chunk_size = chunk_hint + sizeof(struct chunk);
+	while (new_size < p->chunk_size)
+		new_size <<= 1;
+	p->chunk_size = new_size;
+	dm_list_add(&_dm_pools, &p->list);
+	return p;
+}
+
+void dm_pool_destroy(struct dm_pool *p)
+{
+	struct chunk *c, *pr;
+	_free_chunk(p->spare_chunk);
+	c = p->chunk;
+	while (c) {
+		pr = c->prev;
+		_free_chunk(c);
+		c = pr;
+	}
+
+	dm_list_del(&p->list);
+	free(p);
+}
+
+void *dm_pool_alloc(struct dm_pool *p, size_t s)
+{
+	return dm_pool_alloc_aligned(p, s, DEFAULT_ALIGNMENT);
+}
+
+void *dm_pool_alloc_aligned(struct dm_pool *p, size_t s, unsigned alignment)
+{
+	struct chunk *c = p->chunk;
+	void *r;
+
+	/* realign begin */
+	if (c)
+		_align_chunk(c, alignment);
+
+	/* have we got room ? */
+	if (!c || (c->begin > c->end) || ((c->end - c->begin) < (int) s)) {
+		/* allocate new chunk */
+		size_t needed = s + alignment + sizeof(struct chunk);
+		c = _new_chunk(p, (needed > p->chunk_size) ?
+			       needed : p->chunk_size);
+
+		if (!c)
+			return_NULL;
+
+		_align_chunk(c, alignment);
+	}
+
+	r = c->begin;
+	c->begin += s;
+
+#ifdef VALGRIND_POOL
+	VALGRIND_MAKE_MEM_UNDEFINED(r, s);
 #endif
 
-/*
- * Use mprotect system call to ensure all locked pages are not writable.
- * Generates segmentation fault with write access to the locked pool.
- *
- * - Implementation is using posix_memalign() to get page aligned
- *   memory blocks (could be implemented also through malloc).
- * - Only pool-fast is properly handled for now.
- * - Checksum is slower compared to mprotect.
- */
-static size_t _pagesize = 0;
-static size_t _pagesize_mask = 0;
-#define ALIGN_ON_PAGE(size) (((size) + (_pagesize_mask)) & ~(_pagesize_mask))
+	return r;
+}
+
+void dm_pool_empty(struct dm_pool *p)
+{
+	struct chunk *c;
+
+	for (c = p->chunk; c && c->prev; c = c->prev)
+		;
+
+	if (c)
+		dm_pool_free(p, (char *) (c + 1));
+}
+
+void dm_pool_free(struct dm_pool *p, void *ptr)
+{
+	struct chunk *c = p->chunk;
+
+	while (c) {
+		if (((char *) c < (char *) ptr) &&
+		    ((char *) c->end > (char *) ptr)) {
+			c->begin = ptr;
+#ifdef VALGRIND_POOL
+			VALGRIND_MAKE_MEM_NOACCESS(c->begin, c->end - c->begin);
+#endif
+			break;
+		}
+
+		if (p->spare_chunk)
+			_free_chunk(p->spare_chunk);
+
+		c->begin = (char *) (c + 1);
+#ifdef VALGRIND_POOL
+                VALGRIND_MAKE_MEM_NOACCESS(c->begin, c->end - c->begin);
 #endif
 
-#ifdef DEBUG_POOL
-#include "pool-debug.c"
-#else
-#include "pool-fast.c"
+		p->spare_chunk = c;
+		c = c->prev;
+	}
+
+	if (!c)
+		log_error(INTERNAL_ERROR "pool_free asked to free pointer "
+			  "not in pool");
+	else
+		p->chunk = c;
+}
+
+int dm_pool_begin_object(struct dm_pool *p, size_t hint)
+{
+	struct chunk *c = p->chunk;
+	const size_t align = DEFAULT_ALIGNMENT;
+
+	p->object_len = 0;
+	p->object_alignment = align;
+
+	if (c)
+		_align_chunk(c, align);
+
+	if (!c || (c->begin > c->end) || ((c->end - c->begin) < (int) hint)) {
+		/* allocate a new chunk */
+		c = _new_chunk(p,
+			       hint > (p->chunk_size - sizeof(struct chunk)) ?
+			       hint + sizeof(struct chunk) + align :
+			       p->chunk_size);
+
+		if (!c)
+			return 0;
+
+		_align_chunk(c, align);
+	}
+
+	return 1;
+}
+
+int dm_pool_grow_object(struct dm_pool *p, const void *extra, size_t delta)
+{
+	struct chunk *c = p->chunk, *nc;
+
+	if (!delta)
+		delta = strlen(extra);
+
+	if ((c->end - (c->begin + p->object_len)) < (int) delta) {
+		/* move into a new chunk */
+		if (p->object_len + delta > (p->chunk_size / 2))
+			nc = _new_chunk(p, (p->object_len + delta) * 2);
+		else
+			nc = _new_chunk(p, p->chunk_size);
+
+		if (!nc)
+			return 0;
+
+		_align_chunk(p->chunk, p->object_alignment);
+
+#ifdef VALGRIND_POOL
+		VALGRIND_MAKE_MEM_UNDEFINED(p->chunk->begin, p->object_len);
 #endif
+
+		memcpy(p->chunk->begin, c->begin, p->object_len);
+
+#ifdef VALGRIND_POOL
+		VALGRIND_MAKE_MEM_NOACCESS(c->begin, p->object_len);
+#endif
+
+		c = p->chunk;
+	}
+
+#ifdef VALGRIND_POOL
+	VALGRIND_MAKE_MEM_UNDEFINED(p->chunk->begin + p->object_len, delta);
+#endif
+
+	memcpy(c->begin + p->object_len, extra, delta);
+	p->object_len += delta;
+	return 1;
+}
+
+void *dm_pool_end_object(struct dm_pool *p)
+{
+	struct chunk *c = p->chunk;
+	void *r = c->begin;
+	c->begin += p->object_len;
+	p->object_len = 0u;
+	p->object_alignment = DEFAULT_ALIGNMENT;
+	return r;
+}
+
+void dm_pool_abandon_object(struct dm_pool *p)
+{
+#ifdef VALGRIND_POOL
+	VALGRIND_MAKE_MEM_NOACCESS(p->chunk, p->object_len);
+#endif
+	p->object_len = 0;
+	p->object_alignment = DEFAULT_ALIGNMENT;
+}
+
+static void _align_chunk(struct chunk *c, unsigned alignment)
+{
+	c->begin += alignment - ((unsigned long) c->begin & (alignment - 1));
+}
+
+static struct chunk *_new_chunk(struct dm_pool *p, size_t s)
+{
+	struct chunk *c;
+
+	if (p->spare_chunk &&
+	    ((p->spare_chunk->end - p->spare_chunk->begin) >= (ptrdiff_t)s)) {
+		/* reuse old chunk */
+		c = p->spare_chunk;
+		p->spare_chunk = 0;
+	} else {
+		c = malloc(s);
+		if (!c) {
+			log_error("Out of memory.  Requested %" PRIsize_t
+				  " bytes.", s);
+			return NULL;
+		}
+
+		c->begin = (char *) (c + 1);
+		c->end = (char *) c + s;
+
+#ifdef VALGRIND_POOL
+		VALGRIND_MAKE_MEM_NOACCESS(c->begin, c->end - c->begin);
+#endif
+	}
+
+	c->prev = p->chunk;
+	p->chunk = c;
+	return c;
+}
+
+static void _free_chunk(struct chunk *c)
+{
+#ifdef VALGRIND_POOL
+#  ifdef DEBUG_MEM
+	if (c)
+		VALGRIND_MAKE_MEM_UNDEFINED(c + 1, c->end - (char *) (c + 1));
+#  endif
+#endif
+	free(c);
+}
 
 char *dm_pool_strdup(struct dm_pool *p, const char *str)
 {
@@ -87,107 +339,14 @@ void dm_pools_check_leaks(void)
 {
 	struct dm_pool *p;
 
-	pthread_mutex_lock(&_dm_pools_mutex);
 	if (dm_list_empty(&_dm_pools)) {
-		pthread_mutex_unlock(&_dm_pools_mutex);
 		return;
 	}
 
 	log_error("You have a memory leak (not released memory pool):");
 	dm_list_iterate_items(p, &_dm_pools) {
-#ifdef DEBUG_POOL
-		log_error(" [%p] %s (%u bytes)",
-			  p->orig_pool,
-			  p->name, p->stats.bytes);
-#else
 		log_error(" [%p] %s", p, p->name);
-#endif
 	}
-	pthread_mutex_unlock(&_dm_pools_mutex);
 	log_error(INTERNAL_ERROR "Unreleased memory pool(s) found.");
 }
 
-/**
- * Status of locked pool.
- *
- * \param p
- * Pool to be tested for lock status.
- *
- * \return
- * 1 when the pool is locked, 0 otherwise.
- */
-int dm_pool_locked(struct dm_pool *p)
-{
-	return p->locked;
-}
-
-/**
- * Lock memory pool.
- *
- * \param p
- * Pool to be locked.
- *
- * \param crc
- * Bool specifies whether to store the pool crc/hash checksum.
- *
- * \return
- * 1 (success) when the pool was preperly locked, 0 otherwise.
- */
-int dm_pool_lock(struct dm_pool *p, int crc)
-{
-	if (p->locked) {
-		log_error(INTERNAL_ERROR "Pool %s is already locked.",
-			  p->name);
-		return 0;
-	}
-
-	if (crc)
-		p->crc = _pool_crc(p);  /* Get crc for pool */
-
-	if (!_pool_protect(p, PROT_READ)) {
-		_pool_protect(p, PROT_READ | PROT_WRITE);
-		return_0;
-	}
-
-	p->locked = 1;
-
-	log_debug("Pool %s is locked.", p->name);
-
-	return 1;
-}
-
-/**
- * Unlock memory pool.
- *
- * \param p
- * Pool to be unlocked.
- *
- * \param crc
- * Bool enables compare of the pool crc/hash with the stored value
- * at pool lock. The pool is not properly unlocked if there is a mismatch.
- *
- * \return
- * 1 (success) when the pool was properly unlocked, 0 otherwise.
- */
-int dm_pool_unlock(struct dm_pool *p, int crc)
-{
-	if (!p->locked) {
-		log_error(INTERNAL_ERROR "Pool %s is already unlocked.",
-			  p->name);
-		return 0;
-	}
-
-	p->locked = 0;
-
-	if (!_pool_protect(p, PROT_READ | PROT_WRITE))
-		return_0;
-
-	log_debug("Pool %s is unlocked.", p->name);
-
-	if (crc && (p->crc != _pool_crc(p))) {
-		log_error(INTERNAL_ERROR "Pool %s crc mismatch.", p->name);
-		return 0;
-	}
-
-	return 1;
-}
