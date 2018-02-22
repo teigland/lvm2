@@ -28,9 +28,9 @@
 #include <sys/ioctl.h>
 #include <sys/user.h>
 
-#include "bcache.h"
-#include "dm-logging.h"
-#include "log.h"
+#include "lib/device/bcache.h"
+#include "libdm/misc/dm-logging.h"
+#include "lib/log/log.h"
 
 #define SECTOR_SHIFT 9L
 
@@ -68,14 +68,14 @@ struct cb_set {
 static struct cb_set *_cb_set_create(unsigned nr)
 {
 	int i;
-	struct cb_set *cbs = dm_malloc(sizeof(*cbs));
+	struct cb_set *cbs = malloc(sizeof(*cbs));
 
 	if (!cbs)
 		return NULL;
 
-	cbs->vec = dm_malloc(nr * sizeof(*cbs->vec));
+	cbs->vec = malloc(nr * sizeof(*cbs->vec));
 	if (!cbs->vec) {
-		dm_free(cbs);
+		free(cbs);
 		return NULL;
 	}
 
@@ -98,8 +98,8 @@ static void _cb_set_destroy(struct cb_set *cbs)
 		return;
 	}
 
-	dm_free(cbs->vec);
-	dm_free(cbs);
+	free(cbs->vec);
+	free(cbs);
 }
 
 static struct control_block *_cb_alloc(struct cb_set *cbs, void *context)
@@ -153,7 +153,7 @@ static void _async_destroy(struct io_engine *ioe)
 	if (r)
 		log_sys_warn("io_destroy");
 
-	dm_free(e);
+	free(e);
 }
 
 static bool _async_issue(struct io_engine *ioe, enum dir d, int fd,
@@ -252,7 +252,7 @@ static unsigned _async_max_io(struct io_engine *e)
 struct io_engine *create_async_io_engine(void)
 {
 	int r;
-	struct async_engine *e = dm_malloc(sizeof(*e));
+	struct async_engine *e = malloc(sizeof(*e));
 
 	if (!e)
 		return NULL;
@@ -266,14 +266,14 @@ struct io_engine *create_async_io_engine(void)
 	r = io_setup(MAX_IO, &e->aio_context);
 	if (r < 0) {
 		log_warn("io_setup failed");
-		dm_free(e);
+		free(e);
 		return NULL;
 	}
 
 	e->cbs = _cb_set_create(MAX_IO);
 	if (!e->cbs) {
 		log_warn("couldn't create control block set");
-		dm_free(e);
+		free(e);
 		return NULL;
 	}
 
@@ -422,7 +422,7 @@ static bool _hash_table_init(struct bcache *cache, unsigned nr_entries)
 
 	cache->nr_buckets = _calc_nr_buckets(nr_entries);
 	cache->hash_mask = cache->nr_buckets - 1;
-	cache->buckets = dm_malloc(cache->nr_buckets * sizeof(*cache->buckets));
+	cache->buckets = malloc(cache->nr_buckets * sizeof(*cache->buckets));
 	if (!cache->buckets)
 		return false;
 
@@ -434,7 +434,7 @@ static bool _hash_table_init(struct bcache *cache, unsigned nr_entries)
 
 static void _hash_table_exit(struct bcache *cache)
 {
-	dm_free(cache->buckets);
+	free(cache->buckets);
 }
 
 //----------------------------------------------------------------
@@ -451,10 +451,10 @@ static bool _init_free_list(struct bcache *cache, unsigned count)
 		return false;
 
 	cache->raw_data = data;
-	cache->raw_blocks = dm_malloc(count * sizeof(*cache->raw_blocks));
+	cache->raw_blocks = malloc(count * sizeof(*cache->raw_blocks));
 
 	if (!cache->raw_blocks)
-		dm_free(cache->raw_data);
+		free(cache->raw_data);
 
 	for (i = 0; i < count; i++) {
 		struct block *b = cache->raw_blocks + i;
@@ -468,8 +468,8 @@ static bool _init_free_list(struct bcache *cache, unsigned count)
 
 static void _exit_free_list(struct bcache *cache)
 {
-	dm_free(cache->raw_data);
-	dm_free(cache->raw_blocks);
+	free(cache->raw_data);
+	free(cache->raw_blocks);
 }
 
 static struct block *_alloc_block(struct bcache *cache)
@@ -798,7 +798,7 @@ struct bcache *bcache_create(sector_t block_sectors, unsigned nr_cache_blocks,
 		return NULL;
 	}
 
-	cache = dm_malloc(sizeof(*cache));
+	cache = malloc(sizeof(*cache));
 	if (!cache)
 		return NULL;
 
@@ -818,7 +818,7 @@ struct bcache *bcache_create(sector_t block_sectors, unsigned nr_cache_blocks,
 
 	if (!_hash_table_init(cache, nr_cache_blocks)) {
 		cache->engine->destroy(cache->engine);
-		dm_free(cache);
+		free(cache);
 		return NULL;
 	}
 
@@ -832,7 +832,7 @@ struct bcache *bcache_create(sector_t block_sectors, unsigned nr_cache_blocks,
 	if (!_init_free_list(cache, nr_cache_blocks)) {
 		cache->engine->destroy(cache->engine);
 		_hash_table_exit(cache);
-		dm_free(cache);
+		free(cache);
 		return NULL;
 	}
 
@@ -849,7 +849,7 @@ void bcache_destroy(struct bcache *cache)
 	_exit_free_list(cache);
 	_hash_table_exit(cache);
 	cache->engine->destroy(cache->engine);
-	dm_free(cache);
+	free(cache);
 }
 
 unsigned bcache_nr_cache_blocks(struct bcache *cache)

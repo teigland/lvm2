@@ -17,9 +17,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "bcache.h"
-#include "framework.h"
-#include "units.h"
+#include "lib/device/bcache.h"
+#include "unit-test/framework.h"
+#include "unit-test/units.h"
 
 #define SHOW_MOCK_CALLS 0
 

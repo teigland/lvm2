@@ -21,11 +21,11 @@
 #define _GNU_SOURCE
 #define _FILE_OFFSET_BITS 64
 
-#include "configure.h"
+#include "include/configure.h"
 
 #include <unistd.h>
 
-#include "libdevmapper.h"
-#include "util.h"
+#include "libdm/libdevmapper.h"
+#include "lib/misc/util.h"
 
 #endif	/* _LVM_TOOL_H */

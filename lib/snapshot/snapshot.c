@@ -13,13 +13,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "metadata.h"
-#include "segtype.h"
-#include "text_export.h"
-#include "config.h"
-#include "activate.h"
-#include "str_list.h"
+#include "lib/misc/lib.h"
+#include "lib/metadata/metadata.h"
+#include "lib/metadata/segtype.h"
+#include "lib/format_text/text_export.h"
+#include "lib/config/config.h"
+#include "lib/activate/activate.h"
+#include "lib/datastruct/str_list.h"
 
 #define SEG_LOG_ERROR(t, p...) \
 	log_error(t " segment %s of logical volume %s.", ## p, \
@@ -229,7 +229,7 @@ static int _snap_modules_needed(struct dm_pool *mem,
 
 static void _snap_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _snapshot_ops = {
@@ -257,7 +257,7 @@ struct segment_type *init_segtype(struct cmd_context *cmd);
 struct segment_type *init_segtype(struct cmd_context *cmd)
 #endif
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype)
 		return_NULL;

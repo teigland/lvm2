@@ -16,12 +16,12 @@
  * dmeventd - dm event daemon to monitor active mapped devices
  */
 
-#include "dm-logging.h"
+#include "libdm/misc/dm-logging.h"
 
-#include "libdevmapper-event.h"
-#include "dmeventd.h"
+#include "daemons/dmeventd/libdevmapper-event.h"
+#include "daemons/dmeventd/dmeventd.h"
 
-#include "tool.h"
+#include "tools/tool.h"
 
 #include <dlfcn.h>
 #include <pthread.h>
@@ -264,19 +264,19 @@ static pthread_cond_t _timeout_cond = PTHREAD_COND_INITIALIZER;
 /* DSO data allocate/free. */
 static void _free_dso_data(struct dso_data *data)
 {
-	dm_free(data->dso_name);
-	dm_free(data);
+	free(data->dso_name);
+	free(data);
 }
 
 static struct dso_data *_alloc_dso_data(struct message_data *data)
 {
-	struct dso_data *ret = (typeof(ret)) dm_zalloc(sizeof(*ret));
+	struct dso_data *ret = (typeof(ret)) zalloc(sizeof(*ret));
 
 	if (!ret)
 		return_NULL;
 
 	if (!(ret->dso_name = dm_strdup(data->dso_name))) {
-		dm_free(ret);
+		free(ret);
 		return_NULL;
 	}
 
@@ -397,9 +397,9 @@ static void _free_thread_status(struct thread_status *thread)
 	_lib_put(thread->dso_data);
 	if (thread->wait_task)
 		dm_task_destroy(thread->wait_task);
-	dm_free(thread->device.uuid);
-	dm_free(thread->device.name);
-	dm_free(thread);
+	free(thread->device.uuid);
+	free(thread->device.name);
+	free(thread);
 }
 
 /* Note: events_field must not be 0, ensured by caller */
@@ -408,7 +408,7 @@ static struct thread_status *_alloc_thread_status(const struct message_data *dat
 {
 	struct thread_status *thread;
 
-	if (!(thread = dm_zalloc(sizeof(*thread)))) {
+	if (!(thread = zalloc(sizeof(*thread)))) {
 		log_error("Cannot create new thread, out of memory.");
 		return NULL;
 	}
@@ -538,11 +538,11 @@ out:
 /* Free message memory. */
 static void _free_message(struct message_data *message_data)
 {
-	dm_free(message_data->id);
-	dm_free(message_data->dso_name);
-	dm_free(message_data->device_uuid);
-	dm_free(message_data->events_str);
-	dm_free(message_data->timeout_str);
+	free(message_data->id);
+	free(message_data->dso_name);
+	free(message_data->device_uuid);
+	free(message_data->events_str);
+	free(message_data->timeout_str);
 }
 
 /* Parse a register message from the client. */
@@ -574,7 +574,7 @@ static int _parse_message(struct message_data *message_data)
 		ret = 1;
 	}
 
-	dm_free(msg->data);
+	free(msg->data);
 	msg->data = NULL;
 
 	return ret;
@@ -608,7 +608,7 @@ static int _fill_device_data(struct thread_status *ts)
 	if (!dm_task_run(dmt))
 		goto fail;
 
-	dm_free(ts->device.name);
+	free(ts->device.name);
 	if (!(ts->device.name = dm_strdup(dm_task_get_name(dmt))))
 		goto fail;
 
@@ -696,8 +696,8 @@ static int _get_status(struct message_data *message_data)
 
 	len = strlen(message_data->id);
 	msg->size = size + len + 1;
-	dm_free(msg->data);
-	if (!(msg->data = dm_malloc(msg->size)))
+	free(msg->data);
+	if (!(msg->data = malloc(msg->size)))
 		goto out;
 
 	memcpy(msg->data, message_data->id, len);
@@ -712,7 +712,7 @@ static int _get_status(struct message_data *message_data)
 	ret = 0;
  out:
 	for (j = 0; j < i; ++j)
-		dm_free(buffers[j]);
+		free(buffers[j]);
 
 	return ret;
 }
@@ -721,7 +721,7 @@ static int _get_parameters(struct message_data *message_data) {
 	struct dm_event_daemon_message *msg = message_data->msg;
 	int size;
 
-	dm_free(msg->data);
+	free(msg->data);
 	if ((size = dm_asprintf(&msg->data, "%s pid=%d daemon=%s exec_method=%s",
 				message_data->id, getpid(),
 				_foreground ? "no" : "yes",
@@ -1225,7 +1225,7 @@ static int _registered_device(struct message_data *message_data,
 	int r;
 	struct dm_event_daemon_message *msg = message_data->msg;
 
-	dm_free(msg->data);
+	free(msg->data);
 
 	if ((r = dm_asprintf(&(msg->data), "%s %s %s %u",
 			     message_data->id,
@@ -1365,7 +1365,7 @@ static int _get_timeout(struct message_data *message_data)
 	if (!thread)
 		return -ENODEV;
 
-	dm_free(msg->data);
+	free(msg->data);
 	msg->size = dm_asprintf(&(msg->data), "%s %" PRIu32,
 				message_data->id, thread->timeout);
 
@@ -1502,7 +1502,7 @@ static int _client_read(struct dm_event_fifos *fifos,
 			bytes = 0;
 			if (!size)
 				break; /* No data -> error */
-			buf = msg->data = dm_malloc(msg->size);
+			buf = msg->data = malloc(msg->size);
 			if (!buf)
 				break; /* No mem -> error */
 			header = 0;
@@ -1510,7 +1510,7 @@ static int _client_read(struct dm_event_fifos *fifos,
 	}
 
 	if (bytes != size) {
-		dm_free(msg->data);
+		free(msg->data);
 		msg->data = NULL;
 		return 0;
 	}
@@ -1530,7 +1530,7 @@ static int _client_write(struct dm_event_fifos *fifos,
 	fd_set fds;
 
 	size_t size = 2 * sizeof(uint32_t) + ((msg->data) ? msg->size : 0);
-	uint32_t *header = dm_malloc(size);
+	uint32_t *header = malloc(size);
 	char *buf = (char *)header;
 
 	if (!header) {
@@ -1560,7 +1560,7 @@ static int _client_write(struct dm_event_fifos *fifos,
 	}
 
 	if (header != temp)
-		dm_free(header);
+		free(header);
 
 	return (bytes == size);
 }
@@ -1622,7 +1622,7 @@ static int _do_process_request(struct dm_event_daemon_message *msg)
 			msg->size = dm_asprintf(&(msg->data), "%s %s %d", answer,
 						(msg->cmd == DM_EVENT_CMD_DIE) ? "DYING" : "HELLO",
 						DM_EVENT_PROTOCOL_VERSION);
-			dm_free(answer);
+			free(answer);
 		}
 	} else if (msg->cmd != DM_EVENT_CMD_ACTIVE && !_parse_message(&message_data)) {
 		stack;
@@ -1664,7 +1664,7 @@ static void _process_request(struct dm_event_fifos *fifos)
 
 	DEBUGLOG("<<< CMD:%s (0x%x) completed (result %d).", decode_cmd(cmd), cmd, msg.cmd);
 
-	dm_free(msg.data);
+	free(msg.data);
 
 	if (cmd == DM_EVENT_CMD_DIE) {
 		if (unlink(DMEVENTD_PIDFILE))
@@ -1975,7 +1975,7 @@ static int _reinstate_registrations(struct dm_event_fifos *fifos)
 	int i, ret;
 
 	ret = daemon_talk(fifos, &msg, DM_EVENT_CMD_HELLO, NULL, NULL, 0, 0);
-	dm_free(msg.data);
+	free(msg.data);
 	msg.data = NULL;
 
 	if (ret) {
@@ -2061,7 +2061,7 @@ static void _restart_dmeventd(void)
 			++count;
 		}
 
-	if (!(_initial_registrations = dm_malloc(sizeof(char*) * (count + 1)))) {
+	if (!(_initial_registrations = malloc(sizeof(char*) * (count + 1)))) {
 		fprintf(stderr, "Memory allocation registration failed.\n");
 		goto bad;
 	}

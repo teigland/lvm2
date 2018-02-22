@@ -12,15 +12,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
+#include "lib/misc/lib.h"
 
-#include "daemon-io.h"
-#include "lvmpolld-client.h"
-#include "lvmpolld-protocol.h"
-#include "metadata-exported.h"
-#include "polldaemon.h"
-#include "toolcontext.h"
-#include "lvm2cmd.h"
+#include "libdaemon/client/daemon-io.h"
+#include "lib/lvmpolld/lvmpolld-client.h"
+#include "daemons/lvmpolld/lvmpolld-protocol.h"
+#include "lib/metadata/metadata-exported.h"
+#include "lib/lvmpolld/polldaemon.h"
+#include "lib/commands/toolcontext.h"
+#include "tools/lvm2cmd.h"
 
 struct progress_info {
 	unsigned error:1;
@@ -207,7 +207,7 @@ static int _process_poll_init(const struct cmd_context *cmd, const char *poll_ty
 	const char *e = getenv("LVM_SYSTEM_DIR");
 	int r = 0; 
 
-	str = dm_malloc(INTERV_SIZE * sizeof(char));
+	str = malloc(INTERV_SIZE * sizeof(char));
 	if (!str)
 		return r;
 
@@ -266,7 +266,7 @@ out_rep:
 	daemon_reply_destroy(rep);
 out_req:
 	daemon_request_destroy(req);
-	dm_free(str);
+	free(str);
 
 	return r;
 }

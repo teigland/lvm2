@@ -9,7 +9,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "logging.h"
+#include "daemons/cmirrord/logging.h"
 
 const char *__rq_types_off_by_one[] = {
 	"DM_ULOG_CTR",

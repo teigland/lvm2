@@ -13,11 +13,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "config.h"
-#include "lvm-flock.h"
-#include "lvm-signal.h"
-#include "locking.h"
+#include "lib/misc/lib.h"
+#include "lib/config/config.h"
+#include "lib/misc/lvm-flock.h"
+#include "lib/misc/lvm-signal.h"
+#include "lib/locking/locking.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -74,8 +74,8 @@ static int _release_lock(const char *file, int unlock)
 			} else
 				_drop_shared_flock(ll->res, ll->lf);
 
-			dm_free(ll->res);
-			dm_free(llh);
+			free(ll->res);
+			free(llh);
 
 			if (file)
 				return 1;
@@ -188,11 +188,11 @@ int lock_file(const char *file, uint32_t flags)
 		return 0;
 	}
 
-	if (!(ll = dm_malloc(sizeof(struct lock_list))))
+	if (!(ll = malloc(sizeof(struct lock_list))))
 		return_0;
 
 	if (!(ll->res = dm_strdup(file))) {
-		dm_free(ll);
+		free(ll);
 		return_0;
 	}
 
@@ -211,8 +211,8 @@ int lock_file(const char *file, uint32_t flags)
 	if (r)
 		dm_list_add(&_lock_list, &ll->list);
 	else {
-		dm_free(ll->res);
-		dm_free(ll);
+		free(ll->res);
+		free(ll);
 		stack;
 	}
 

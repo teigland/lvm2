@@ -19,10 +19,10 @@
  * Send a command to a running clvmd from the command-line
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
-#include "clvm.h"
-#include "refresh_clvmd.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/refresh_clvmd.h"
 
 #include <stddef.h>
 #include <sys/socket.h>
@@ -114,7 +114,7 @@ static int _send_request(const char *inbuf, int inlen, char **retbuf, int no_res
 
 	/* Allocate buffer */
 	buflen = len + outheader->arglen;
-	*retbuf = dm_malloc(buflen);
+	*retbuf = malloc(buflen);
 	if (!*retbuf) {
 		errno = ENOMEM;
 		return 0;
@@ -226,7 +226,7 @@ static int _cluster_request(char cmd, const char *node, void *data, int len,
 	 * check the pointer when we are given it back to free
 	 */
 	*response = NULL;
-	if (!(rarray = dm_malloc(sizeof(lvm_response_t) * num_responses +
+	if (!(rarray = malloc(sizeof(lvm_response_t) * num_responses +
 				 sizeof(int) * 2))) {
 		errno = ENOMEM;
 		status = 0;
@@ -243,13 +243,13 @@ static int _cluster_request(char cmd, const char *node, void *data, int len,
 		memcpy(&rarray[i].status, inptr, sizeof(int));
 		inptr += sizeof(int);
 
-		rarray[i].response = dm_malloc(strlen(inptr) + 1);
+		rarray[i].response = malloc(strlen(inptr) + 1);
 		if (rarray[i].response == NULL) {
 			/* Free up everything else and return error */
 			int j;
 			for (j = 0; j < i; j++)
-				dm_free(rarray[i].response);
-			dm_free(rarray);
+				free(rarray[i].response);
+			free(rarray);
 			errno = ENOMEM;
 			status = 0;
 			goto out;
@@ -264,7 +264,7 @@ static int _cluster_request(char cmd, const char *node, void *data, int len,
 	*response = rarray;
 
       out:
-	dm_free(retbuf);
+	free(retbuf);
 
 	return status;
 }
@@ -275,10 +275,10 @@ static int _cluster_free_request(lvm_response_t * response, int num)
 	int i;
 
 	for (i = 0; i < num; i++) {
-		dm_free(response[i].response);
+		free(response[i].response);
 	}
 
-	dm_free(response);
+	free(response);
 
 	return 1;
 }

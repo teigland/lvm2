@@ -11,52 +11,50 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-top_builddir = @top_builddir@
+LVMETAD_SOURCE = daemons/lvmetad/lvmetad-core.c
+LVMETAD_DEPENDS = $(subst .c,.d,$(LVMETAD_SOURCE))
+LVMETAD_OBJECTS = $(subst .c,.o,$(LVMETAD_SOURCE))
+CLEAN_TARGETS += $(LVMETAD_DEPENDS) $(LVMETAD_OBJECTS)
 
-SOURCES = lvmetad-core.c
-SOURCES2 = lvmetactl.c
+-include $(LVMETAD_DEPENDS)
 
-TARGETS = lvmetad lvmetactl
+LVMETAD_SOURCES2 = daemons/lvmetad/lvmetactl.c
+LVMETAD_DEPENDS2 = $(subst .c,.d,$(LVMETAD_SOURCE2))
+LVMETAD_OBJECTS2 = $(subst .c,.o,$(LVMETAD_SOURCE2))
+CLEAN_TARGETS += $(LVMETAD_DEPENDS2) $(LVMETAD_OBJECTS2)
+
+-include $(LVMETAD_DEPENDS2)
+
+TARGETS += daemons/lvmetad/lvmetad daemons/lvmetad/lvmetactl
 
 .PHONY: install_lvmetad
 
-CFLOW_LIST = $(SOURCES)
-CFLOW_LIST_TARGET = $(LIB_NAME).cflow
-CFLOW_TARGET = lvmetad
+# FIXME: put back
+#CFLOW_LIST = $(SOURCES)
+#CFLOW_LIST_TARGET = $(LIB_NAME).cflow
+#CFLOW_TARGET = lvmetad
 
-include $(top_builddir)/make.tmpl
+$(LVMETAD_OBJECTS) $(LVMETAD_OBJECTS2): CFLAGS += $(EXTRA_EXEC_CFLAGS)
+$(LVMETAD_OBJECTS) $(LVMETAD_OBJECTS2): INCLUDES += -Ilibdaemon/server
+daemons/lvmetad/lvmetad daemons/lvmetad/lvmetactl: LDFLAGS += -Llibdaemon/server $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS)
+daemons/lvmetad/lvmetad daemons/lvmetad/lvmetactl: LIBS += $(RT_LIBS) $(DAEMON_LIBS) -ldevmapper $(PTHREAD_LIBS)
 
-CFLAGS_lvmetactl.o += $(EXTRA_EXEC_CFLAGS)
-CFLAGS_lvmetad-core.o += $(EXTRA_EXEC_CFLAGS)
-INCLUDES += -I$(top_srcdir)/libdaemon/server
-LDFLAGS += -L$(top_builddir)/libdaemon/server $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS)
-LIBS += $(RT_LIBS) $(DAEMON_LIBS) -ldevmapper $(PTHREAD_LIBS)
+daemons/lvmetad/lvmetad: $(LVMETAD_OBJECTS) libdaemon/client/libdaemonclient.a \
+		    libdaemon/server/libdaemonserver.a
+	@echo "    [LD] $@"
+	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LVMETAD_OBJECTS) -ldaemonserver $(LIBS)
 
-lvmetad: $(OBJECTS) $(top_builddir)/libdaemon/client/libdaemonclient.a \
-		    $(top_builddir)/libdaemon/server/libdaemonserver.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -ldaemonserver $(LIBS)
+daemons/lvmetad/lvmetactl: daemons/lvmetad/lvmetactl.o libdaemon/client/libdaemonclient.a \
+	libdaemon/server/libdaemonserver.a
+	@echo "    [LD] $@"
+	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ daemons/lvmetad/lvmetactl.o $(LIBS)
 
-lvmetactl: lvmetactl.o $(top_builddir)/libdaemon/client/libdaemonclient.a \
-	$(top_builddir)/libdaemon/server/libdaemonserver.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ lvmetactl.o $(LIBS)
+CLEAN_TARGETS += daemons/lvmetad/lvmetad daemons/lvmetad/lvmetactl
 
-CLEAN_TARGETS += lvmetactl.o
-
-# TODO: No idea. No idea how to test either.
-#ifneq ("$(CFLOW_CMD)", "")
-#CFLOW_SOURCES = $(addprefix $(srcdir)/, $(SOURCES))
-#-include $(top_builddir)/libdm/libdevmapper.cflow
-#-include $(top_builddir)/lib/liblvm-internal.cflow
-#-include $(top_builddir)/lib/liblvm2cmd.cflow
-#-include $(top_builddir)/daemons/dmeventd/$(LIB_NAME).cflow
-#-include $(top_builddir)/daemons/dmeventd/plugins/mirror/$(LIB_NAME)-lvm2mirror.cflow
-#endif
-
-install_lvmetad: lvmetad
+install_lvmetad: daemons/lvmetad/lvmetad
 	$(INSTALL_PROGRAM) -D $< $(sbindir)/$(<F)
 
 install_lvm2: install_lvmetad
 
 install: install_lvm2
+

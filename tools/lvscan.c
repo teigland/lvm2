@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 static int _lvscan_single_lvmetad(struct cmd_context *cmd, struct logical_volume *lv)
 {

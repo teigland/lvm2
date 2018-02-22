@@ -13,8 +13,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
-#include "format-text.h"
+#include "tools/tools.h"
+#include "lib/format_text/format-text.h"
 
 #include <sys/stat.h>
 #include <signal.h>
@@ -1519,7 +1519,7 @@ int process_each_label(struct cmd_context *cmd, int argc, char **argv,
 					log_error("No physical volume label read from %s.", argv[opt]);
 					ret_max = ECMD_FAILED;
 				} else {
-					if (!(devl = dm_malloc(sizeof(*devl))))
+					if (!(devl = malloc(sizeof(*devl))))
 						return_0;
 					devl->dev = dev;
 					dm_list_add(&process_duplicates, &devl->list);

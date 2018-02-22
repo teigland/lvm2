@@ -18,14 +18,14 @@
  * Ideally this file should be empty as liblvm and toollib should be doing identical things.
  * FIXME Merge all the code into different parts of the tree.
  */
-#include "lib.h"
-#include "toolcontext.h"
-#include "lvm-string.h"
-#include "metadata.h"
-#include "label.h"
-#include "lvm-signal.h"
-#include "lvmcache.h"
-#include "lvmetad.h"
+#include "lib/misc/lib.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/metadata/metadata.h"
+#include "lib/label/label.h"
+#include "lib/misc/lvm-signal.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/cache/lvmetad.h"
 
 int vg_reduce(struct volume_group *vg, const char *pv_name)
 {
@@ -469,10 +469,10 @@ int vg_extend(struct volume_group *vg, int pv_count, const char *const *pv_names
 		if (!_vg_extend_single_pv(vg, pv_name, pp, &max_phys_block_size)) {
 			log_error("Unable to add physical volume '%s' to "
 				  "volume group '%s'.", pv_name, vg->name);
-			dm_free(pv_name);
+			free(pv_name);
 			return 0;
 		}
-		dm_free(pv_name);
+		free(pv_name);
 	}
 
 	(void) check_pv_dev_sizes(vg);

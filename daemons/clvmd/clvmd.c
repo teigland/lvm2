@@ -17,14 +17,14 @@
  * CLVMD: Cluster LVM daemon
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
-#include "clvmd-comms.h"
-#include "clvm.h"
-#include "clvmd.h"
-#include "lvm-functions.h"
-#include "lvm-version.h"
-#include "refresh_clvmd.h"
+#include "daemons/clvmd/clvmd-comms.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/clvmd.h"
+#include "daemons/clvmd/lvm-functions.h"
+#include "include/lvm-version.h"
+#include "daemons/clvmd/refresh_clvmd.h"
 
 #ifdef HAVE_COROSYNC_CONFDB_H
 #include <corosync/confdb.h>
@@ -624,7 +624,7 @@ int main(int argc, char *argv[])
 	_local_client_count++;
 
 	/* Add the local socket to the list */
-	if (!(newfd = dm_zalloc(sizeof(struct local_client)))) {
+	if (!(newfd = zalloc(sizeof(struct local_client)))) {
 		child_init_signal_and_exit(DFAIL_MALLOC);
 		/* NOTREACHED */
 	}
@@ -681,7 +681,7 @@ int main(int argc, char *argv[])
 			cmd_client_cleanup(delfd); /* calls sync_unlock */
 		if (delfd->fd != local_sock)
 			safe_close(&(delfd->fd));
-		dm_free(delfd);
+		free(delfd);
 	}
 
 	DEBUGLOG("cluster_closedown\n");
@@ -727,7 +727,7 @@ static int local_rendezvous_callback(struct local_client *thisfd, char *buf,
 		return 1;
 
 	if (client_fd >= 0) {
-		if (!(newfd = dm_zalloc(sizeof(*newfd)))) {
+		if (!(newfd = zalloc(sizeof(*newfd)))) {
 			if (close(client_fd))
 				log_sys_error("close", "socket");
 			return 1;
@@ -1263,14 +1263,14 @@ static int cleanup_zombie(struct local_client *thisfd)
 
 			/* Remove pipe client */
 			if (!_del_client(delfd)) {
-				dm_free(delfd);
+				free(delfd);
 				thisfd->bits.localsock.pipe_client = NULL;
 			}
 		}
 	}
 
 	/* Free the command buffer */
-	dm_free(thisfd->bits.localsock.cmd);
+	free(thisfd->bits.localsock.cmd);
 
 	safe_close(&(thisfd->fd));
 	thisfd->bits.localsock.cleanup_needed = 0;
@@ -1349,10 +1349,10 @@ static int read_from_local_sock(struct local_client *thisfd)
 	}
 
 	/* Free any old buffer space */
-	dm_free(thisfd->bits.localsock.cmd);
+	free(thisfd->bits.localsock.cmd);
 
 	/* Save the message */
-	if (!(thisfd->bits.localsock.cmd = dm_malloc(len + missing_len))) {
+	if (!(thisfd->bits.localsock.cmd = malloc(len + missing_len))) {
 		struct clvm_header reply = {
 			.cmd = CLVMD_CMD_REPLY,
 			.status = ENOMEM
@@ -1379,7 +1379,7 @@ static int read_from_local_sock(struct local_client *thisfd)
 			if (len <= 0) {
 				/* EOF or error on socket */
 				DEBUGLOG("(%p) EOF on local socket\n", thisfd);
-				dm_free(thisfd->bits.localsock.cmd);
+				free(thisfd->bits.localsock.cmd);
 				thisfd->bits.localsock.cmd = NULL;
 				return 0;
 			}
@@ -1438,7 +1438,7 @@ static int read_from_local_sock(struct local_client *thisfd)
 		return len;
 	}
 
-	if (!(newfd = dm_zalloc(sizeof(*newfd)))) {
+	if (!(newfd = zalloc(sizeof(*newfd)))) {
 		struct clvm_header reply = {
 			.cmd = CLVMD_CMD_REPLY,
 			.status = ENOMEM
@@ -1617,7 +1617,7 @@ static void process_remote_command(struct clvm_header *msg, int msglen, int fd,
 	}
 
 	/* Allocate a default reply buffer */
-	if ((replyargs = dm_malloc(max_cluster_message - sizeof(struct clvm_header))))
+	if ((replyargs = malloc(max_cluster_message - sizeof(struct clvm_header))))
 		/* Run the command */
 		/* FIXME: usage of init_test() is unprotected */
 		status = do_command(NULL, msg, msglen, &replyargs,
@@ -1661,7 +1661,7 @@ static void process_remote_command(struct clvm_header *msg, int msglen, int fd,
 		}
 	}
 
-	dm_free(replyargs);
+	free(replyargs);
 }
 
 /* Add a reply to a command to the list of replies for this client.
@@ -1673,7 +1673,7 @@ static void add_reply_to_list(struct local_client *client, int status,
 	struct node_reply *reply;
 
 	/* Add it to the list of replies */
-	if (!(reply = dm_zalloc(sizeof(*reply)))) {
+	if (!(reply = zalloc(sizeof(*reply)))) {
 		/* It's all gone horribly wrong... */
 		send_local_reply(client, ENOMEM, client->fd);
 		return;
@@ -1684,7 +1684,7 @@ static void add_reply_to_list(struct local_client *client, int status,
 	DEBUGLOG("(%p) Reply from node %s: %d bytes\n", client, reply->node, len);
 
 	if (len > 0) {
-		if (!(reply->replymsg = dm_malloc(len)))
+		if (!(reply->replymsg = malloc(len)))
 			reply->status = ENOMEM;
 		else
 			memcpy(reply->replymsg, buf, len);
@@ -1694,8 +1694,8 @@ static void add_reply_to_list(struct local_client *client, int status,
 	pthread_mutex_lock(&client->bits.localsock.mutex);
 
 	if (client->bits.localsock.finished) {
-		dm_free(reply->replymsg);
-		dm_free(reply);
+		free(reply->replymsg);
+		free(reply);
 	} else {
 		/* Hook it onto the reply chain */
 		reply->next = client->bits.localsock.replies;
@@ -1805,7 +1805,7 @@ static int process_local_command(struct clvm_header *msg, int msglen,
 	int replylen = 0;
 	int status;
 
-	if (!(replybuf = dm_malloc(max_cluster_message)))
+	if (!(replybuf = malloc(max_cluster_message)))
 		return -1;
 
 	DEBUGLOG("(%p) process_local_command: %s msg=%p, msglen =%d\n",
@@ -1827,7 +1827,7 @@ static int process_local_command(struct clvm_header *msg, int msglen,
 		DEBUGLOG("(%p) Local command took too long, discarding xid %d, current is %d\n",
 			 client, xid, client->xid);
 
-	dm_free(replybuf);
+	free(replybuf);
 
 	return status;
 }
@@ -1883,7 +1883,7 @@ static void send_local_reply(struct local_client *client, int status, int fd)
 
 	/* Add in the size of our header */
 	message_len = message_len + sizeof(struct clvm_header);
-	if (!(replybuf = dm_malloc(message_len))) {
+	if (!(replybuf = malloc(message_len))) {
 		DEBUGLOG("(%p) Memory allocation fails\n", client);
 		return;
 	}
@@ -1921,8 +1921,8 @@ static void send_local_reply(struct local_client *client, int status, int fd)
 		}
 		thisreply = thisreply->next;
 
-		dm_free(tempreply->replymsg);
-		dm_free(tempreply);
+		free(tempreply->replymsg);
+		free(tempreply);
 	}
 
 	/* Terminate with an empty node name */
@@ -1933,7 +1933,7 @@ static void send_local_reply(struct local_client *client, int status, int fd)
 	/* And send it */
 	send_message(replybuf, message_len, our_csid, fd,
 		     "Error sending REPLY to client");
-	dm_free(replybuf);
+	free(replybuf);
 
 	/* Reset comms variables */
 	client->bits.localsock.replies = NULL;
@@ -1952,8 +1952,8 @@ static void free_reply(struct local_client *client)
 
 		thisreply = thisreply->next;
 
-		dm_free(tempreply->replymsg);
-		dm_free(tempreply);
+		free(tempreply->replymsg);
+		free(tempreply);
 	}
 	client->bits.localsock.replies = NULL;
 }
@@ -2031,7 +2031,7 @@ static int process_work_item(struct lvm_thread_cmd *cmd)
 		cmd_client_cleanup(cmd->client);
 		pthread_mutex_destroy(&cmd->client->bits.localsock.mutex);
 		pthread_cond_destroy(&cmd->client->bits.localsock.cond);
-		dm_free(cmd->client);
+		free(cmd->client);
 		return 0;
 	}
 
@@ -2083,8 +2083,8 @@ static void *lvm_thread_fn(void *arg)
 			pthread_mutex_unlock(&lvm_thread_mutex);
 
 			process_work_item(cmd);
-			dm_free(cmd->msg);
-			dm_free(cmd);
+			free(cmd->msg);
+			free(cmd);
 
 			pthread_mutex_lock(&lvm_thread_mutex);
 		}
@@ -2110,13 +2110,13 @@ static int add_to_lvmqueue(struct local_client *client, struct clvm_header *msg,
 {
 	struct lvm_thread_cmd *cmd;
 
-	if (!(cmd = dm_malloc(sizeof(*cmd))))
+	if (!(cmd = malloc(sizeof(*cmd))))
 		return ENOMEM;
 
 	if (msglen) {
-		if (!(cmd->msg = dm_malloc(msglen))) {
+		if (!(cmd->msg = malloc(msglen))) {
 			log_error("Unable to allocate buffer space.");
-			dm_free(cmd);
+			free(cmd);
 			return -1;
 		}
 		memcpy(cmd->msg, msg, msglen);
@@ -2139,8 +2139,8 @@ static int add_to_lvmqueue(struct local_client *client, struct clvm_header *msg,
 	pthread_mutex_lock(&lvm_thread_mutex);
 	if (lvm_thread_exit) {
 		pthread_mutex_unlock(&lvm_thread_mutex);
-		dm_free(cmd->msg);
-		dm_free(cmd);
+		free(cmd->msg);
+		free(cmd);
 		return -1; /* We are about to exit */
 	}
 	dm_list_add(&lvm_cmd_head, &cmd->list);

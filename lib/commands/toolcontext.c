@@ -13,27 +13,27 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "toolcontext.h"
-#include "metadata.h"
-#include "defaults.h"
-#include "lvm-string.h"
-#include "activate.h"
-#include "filter.h"
-#include "label.h"
-#include "lvm-file.h"
-#include "format-text.h"
-#include "display.h"
-#include "memlock.h"
-#include "str_list.h"
-#include "segtype.h"
-#include "lvmcache.h"
-#include "lvmetad.h"
-#include "archiver.h"
-#include "lvmpolld-client.h"
+#include "lib/misc/lib.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/metadata/metadata.h"
+#include "lib/config/defaults.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/activate/activate.h"
+#include "lib/filters/filter.h"
+#include "lib/label/label.h"
+#include "lib/misc/lvm-file.h"
+#include "lib/format_text/format-text.h"
+#include "lib/display/display.h"
+#include "lib/mm/memlock.h"
+#include "lib/datastruct/str_list.h"
+#include "lib/metadata/segtype.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/cache/lvmetad.h"
+#include "lib/format_text/archiver.h"
+#include "lib/lvmpolld/lvmpolld-client.h"
 
 #ifdef HAVE_LIBDL
-#include "sharedlib.h"
+#include "lib/misc/sharedlib.h"
 #endif
 
 #include <locale.h>
@@ -1765,7 +1765,7 @@ void destroy_config_context(struct cmd_context *cmd)
 	if (cmd->libmem)
 		dm_pool_destroy(cmd->libmem);
 
-	dm_free(cmd);
+	free(cmd);
 }
 
 /*
@@ -1776,7 +1776,7 @@ struct cmd_context *create_config_context(void)
 {
 	struct cmd_context *cmd;
 
-	if (!(cmd = dm_zalloc(sizeof(*cmd))))
+	if (!(cmd = zalloc(sizeof(*cmd))))
 		goto_out;
 
 	strcpy(cmd->system_dir, DEFAULT_SYS_DIR);
@@ -1840,7 +1840,7 @@ struct cmd_context *create_toolcontext(unsigned is_long_lived,
 
 	init_syslog(DEFAULT_LOG_FACILITY);
 
-	if (!(cmd = dm_zalloc(sizeof(*cmd)))) {
+	if (!(cmd = zalloc(sizeof(*cmd)))) {
 		log_error("Failed to allocate command context");
 		return NULL;
 	}
@@ -1871,7 +1871,7 @@ struct cmd_context *create_toolcontext(unsigned is_long_lived,
 #endif
 	   ) {
 		/* Allocate 2 buffers */
-		if (!(cmd->linebuffer = dm_malloc(2 * _linebuffer_size))) {
+		if (!(cmd->linebuffer = malloc(2 * _linebuffer_size))) {
 			log_error("Failed to allocate line buffer.");
 			goto out;
 		}
@@ -2059,7 +2059,7 @@ static void _destroy_dev_types(struct cmd_context *cmd)
 	if (!cmd->dev_types)
 		return;
 
-	dm_free(cmd->dev_types);
+	free(cmd->dev_types);
 	cmd->dev_types = NULL;
 }
 
@@ -2269,10 +2269,10 @@ void destroy_toolcontext(struct cmd_context *cmd)
 				cmd->linebuffer = NULL;	/* Leave buffer in place (deliberate leak) */
 		}
 
-		dm_free(cmd->linebuffer);
+		free(cmd->linebuffer);
 	}
 #endif
-	dm_free(cmd);
+	free(cmd);
 
 	lvmetad_release_token();
 	lvmetad_disconnect();

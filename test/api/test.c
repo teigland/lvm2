@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "configure.h"
-#include "lvm2app.h"
+#include "include/configure.h"
+#include "liblvm/lvm2app.h"
 
 #ifdef READLINE_SUPPORT
 #include <readline/readline.h>

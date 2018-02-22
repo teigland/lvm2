@@ -13,17 +13,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "metadata.h"
-#include "report.h"
-#include "toolcontext.h"
-#include "lvm-string.h"
-#include "display.h"
-#include "activate.h"
-#include "segtype.h"
-#include "lvmcache.h"
-#include "device-types.h"
-#include "str_list.h"
+#include "lib/misc/lib.h"
+#include "lib/metadata/metadata.h"
+#include "lib/report/report.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/display/display.h"
+#include "lib/activate/activate.h"
+#include "lib/metadata/segtype.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/device/device-types.h"
+#include "lib/datastruct/str_list.h"
 
 #include <stddef.h> /* offsetof() */
 #include <float.h> /* DBL_MAX */
@@ -47,7 +47,7 @@ static uint32_t _log_seqnum = 1;
  */
 #define FIELD(type, strct, sorttype, head, field_name, width, func, id, desc, writeable) field_ ## id,
 enum {
-#include "columns.h"
+#include "lib/report/columns.h"
 };
 #undef FIELD
 
@@ -1166,7 +1166,7 @@ static int _lv_time_handler(struct dm_report *rh, struct dm_pool *mem,
 	FIELD_RESERVED_VALUE(NAMED, field_id, id ## _y, desc, &_one64, __VA_ARGS__, _str_yes) \
 	FIELD_RESERVED_VALUE(NAMED, field_id, id ## _n, desc, &_zero64, __VA_ARGS__, _str_no)
 
-#include "values.h"
+#include "lib/report/values.h"
 
 #undef NUM
 #undef NUM_HND
@@ -1205,7 +1205,7 @@ static int _lv_time_handler(struct dm_report *rh, struct dm_pool *mem,
 	FIELD_RESERVED_VALUE(NAMED, field_id, id ## _n, desc, &_zero64, __VA_ARGS__)
 
 static const struct dm_report_reserved_value _report_reserved_values[] = {
-	#include "values.h"
+#include "lib/report/values.h"
 	{0, NULL, NULL, NULL}
 };
 
@@ -3938,17 +3938,17 @@ typedef struct label type_label;
 typedef dev_known_type_t type_devtype;
 
 static const struct dm_report_field_type _fields[] = {
-#include "columns.h"
+#include "lib/report/columns.h"
 {0, 0, 0, 0, "", "", NULL, NULL},
 };
 
 static const struct dm_report_field_type _devtypes_fields[] = {
-#include "columns-devtypes.h"
+#include "lib/report/columns-devtypes.h"
 {0, 0, 0, 0, "", "", NULL, NULL},
 };
 
 static const struct dm_report_field_type _log_fields[] = {
-#include "columns-cmdlog.h"
+#include "lib/report/columns-cmdlog.h"
 {0, 0, 0, 0, "", "", NULL, NULL},
 };
 

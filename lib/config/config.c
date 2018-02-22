@@ -14,16 +14,16 @@
  */
 
 
-#include "lib.h"
+#include "lib/misc/lib.h"
 
-#include "config.h"
-#include "crc.h"
-#include "device.h"
-#include "str_list.h"
-#include "toolcontext.h"
-#include "lvm-file.h"
-#include "memlock.h"
-#include "label.h"
+#include "lib/config/config.h"
+#include "lib/misc/crc.h"
+#include "lib/device/device.h"
+#include "lib/datastruct/str_list.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/misc/lvm-file.h"
+#include "lib/mm/memlock.h"
+#include "lib/label/label.h"
 
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -71,7 +71,7 @@ static struct cfg_def_item _cfg_def_items[CFG_COUNT + 1] = {
 #define cfg_runtime(id, name, parent, flags, type, since_version, deprecated_since_version, deprecation_comment, comment) {id, parent, name, type, {.fn_##type = get_default_##id}, (flags) | CFG_DEFAULT_RUN_TIME, since_version, {.fn_UNCONFIGURED = get_default_unconfigured_##id}, deprecated_since_version, (deprecation_comment), comment},
 #define cfg_array(id, name, parent, flags, types, default_value, since_version, unconfigured_value, deprecated_since_version, deprecation_comment, comment) {id, parent, name, CFG_TYPE_ARRAY | (types), {.v_CFG_TYPE_STRING = (default_value)}, (flags), (since_version), {.v_UNCONFIGURED = (unconfigured_value)}, deprecated_since_version, deprecation_comment, comment},
 #define cfg_array_runtime(id, name, parent, flags, types, since_version, deprecated_since_version, deprecation_comment, comment) {id, parent, name, CFG_TYPE_ARRAY | (types), {.fn_CFG_TYPE_STRING = get_default_##id}, (flags) | CFG_DEFAULT_RUN_TIME, (since_version), {.fn_UNCONFIGURED = get_default_unconfigured_##id}, deprecated_since_version, deprecation_comment, comment},
-#include "config_settings.h"
+#include "lib/config/config_settings.h"
 #undef cfg_section
 #undef cfg
 #undef cfg_runtime
@@ -529,7 +529,7 @@ int config_file_read_fd(struct dm_config_tree *cft, struct device *dev, dev_io_r
 		}
 		fb = fb + mmap_offset;
 	} else {
-		if (!(buf = dm_malloc(size + size2))) {
+		if (!(buf = malloc(size + size2))) {
 			log_error("Failed to allocate circular buffer.");
 			return 0;
 		}
@@ -567,7 +567,7 @@ int config_file_read_fd(struct dm_config_tree *cft, struct device *dev, dev_io_r
 
       out:
 	if (!use_mmap)
-		dm_free(buf);
+		free(buf);
 	else {
 		/* unmap the file */
 		if (munmap(fb - mmap_offset, size + mmap_offset)) {
@@ -735,7 +735,7 @@ static struct dm_config_value *_get_def_array_values(struct cmd_context *cmd,
 
 		if (!(v = dm_config_create_value(cft))) {
 			log_error("Failed to create default config array value for %s.", def->name);
-			dm_free(enc_value);
+			free(enc_value);
 			return NULL;
 		}
 
@@ -764,7 +764,7 @@ static struct dm_config_value *_get_def_array_values(struct cmd_context *cmd,
 				break;
 			case 'S':
 				if (!(r = dm_pool_strdup(cft->mem, token + 1))) {
-					dm_free(enc_value);
+					free(enc_value);
 					log_error("Failed to duplicate token for default "
 						  "array value of %s.", def->name);
 					return NULL;
@@ -780,13 +780,13 @@ static struct dm_config_value *_get_def_array_values(struct cmd_context *cmd,
 		token = p;
 	}
 
-	dm_free(enc_value);
+	free(enc_value);
 	return array;
 bad:
 	log_error(INTERNAL_ERROR "Default array value malformed for \"%s\", "
 		  "value: \"%s\", token: \"%s\".", def->name,
 		  def->default_value.v_CFG_TYPE_STRING, token);
-	dm_free(enc_value);
+	free(enc_value);
 	return NULL;
 }
 

@@ -12,14 +12,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "display.h"
-#include "metadata.h"
-#include "segtype.h"
-#include "text_export.h"
-#include "config.h"
-#include "activate.h"
-#include "str_list.h"
+#include "lib/misc/lib.h"
+#include "lib/display/display.h"
+#include "lib/metadata/metadata.h"
+#include "lib/metadata/segtype.h"
+#include "lib/format_text/text_export.h"
+#include "lib/config/config.h"
+#include "lib/activate/activate.h"
+#include "lib/datastruct/str_list.h"
 
 /* Dm kernel module name for thin provisiong */
 static const char _thin_pool_module[] = "thin-pool";
@@ -750,7 +750,7 @@ static int _thin_target_present(struct cmd_context *cmd,
 
 static void _thin_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _thin_pool_ops = {
@@ -807,7 +807,7 @@ int init_multiple_segtypes(struct cmd_context *cmd, struct segtype_library *segl
 	unsigned i;
 
 	for (i = 0; i < DM_ARRAY_SIZE(reg_segtypes); ++i) {
-		segtype = dm_zalloc(sizeof(*segtype));
+		segtype = zalloc(sizeof(*segtype));
 
 		if (!segtype) {
 			log_error("Failed to allocate memory for %s segtype",

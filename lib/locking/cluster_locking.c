@@ -19,12 +19,12 @@
  * management operations across a cluster.
  */
 
-#include "lib.h"
-#include "clvm.h"
-#include "lvm-string.h"
-#include "locking.h"
-#include "locking_types.h"
-#include "toolcontext.h"
+#include "lib/misc/lib.h"
+#include "daemons/clvmd/clvm.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/locking/locking.h"
+#include "lib/locking/locking_types.h"
+#include "lib/commands/toolcontext.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -132,7 +132,7 @@ static int _send_request(char *inbuf, int inlen, char **retbuf)
 
 	/* Allocate buffer */
 	buflen = len + outheader->arglen;
-	*retbuf = dm_malloc(buflen);
+	*retbuf = malloc(buflen);
 	if (!*retbuf) {
 		errno = ENOMEM;
 		return 0;
@@ -242,7 +242,7 @@ static int _cluster_request(char clvmd_cmd, const char *node, void *data, int le
 	 * check the pointer when we are given it back to free
 	 */
 	*response = NULL;
-	if (!(rarray = dm_malloc(sizeof(lvm_response_t) * num_responses))) {
+	if (!(rarray = malloc(sizeof(lvm_response_t) * num_responses))) {
 		errno = ENOMEM;
 		status = 0;
 		goto out;
@@ -258,13 +258,13 @@ static int _cluster_request(char clvmd_cmd, const char *node, void *data, int le
 		memcpy(&rarray[i].status, inptr, sizeof(int));
 		inptr += sizeof(int);
 
-		rarray[i].response = dm_malloc(strlen(inptr) + 1);
+		rarray[i].response = malloc(strlen(inptr) + 1);
 		if (rarray[i].response == NULL) {
 			/* Free up everything else and return error */
 			int j;
 			for (j = 0; j < i; j++)
-				dm_free(rarray[i].response);
-			dm_free(rarray);
+				free(rarray[i].response);
+			free(rarray);
 			errno = ENOMEM;
 			status = 0;
 			goto out;
@@ -279,7 +279,7 @@ static int _cluster_request(char clvmd_cmd, const char *node, void *data, int le
 	*response = rarray;
 
       out:
-	dm_free(retbuf);
+	free(retbuf);
 
 	return status;
 }
@@ -290,10 +290,10 @@ static int _cluster_free_request(lvm_response_t * response, int num)
 	int i;
 
 	for (i = 0; i < num; i++) {
-		dm_free(response[i].response);
+		free(response[i].response);
 	}
 
-	dm_free(response);
+	free(response);
 
 	return 1;
 }

@@ -12,11 +12,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "toolcontext.h"
-#include "segtype.h"
-#include "text_export.h"
-#include "config.h"
+#include "lib/misc/lib.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/metadata/segtype.h"
+#include "lib/format_text/text_export.h"
+#include "lib/config/config.h"
 
 static int _unknown_text_import(struct lv_segment *seg, const struct dm_config_node *sn,
 				struct dm_hash_table *pv_hash)
@@ -49,7 +49,7 @@ static int _unknown_text_export(const struct lv_segment *seg, struct formatter *
 
 static void _unknown_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _unknown_ops = {
@@ -60,7 +60,7 @@ static struct segtype_handler _unknown_ops = {
 
 struct segment_type *init_unknown_segtype(struct cmd_context *cmd, const char *name)
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype) {
 		log_error("Failed to allocate memory for unknown segtype");

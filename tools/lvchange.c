@@ -13,9 +13,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "memlock.h"
+#include "lib/mm/memlock.h"
 
 /*
  * Passed back from callee to request caller to

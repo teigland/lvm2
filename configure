@@ -644,7 +644,6 @@ DMEVENTD_PIDFILE
 WRITE_INSTALL
 VALGRIND_POOL
 USRSBINDIR
-USE_TRACKING
 UDEV_HAS_BUILTIN_BLKID
 UDEV_RULE_EXEC_DETECTION
 UDEV_SYSTEMD_BACKGROUND_JOBS
@@ -674,6 +673,7 @@ PYTHON3_BINDINGS
 PYTHON2_BINDINGS
 PYTHON_BINDINGS
 PYTHON3
+PYTHON2
 PTHREAD_LIBS
 M_LIBS
 POOL
@@ -745,25 +745,12 @@ BUILD_LOCKDSANLOCK
 BUILD_LVMLOCKD
 BUILD_LVMPOLLD
 BUILD_LVMETAD
-BUILD_LVMDBUSD
 BUILD_DMEVENTD
 BUILD_CMIRRORD
 BLKID_PC
 APPLIB
 MODPROBE_CMD
 MSGFMT
-PYTHON3_CONFIG
-PYTHON2_CONFIG
-PYTHON2
-pkgpyexecdir
-pyexecdir
-pkgpythondir
-pythondir
-PYTHON_PLATFORM
-PYTHON_EXEC_PREFIX
-PYTHON_PREFIX
-PYTHON_VERSION
-PYTHON
 LVM2CMD_LIB
 LVM2APP_LIB
 UDEV_LIBS
@@ -772,8 +759,6 @@ SYSTEMD_LIBS
 SYSTEMD_CFLAGS
 BLKID_LIBS
 BLKID_CFLAGS
-NOTIFY_DBUS_LIBS
-NOTIFY_DBUS_CFLAGS
 LOCKD_DLM_LIBS
 LOCKD_DLM_CFLAGS
 LOCKD_SANLOCK_LIBS
@@ -904,7 +889,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_dependency_tracking
 enable_static_link
 with_user
 with_group
@@ -955,7 +939,6 @@ with_lvmetad_pidfile
 enable_use_lvmpolld
 with_lvmpolld_pidfile
 enable_dmfilemapd
-enable_notify_dbus
 enable_blkid_wiping
 enable_udev_systemd_background_jobs
 enable_udev_sync
@@ -967,10 +950,6 @@ enable_ioctl
 enable_o_direct
 enable_applib
 enable_cmdlib
-enable_dbus_service
-enable_python_bindings
-enable_python2_bindings
-enable_python3_bindings
 enable_pkgconfig
 enable_write_install
 enable_fsadm
@@ -1039,15 +1018,12 @@ LOCKD_SANLOCK_CFLAGS
 LOCKD_SANLOCK_LIBS
 LOCKD_DLM_CFLAGS
 LOCKD_DLM_LIBS
-NOTIFY_DBUS_CFLAGS
-NOTIFY_DBUS_LIBS
 BLKID_CFLAGS
 BLKID_LIBS
 SYSTEMD_CFLAGS
 SYSTEMD_LIBS
 UDEV_CFLAGS
-UDEV_LIBS
-PYTHON'
+UDEV_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1671,8 +1647,6 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --disable-dependency-tracking
-                          speeds up one-time build.
   --enable-static_link    use this to link the tools to their libraries
                           statically (default is dynamic linking
   --enable-lvm1_fallback  use this to fall back and use LVM1 binaries if
@@ -1699,7 +1673,6 @@ Optional Features:
   --disable-use-lvmetad   disable usage of LVM Metadata Daemon
   --disable-use-lvmpolld  disable usage of LVM Poll Daemon
   --enable-dmfilemapd     enable the dmstats filemap daemon
-  --enable-notify-dbus    enable LVM notification using dbus
   --disable-blkid_wiping  disable libblkid detection of signatures when wiping
                           and use native code instead
   --disable-udev-systemd-background-jobs
@@ -1716,13 +1689,6 @@ Optional Features:
   --disable-o_direct      disable O_DIRECT
   --enable-applib         build application library
   --enable-cmdlib         build shared command library
-  --enable-dbus-service   install D-Bus support
-  --enable-python_bindings
-                          build default Python applib bindings
-  --enable-python2_bindings
-                          build Python2 applib bindings
-  --enable-python3_bindings
-                          build Python3 applib bindings
   --enable-pkgconfig      install pkgconfig support
   --enable-write_install  install user writable files
   --disable-fsadm         disable fsadm
@@ -1743,7 +1709,7 @@ Optional Packages:
                           create nodes on resume or create [ON=resume]
   --with-default-name-mangling=MANGLING
                           default name mangling: auto/none/hex [auto]
-  --with-cluster=TYPE     cluster LVM locking support: internal/shared/none
+  --with-cluster=TYPE     cluster LVM locking support: internal/none
                           [internal]
   --with-default-mirror-segtype=TYPE
                           default mirror segtype: raid1/mirror [raid1]
@@ -1878,10 +1844,6 @@ Some influential environment variables:
               C compiler flags for LOCKD_DLM, overriding pkg-config
   LOCKD_DLM_LIBS
               linker flags for LOCKD_DLM, overriding pkg-config
-  NOTIFY_DBUS_CFLAGS
-              C compiler flags for NOTIFY_DBUS, overriding pkg-config
-  NOTIFY_DBUS_LIBS
-              linker flags for NOTIFY_DBUS, overriding pkg-config
   BLKID_CFLAGS
               C compiler flags for BLKID, overriding pkg-config
   BLKID_LIBS  linker flags for BLKID, overriding pkg-config
@@ -1891,7 +1853,6 @@ Some influential environment variables:
               linker flags for SYSTEMD, overriding pkg-config
   UDEV_CFLAGS C compiler flags for UDEV, overriding pkg-config
   UDEV_LIBS   linker flags for UDEV, overriding pkg-config
-  PYTHON      the Python interpreter
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -8122,19 +8083,6 @@ done
 
 
 ################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable dependency tracking" >&5
-$as_echo_n "checking whether to enable dependency tracking... " >&6; }
-# Check whether --enable-dependency-tracking was given.
-if test "${enable_dependency_tracking+set}" = set; then :
-  enableval=$enable_dependency_tracking; USE_TRACKING=$enableval
-else
-  USE_TRACKING=yes
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $USE_TRACKING" >&5
-$as_echo "$USE_TRACKING" >&6; }
-
-################################################################################
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use static linking" >&5
 $as_echo_n "checking whether to use static linking... " >&6; }
 # Check whether --enable-static_link was given.
@@ -8410,7 +8358,7 @@ fi
 $as_echo "$CLUSTER" >&6; }
 
 case "$CLUSTER" in
-  none|shared) ;;
+  none) ;;
   internal)
 $as_echo "#define CLUSTER_LOCKING_INTERNAL 1" >>confdefs.h
  ;;
@@ -12265,101 +12213,6 @@ fi
 fi
 
 ################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build notifydbus" >&5
-$as_echo_n "checking whether to build notifydbus... " >&6; }
-# Check whether --enable-notify-dbus was given.
-if test "${enable_notify_dbus+set}" = set; then :
-  enableval=$enable_notify_dbus; NOTIFYDBUS_SUPPORT=$enableval
-else
-  NOTIFYDBUS_SUPPORT=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $NOTIFYDBUS_SUPPORT" >&5
-$as_echo "$NOTIFYDBUS_SUPPORT" >&6; }
-
-if test "$NOTIFYDBUS_SUPPORT" = yes; then
-
-$as_echo "#define NOTIFYDBUS_SUPPORT 1" >>confdefs.h
-
-	SYSTEMD_LIBS="-lsystemd"
-fi
-
-################################################################################
-if test "$NOTIFYDBUS_SUPPORT" = yes; then
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for NOTIFY_DBUS" >&5
-$as_echo_n "checking for NOTIFY_DBUS... " >&6; }
-
-if test -n "$NOTIFY_DBUS_CFLAGS"; then
-    pkg_cv_NOTIFY_DBUS_CFLAGS="$NOTIFY_DBUS_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"systemd >= 221\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "systemd >= 221") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_NOTIFY_DBUS_CFLAGS=`$PKG_CONFIG --cflags "systemd >= 221" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$NOTIFY_DBUS_LIBS"; then
-    pkg_cv_NOTIFY_DBUS_LIBS="$NOTIFY_DBUS_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"systemd >= 221\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "systemd >= 221") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_NOTIFY_DBUS_LIBS=`$PKG_CONFIG --libs "systemd >= 221" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        NOTIFY_DBUS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "systemd >= 221" 2>&1`
-        else
-	        NOTIFY_DBUS_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "systemd >= 221" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$NOTIFY_DBUS_PKG_ERRORS" >&5
-
-	$bailout
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	$bailout
-else
-	NOTIFY_DBUS_CFLAGS=$pkg_cv_NOTIFY_DBUS_CFLAGS
-	NOTIFY_DBUS_LIBS=$pkg_cv_NOTIFY_DBUS_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	HAVE_NOTIFY_DBUS=yes
-fi
-fi
-
-################################################################################
 
 # Check whether --enable-blkid_wiping was given.
 if test "${enable_blkid_wiping+set}" = set; then :
@@ -12856,1074 +12709,6 @@ $as_echo "$CMDLIB" >&6; }
 test "$CMDLIB" = yes \
   && LVM2CMD_LIB=-llvm2cmd \
   || LVM2CMD_LIB=
-
-################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include Python D-Bus support" >&5
-$as_echo_n "checking whether to include Python D-Bus support... " >&6; }
-# Check whether --enable-dbus-service was given.
-if test "${enable_dbus_service+set}" = set; then :
-  enableval=$enable_dbus_service; BUILD_LVMDBUSD=$enableval
-else
-  BUILD_LVMDBUSD=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BUILD_LVMDBUSD" >&5
-$as_echo "$BUILD_LVMDBUSD" >&6; }
-if test "$NOTIFYDBUS_SUPPORT" = yes && test "BUILD_LVMDBUSD" = yes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Building D-Bus support without D-Bus notifications." >&5
-$as_echo "$as_me: WARNING: Building D-Bus support without D-Bus notifications." >&2;}
-fi
-
-################################################################################
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build Python wrapper for liblvm2app.so" >&5
-$as_echo_n "checking whether to build Python wrapper for liblvm2app.so... " >&6; }
-# Check whether --enable-python_bindings was given.
-if test "${enable_python_bindings+set}" = set; then :
-  enableval=$enable_python_bindings; PYTHON_BINDINGS=$enableval
-else
-  PYTHON_BINDINGS=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_BINDINGS" >&5
-$as_echo "$PYTHON_BINDINGS" >&6; }
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build Python2 wrapper for liblvm2app.so" >&5
-$as_echo_n "checking whether to build Python2 wrapper for liblvm2app.so... " >&6; }
-# Check whether --enable-python2_bindings was given.
-if test "${enable_python2_bindings+set}" = set; then :
-  enableval=$enable_python2_bindings; PYTHON2_BINDINGS=$enableval
-else
-  PYTHON2_BINDINGS=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON2_BINDINGS" >&5
-$as_echo "$PYTHON2_BINDINGS" >&6; }
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build Python3 wrapper for liblvm2app.so" >&5
-$as_echo_n "checking whether to build Python3 wrapper for liblvm2app.so... " >&6; }
-# Check whether --enable-python3_bindings was given.
-if test "${enable_python3_bindings+set}" = set; then :
-  enableval=$enable_python3_bindings; PYTHON3_BINDINGS=$enableval
-else
-  PYTHON3_BINDINGS=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON3_BINDINGS" >&5
-$as_echo "$PYTHON3_BINDINGS" >&6; }
-
-if test "$PYTHON_BINDINGS" = yes; then
-	as_fn_error $? "--enable-python-bindings is replaced by --enable-python2-bindings and --enable-python3-bindings" "$LINENO" 5
-fi
-
-if test "$PYTHON2_BINDINGS" = yes; then
-
-
-
-
-
-
-        if test -n "$PYTHON"; then
-      # If the user set $PYTHON, use it and don't search something else.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $PYTHON version is >= 2" >&5
-$as_echo_n "checking whether $PYTHON version is >= 2... " >&6; }
-      prog="import sys
-# split strings by '.' and convert to numeric.  Append some zeros
-# because we need at least 4 digits for the hex conversion.
-# map returns an iterator in Python 3.0 and a list in 2.x
-minver = list(map(int, '2'.split('.'))) + [0, 0, 0]
-minverhex = 0
-# xrange is not present in Python 3.0 and range returns an iterator
-for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[i]
-sys.exit(sys.hexversion < minverhex)"
-  if { echo "$as_me:$LINENO: $PYTHON -c "$prog"" >&5
-   ($PYTHON -c "$prog") >&5 2>&5
-   ac_status=$?
-   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-   (exit $ac_status); }; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-			       as_fn_error $? "Python interpreter is too old" "$LINENO" 5
-fi
-      am_display_PYTHON=$PYTHON
-    else
-      # Otherwise, try each interpreter until we find one that satisfies
-      # VERSION.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a Python interpreter with version >= 2" >&5
-$as_echo_n "checking for a Python interpreter with version >= 2... " >&6; }
-if ${am_cv_pathless_PYTHON+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-	for am_cv_pathless_PYTHON in python python2 python3 python3.3 python3.2 python3.1 python3.0 python2.7  python2.6 python2.5 python2.4 python2.3 python2.2 python2.1 python2.0 none; do
-	  test "$am_cv_pathless_PYTHON" = none && break
-	  prog="import sys
-# split strings by '.' and convert to numeric.  Append some zeros
-# because we need at least 4 digits for the hex conversion.
-# map returns an iterator in Python 3.0 and a list in 2.x
-minver = list(map(int, '2'.split('.'))) + [0, 0, 0]
-minverhex = 0
-# xrange is not present in Python 3.0 and range returns an iterator
-for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[i]
-sys.exit(sys.hexversion < minverhex)"
-  if { echo "$as_me:$LINENO: $am_cv_pathless_PYTHON -c "$prog"" >&5
-   ($am_cv_pathless_PYTHON -c "$prog") >&5 2>&5
-   ac_status=$?
-   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-   (exit $ac_status); }; then :
-  break
-fi
-	done
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_pathless_PYTHON" >&5
-$as_echo "$am_cv_pathless_PYTHON" >&6; }
-      # Set $PYTHON to the absolute path of $am_cv_pathless_PYTHON.
-      if test "$am_cv_pathless_PYTHON" = none; then
-	PYTHON=:
-      else
-        # Extract the first word of "$am_cv_pathless_PYTHON", so it can be a program name with args.
-set dummy $am_cv_pathless_PYTHON; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PYTHON+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PYTHON in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PYTHON="$PYTHON" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PYTHON="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PYTHON=$ac_cv_path_PYTHON
-if test -n "$PYTHON"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON" >&5
-$as_echo "$PYTHON" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-      fi
-      am_display_PYTHON=$am_cv_pathless_PYTHON
-    fi
-
-
-  if test "$PYTHON" = :; then
-      as_fn_error $? "no suitable Python interpreter found" "$LINENO" 5
-  else
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON version" >&5
-$as_echo_n "checking for $am_display_PYTHON version... " >&6; }
-if ${am_cv_python_version+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  am_cv_python_version=`$PYTHON -c "import sys; sys.stdout.write(sys.version[:3])"`
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_version" >&5
-$as_echo "$am_cv_python_version" >&6; }
-  PYTHON_VERSION=$am_cv_python_version
-
-
-
-  PYTHON_PREFIX='${prefix}'
-
-  PYTHON_EXEC_PREFIX='${exec_prefix}'
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON platform" >&5
-$as_echo_n "checking for $am_display_PYTHON platform... " >&6; }
-if ${am_cv_python_platform+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  am_cv_python_platform=`$PYTHON -c "import sys; sys.stdout.write(sys.platform)"`
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_platform" >&5
-$as_echo "$am_cv_python_platform" >&6; }
-  PYTHON_PLATFORM=$am_cv_python_platform
-
-
-  # Just factor out some code duplication.
-  am_python_setup_sysconfig="\
-import sys
-# Prefer sysconfig over distutils.sysconfig, for better compatibility
-# with python 3.x.  See automake bug#10227.
-try:
-    import sysconfig
-except ImportError:
-    can_use_sysconfig = 0
-else:
-    can_use_sysconfig = 1
-# Can't use sysconfig in CPython 2.7, since it's broken in virtualenvs:
-# <https://github.com/pypa/virtualenv/issues/118>
-try:
-    from platform import python_implementation
-    if python_implementation() == 'CPython' and sys.version[:3] == '2.7':
-        can_use_sysconfig = 0
-except ImportError:
-    pass"
-
-
-            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON script directory" >&5
-$as_echo_n "checking for $am_display_PYTHON script directory... " >&6; }
-if ${am_cv_python_pythondir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "x$prefix" = xNONE
-     then
-       am_py_prefix=$ac_default_prefix
-     else
-       am_py_prefix=$prefix
-     fi
-     am_cv_python_pythondir=`$PYTHON -c "
-$am_python_setup_sysconfig
-if can_use_sysconfig:
-    sitedir = sysconfig.get_path('purelib', vars={'base':'$am_py_prefix'})
-else:
-    from distutils import sysconfig
-    sitedir = sysconfig.get_python_lib(0, 0, prefix='$am_py_prefix')
-sys.stdout.write(sitedir)"`
-     case $am_cv_python_pythondir in
-     $am_py_prefix*)
-       am__strip_prefix=`echo "$am_py_prefix" | sed 's|.|.|g'`
-       am_cv_python_pythondir=`echo "$am_cv_python_pythondir" | sed "s,^$am__strip_prefix,$PYTHON_PREFIX,"`
-       ;;
-     *)
-       case $am_py_prefix in
-         /usr|/System*) ;;
-         *)
-	  am_cv_python_pythondir=$PYTHON_PREFIX/lib/python$PYTHON_VERSION/site-packages
-	  ;;
-       esac
-       ;;
-     esac
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_pythondir" >&5
-$as_echo "$am_cv_python_pythondir" >&6; }
-  pythondir=$am_cv_python_pythondir
-
-
-
-  pkgpythondir=\${pythondir}/$PACKAGE
-
-
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON extension module directory" >&5
-$as_echo_n "checking for $am_display_PYTHON extension module directory... " >&6; }
-if ${am_cv_python_pyexecdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "x$exec_prefix" = xNONE
-     then
-       am_py_exec_prefix=$am_py_prefix
-     else
-       am_py_exec_prefix=$exec_prefix
-     fi
-     am_cv_python_pyexecdir=`$PYTHON -c "
-$am_python_setup_sysconfig
-if can_use_sysconfig:
-    sitedir = sysconfig.get_path('platlib', vars={'platbase':'$am_py_prefix'})
-else:
-    from distutils import sysconfig
-    sitedir = sysconfig.get_python_lib(1, 0, prefix='$am_py_prefix')
-sys.stdout.write(sitedir)"`
-     case $am_cv_python_pyexecdir in
-     $am_py_exec_prefix*)
-       am__strip_prefix=`echo "$am_py_exec_prefix" | sed 's|.|.|g'`
-       am_cv_python_pyexecdir=`echo "$am_cv_python_pyexecdir" | sed "s,^$am__strip_prefix,$PYTHON_EXEC_PREFIX,"`
-       ;;
-     *)
-       case $am_py_exec_prefix in
-         /usr|/System*) ;;
-         *)
-	   am_cv_python_pyexecdir=$PYTHON_EXEC_PREFIX/lib/python$PYTHON_VERSION/site-packages
-	   ;;
-       esac
-       ;;
-     esac
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_pyexecdir" >&5
-$as_echo "$am_cv_python_pyexecdir" >&6; }
-  pyexecdir=$am_cv_python_pyexecdir
-
-
-
-  pkgpyexecdir=\${pyexecdir}/$PACKAGE
-
-
-
-  fi
-
-
-	if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}python2", so it can be a program name with args.
-set dummy ${ac_tool_prefix}python2; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PYTHON2+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PYTHON2 in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PYTHON2="$PYTHON2" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PYTHON2="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PYTHON2=$ac_cv_path_PYTHON2
-if test -n "$PYTHON2"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON2" >&5
-$as_echo "$PYTHON2" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_PYTHON2"; then
-  ac_pt_PYTHON2=$PYTHON2
-  # Extract the first word of "python2", so it can be a program name with args.
-set dummy python2; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ac_pt_PYTHON2+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_PYTHON2 in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_PYTHON2="$ac_pt_PYTHON2" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_ac_pt_PYTHON2="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_PYTHON2=$ac_cv_path_ac_pt_PYTHON2
-if test -n "$ac_pt_PYTHON2"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PYTHON2" >&5
-$as_echo "$ac_pt_PYTHON2" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_PYTHON2" = x; then
-    PYTHON2=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    PYTHON2=$ac_pt_PYTHON2
-  fi
-else
-  PYTHON2="$ac_cv_path_PYTHON2"
-fi
-
-	test -z "$PYTHON2" && as_fn_error $? "python2 is required for --enable-python2_bindings but cannot be found" "$LINENO" 5
-	if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}python2-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}python2-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PYTHON2_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PYTHON2_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PYTHON2_CONFIG="$PYTHON2_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PYTHON2_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PYTHON2_CONFIG=$ac_cv_path_PYTHON2_CONFIG
-if test -n "$PYTHON2_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON2_CONFIG" >&5
-$as_echo "$PYTHON2_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_PYTHON2_CONFIG"; then
-  ac_pt_PYTHON2_CONFIG=$PYTHON2_CONFIG
-  # Extract the first word of "python2-config", so it can be a program name with args.
-set dummy python2-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ac_pt_PYTHON2_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_PYTHON2_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_PYTHON2_CONFIG="$ac_pt_PYTHON2_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_ac_pt_PYTHON2_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_PYTHON2_CONFIG=$ac_cv_path_ac_pt_PYTHON2_CONFIG
-if test -n "$ac_pt_PYTHON2_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PYTHON2_CONFIG" >&5
-$as_echo "$ac_pt_PYTHON2_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_PYTHON2_CONFIG" = x; then
-    PYTHON2_CONFIG=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    PYTHON2_CONFIG=$ac_pt_PYTHON2_CONFIG
-  fi
-else
-  PYTHON2_CONFIG="$ac_cv_path_PYTHON2_CONFIG"
-fi
-
-	test -z "$PYTHON2_CONFIG" && if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}python-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}python-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PYTHON2_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PYTHON2_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PYTHON2_CONFIG="$PYTHON2_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PYTHON2_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PYTHON2_CONFIG=$ac_cv_path_PYTHON2_CONFIG
-if test -n "$PYTHON2_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON2_CONFIG" >&5
-$as_echo "$PYTHON2_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_PYTHON2_CONFIG"; then
-  ac_pt_PYTHON2_CONFIG=$PYTHON2_CONFIG
-  # Extract the first word of "python-config", so it can be a program name with args.
-set dummy python-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ac_pt_PYTHON2_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_PYTHON2_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_PYTHON2_CONFIG="$ac_pt_PYTHON2_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_ac_pt_PYTHON2_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_PYTHON2_CONFIG=$ac_cv_path_ac_pt_PYTHON2_CONFIG
-if test -n "$ac_pt_PYTHON2_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PYTHON2_CONFIG" >&5
-$as_echo "$ac_pt_PYTHON2_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_PYTHON2_CONFIG" = x; then
-    PYTHON2_CONFIG=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    PYTHON2_CONFIG=$ac_pt_PYTHON2_CONFIG
-  fi
-else
-  PYTHON2_CONFIG="$ac_cv_path_PYTHON2_CONFIG"
-fi
-
-	test -z "$PYTHON2_CONFIG" && as_fn_error $? "python headers are required for --enable-python2_bindings but cannot be found" "$LINENO" 5
-	PYTHON2_INCDIRS=`"$PYTHON2_CONFIG" --includes`
-	PYTHON2_LIBDIRS=`"$PYTHON2_CONFIG" --libs`
-	PYTHON2DIR=$pythondir
-	PYTHON_BINDINGS=yes
-fi
-
-if test "$PYTHON3_BINDINGS" = yes -o "$BUILD_LVMDBUSD" = yes; then
-	unset PYTHON PYTHON_CONFIG
-	unset am_cv_pathless_PYTHON ac_cv_path_PYTHON am_cv_python_platform
-	unset am_cv_python_pythondir am_cv_python_version am_cv_python_pyexecdir
-	unset ac_cv_path_PYTHON_CONFIG ac_cv_path_ac_pt_PYTHON_CONFIG
-
-
-
-
-
-
-        if test -n "$PYTHON"; then
-      # If the user set $PYTHON, use it and don't search something else.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $PYTHON version is >= 3" >&5
-$as_echo_n "checking whether $PYTHON version is >= 3... " >&6; }
-      prog="import sys
-# split strings by '.' and convert to numeric.  Append some zeros
-# because we need at least 4 digits for the hex conversion.
-# map returns an iterator in Python 3.0 and a list in 2.x
-minver = list(map(int, '3'.split('.'))) + [0, 0, 0]
-minverhex = 0
-# xrange is not present in Python 3.0 and range returns an iterator
-for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[i]
-sys.exit(sys.hexversion < minverhex)"
-  if { echo "$as_me:$LINENO: $PYTHON -c "$prog"" >&5
-   ($PYTHON -c "$prog") >&5 2>&5
-   ac_status=$?
-   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-   (exit $ac_status); }; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-			       as_fn_error $? "Python interpreter is too old" "$LINENO" 5
-fi
-      am_display_PYTHON=$PYTHON
-    else
-      # Otherwise, try each interpreter until we find one that satisfies
-      # VERSION.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a Python interpreter with version >= 3" >&5
-$as_echo_n "checking for a Python interpreter with version >= 3... " >&6; }
-if ${am_cv_pathless_PYTHON+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-	for am_cv_pathless_PYTHON in python python2 python3 python3.3 python3.2 python3.1 python3.0 python2.7  python2.6 python2.5 python2.4 python2.3 python2.2 python2.1 python2.0 none; do
-	  test "$am_cv_pathless_PYTHON" = none && break
-	  prog="import sys
-# split strings by '.' and convert to numeric.  Append some zeros
-# because we need at least 4 digits for the hex conversion.
-# map returns an iterator in Python 3.0 and a list in 2.x
-minver = list(map(int, '3'.split('.'))) + [0, 0, 0]
-minverhex = 0
-# xrange is not present in Python 3.0 and range returns an iterator
-for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[i]
-sys.exit(sys.hexversion < minverhex)"
-  if { echo "$as_me:$LINENO: $am_cv_pathless_PYTHON -c "$prog"" >&5
-   ($am_cv_pathless_PYTHON -c "$prog") >&5 2>&5
-   ac_status=$?
-   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-   (exit $ac_status); }; then :
-  break
-fi
-	done
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_pathless_PYTHON" >&5
-$as_echo "$am_cv_pathless_PYTHON" >&6; }
-      # Set $PYTHON to the absolute path of $am_cv_pathless_PYTHON.
-      if test "$am_cv_pathless_PYTHON" = none; then
-	PYTHON=:
-      else
-        # Extract the first word of "$am_cv_pathless_PYTHON", so it can be a program name with args.
-set dummy $am_cv_pathless_PYTHON; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PYTHON+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PYTHON in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PYTHON="$PYTHON" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PYTHON="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PYTHON=$ac_cv_path_PYTHON
-if test -n "$PYTHON"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON" >&5
-$as_echo "$PYTHON" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-      fi
-      am_display_PYTHON=$am_cv_pathless_PYTHON
-    fi
-
-
-  if test "$PYTHON" = :; then
-      as_fn_error $? "no suitable Python interpreter found" "$LINENO" 5
-  else
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON version" >&5
-$as_echo_n "checking for $am_display_PYTHON version... " >&6; }
-if ${am_cv_python_version+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  am_cv_python_version=`$PYTHON -c "import sys; sys.stdout.write(sys.version[:3])"`
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_version" >&5
-$as_echo "$am_cv_python_version" >&6; }
-  PYTHON_VERSION=$am_cv_python_version
-
-
-
-  PYTHON_PREFIX='${prefix}'
-
-  PYTHON_EXEC_PREFIX='${exec_prefix}'
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON platform" >&5
-$as_echo_n "checking for $am_display_PYTHON platform... " >&6; }
-if ${am_cv_python_platform+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  am_cv_python_platform=`$PYTHON -c "import sys; sys.stdout.write(sys.platform)"`
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_platform" >&5
-$as_echo "$am_cv_python_platform" >&6; }
-  PYTHON_PLATFORM=$am_cv_python_platform
-
-
-  # Just factor out some code duplication.
-  am_python_setup_sysconfig="\
-import sys
-# Prefer sysconfig over distutils.sysconfig, for better compatibility
-# with python 3.x.  See automake bug#10227.
-try:
-    import sysconfig
-except ImportError:
-    can_use_sysconfig = 0
-else:
-    can_use_sysconfig = 1
-# Can't use sysconfig in CPython 2.7, since it's broken in virtualenvs:
-# <https://github.com/pypa/virtualenv/issues/118>
-try:
-    from platform import python_implementation
-    if python_implementation() == 'CPython' and sys.version[:3] == '2.7':
-        can_use_sysconfig = 0
-except ImportError:
-    pass"
-
-
-            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON script directory" >&5
-$as_echo_n "checking for $am_display_PYTHON script directory... " >&6; }
-if ${am_cv_python_pythondir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "x$prefix" = xNONE
-     then
-       am_py_prefix=$ac_default_prefix
-     else
-       am_py_prefix=$prefix
-     fi
-     am_cv_python_pythondir=`$PYTHON -c "
-$am_python_setup_sysconfig
-if can_use_sysconfig:
-    sitedir = sysconfig.get_path('purelib', vars={'base':'$am_py_prefix'})
-else:
-    from distutils import sysconfig
-    sitedir = sysconfig.get_python_lib(0, 0, prefix='$am_py_prefix')
-sys.stdout.write(sitedir)"`
-     case $am_cv_python_pythondir in
-     $am_py_prefix*)
-       am__strip_prefix=`echo "$am_py_prefix" | sed 's|.|.|g'`
-       am_cv_python_pythondir=`echo "$am_cv_python_pythondir" | sed "s,^$am__strip_prefix,$PYTHON_PREFIX,"`
-       ;;
-     *)
-       case $am_py_prefix in
-         /usr|/System*) ;;
-         *)
-	  am_cv_python_pythondir=$PYTHON_PREFIX/lib/python$PYTHON_VERSION/site-packages
-	  ;;
-       esac
-       ;;
-     esac
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_pythondir" >&5
-$as_echo "$am_cv_python_pythondir" >&6; }
-  pythondir=$am_cv_python_pythondir
-
-
-
-  pkgpythondir=\${pythondir}/$PACKAGE
-
-
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $am_display_PYTHON extension module directory" >&5
-$as_echo_n "checking for $am_display_PYTHON extension module directory... " >&6; }
-if ${am_cv_python_pyexecdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "x$exec_prefix" = xNONE
-     then
-       am_py_exec_prefix=$am_py_prefix
-     else
-       am_py_exec_prefix=$exec_prefix
-     fi
-     am_cv_python_pyexecdir=`$PYTHON -c "
-$am_python_setup_sysconfig
-if can_use_sysconfig:
-    sitedir = sysconfig.get_path('platlib', vars={'platbase':'$am_py_prefix'})
-else:
-    from distutils import sysconfig
-    sitedir = sysconfig.get_python_lib(1, 0, prefix='$am_py_prefix')
-sys.stdout.write(sitedir)"`
-     case $am_cv_python_pyexecdir in
-     $am_py_exec_prefix*)
-       am__strip_prefix=`echo "$am_py_exec_prefix" | sed 's|.|.|g'`
-       am_cv_python_pyexecdir=`echo "$am_cv_python_pyexecdir" | sed "s,^$am__strip_prefix,$PYTHON_EXEC_PREFIX,"`
-       ;;
-     *)
-       case $am_py_exec_prefix in
-         /usr|/System*) ;;
-         *)
-	   am_cv_python_pyexecdir=$PYTHON_EXEC_PREFIX/lib/python$PYTHON_VERSION/site-packages
-	   ;;
-       esac
-       ;;
-     esac
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_python_pyexecdir" >&5
-$as_echo "$am_cv_python_pyexecdir" >&6; }
-  pyexecdir=$am_cv_python_pyexecdir
-
-
-
-  pkgpyexecdir=\${pyexecdir}/$PACKAGE
-
-
-
-  fi
-
-
-	PYTHON3=$PYTHON
-	test -z "$PYTHON3" && as_fn_error $? "python3 is required for --enable-python3_bindings or --enable-dbus-service but cannot be found" "$LINENO" 5
-	if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}python3-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}python3-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PYTHON3_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PYTHON3_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PYTHON3_CONFIG="$PYTHON3_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PYTHON3_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PYTHON3_CONFIG=$ac_cv_path_PYTHON3_CONFIG
-if test -n "$PYTHON3_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON3_CONFIG" >&5
-$as_echo "$PYTHON3_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_PYTHON3_CONFIG"; then
-  ac_pt_PYTHON3_CONFIG=$PYTHON3_CONFIG
-  # Extract the first word of "python3-config", so it can be a program name with args.
-set dummy python3-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ac_pt_PYTHON3_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_PYTHON3_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_PYTHON3_CONFIG="$ac_pt_PYTHON3_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_ac_pt_PYTHON3_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_PYTHON3_CONFIG=$ac_cv_path_ac_pt_PYTHON3_CONFIG
-if test -n "$ac_pt_PYTHON3_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PYTHON3_CONFIG" >&5
-$as_echo "$ac_pt_PYTHON3_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_PYTHON3_CONFIG" = x; then
-    PYTHON3_CONFIG=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    PYTHON3_CONFIG=$ac_pt_PYTHON3_CONFIG
-  fi
-else
-  PYTHON3_CONFIG="$ac_cv_path_PYTHON3_CONFIG"
-fi
-
-	test -z "$PYTHON3_CONFIG" && as_fn_error $? "python3 headers are required for --enable-python3_bindings or --enable-dbus-service but cannot be found" "$LINENO" 5
-	PYTHON3_INCDIRS=`"$PYTHON3_CONFIG" --includes`
-	PYTHON3_LIBDIRS=`"$PYTHON3_CONFIG" --libs`
-	PYTHON3DIR=$pythondir
-	test "$PYTHON3_BINDINGS" = yes && PYTHON_BINDINGS=yes
-fi
-
-if test "$BUILD_LVMDBUSD" = yes; then
-	# To get this macro, install autoconf-archive package then run autoreconf
-
-    if test -z $PYTHON;
-    then
-        if test -z "python3";
-        then
-            PYTHON="python3"
-        else
-            PYTHON="python3"
-        fi
-    fi
-    PYTHON_NAME=`basename $PYTHON`
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $PYTHON_NAME module: pyudev" >&5
-$as_echo_n "checking $PYTHON_NAME module: pyudev... " >&6; }
-    $PYTHON -c "import pyudev" 2>/dev/null
-    if test $? -eq 0;
-    then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-        eval HAVE_PYMOD_PYUDEV=yes
-    else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-        eval HAVE_PYMOD_PYUDEV=no
-        #
-        if test -n "Required"
-        then
-            as_fn_error $? "failed to find required module pyudev" "$LINENO" 5
-            exit 1
-        fi
-    fi
-
-
-    if test -z $PYTHON;
-    then
-        if test -z "python3";
-        then
-            PYTHON="python3"
-        else
-            PYTHON="python3"
-        fi
-    fi
-    PYTHON_NAME=`basename $PYTHON`
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $PYTHON_NAME module: dbus" >&5
-$as_echo_n "checking $PYTHON_NAME module: dbus... " >&6; }
-    $PYTHON -c "import dbus" 2>/dev/null
-    if test $? -eq 0;
-    then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-        eval HAVE_PYMOD_DBUS=yes
-    else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-        eval HAVE_PYMOD_DBUS=no
-        #
-        if test -n "Required"
-        then
-            as_fn_error $? "failed to find required module dbus" "$LINENO" 5
-            exit 1
-        fi
-    fi
-
-fi
-
-if test "$PYTHON_BINDINGS" = yes -o "$PYTHON2_BINDINGS" = yes -o "$PYTHON3_BINDINGS" = yes; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Python bindings are deprecated. Use D-Bus API" >&5
-$as_echo "$as_me: WARNING: Python bindings are deprecated. Use D-Bus API" >&2;}
-	test "$APPLIB" != yes && as_fn_error $? "Python_bindings require --enable-applib" "$LINENO" 5
-fi
 
 ################################################################################
 # Check whether --enable-pkgconfig was given.
@@ -15833,10 +14618,8 @@ _ACEOF
 
 
 
-
-
 ################################################################################
-ac_config_files="$ac_config_files Makefile make.tmpl daemons/Makefile daemons/clvmd/Makefile daemons/cmirrord/Makefile daemons/dmeventd/Makefile daemons/dmeventd/libdevmapper-event.pc daemons/dmeventd/plugins/Makefile daemons/dmeventd/plugins/lvm2/Makefile daemons/dmeventd/plugins/raid/Makefile daemons/dmeventd/plugins/mirror/Makefile daemons/dmeventd/plugins/snapshot/Makefile daemons/dmeventd/plugins/thin/Makefile daemons/dmfilemapd/Makefile daemons/lvmdbusd/Makefile daemons/lvmdbusd/lvmdbusd daemons/lvmdbusd/lvmdb.py daemons/lvmdbusd/lvm_shell_proxy.py daemons/lvmdbusd/path.py daemons/lvmetad/Makefile daemons/lvmpolld/Makefile daemons/lvmlockd/Makefile conf/Makefile conf/example.conf conf/lvmlocal.conf conf/command_profile_template.profile conf/metadata_profile_template.profile lib/Makefile lib/locking/Makefile include/lvm-version.h libdaemon/Makefile libdaemon/client/Makefile libdaemon/server/Makefile libdm/Makefile libdm/libdevmapper.pc liblvm/Makefile liblvm/liblvm2app.pc man/Makefile po/Makefile python/Makefile python/setup.py scripts/blkdeactivate.sh scripts/blk_availability_init_red_hat scripts/blk_availability_systemd_red_hat.service scripts/clvmd_init_red_hat scripts/cmirrord_init_red_hat scripts/com.redhat.lvmdbus1.service scripts/dm_event_systemd_red_hat.service scripts/dm_event_systemd_red_hat.socket scripts/lvm2_cluster_activation_red_hat.sh scripts/lvm2_cluster_activation_systemd_red_hat.service scripts/lvm2_clvmd_systemd_red_hat.service scripts/lvm2_cmirrord_systemd_red_hat.service scripts/lvm2_lvmdbusd_systemd_red_hat.service scripts/lvm2_lvmetad_init_red_hat scripts/lvm2_lvmetad_systemd_red_hat.service scripts/lvm2_lvmetad_systemd_red_hat.socket scripts/lvm2_lvmpolld_init_red_hat scripts/lvm2_lvmpolld_systemd_red_hat.service scripts/lvm2_lvmpolld_systemd_red_hat.socket scripts/lvm2_lvmlockd_systemd_red_hat.service scripts/lvm2_lvmlocking_systemd_red_hat.service scripts/lvm2_monitoring_init_red_hat scripts/lvm2_monitoring_systemd_red_hat.service scripts/lvm2_pvscan_systemd_red_hat@.service scripts/lvm2_tmpfiles_red_hat.conf scripts/lvmdump.sh scripts/Makefile test/Makefile test/api/Makefile unit-test/Makefile tools/Makefile udev/Makefile"
+ac_config_files="$ac_config_files Makefile make.tmpl daemons/clvmd/Makefile daemons/cmirrord/Makefile daemons/dmeventd/Makefile daemons/dmeventd/libdevmapper-event.pc daemons/dmeventd/plugins/Makefile daemons/dmeventd/plugins/lvm2/Makefile daemons/dmeventd/plugins/raid/Makefile daemons/dmeventd/plugins/mirror/Makefile daemons/dmeventd/plugins/snapshot/Makefile daemons/dmeventd/plugins/thin/Makefile daemons/dmfilemapd/Makefile daemons/lvmetad/Makefile daemons/lvmpolld/Makefile daemons/lvmlockd/Makefile conf/Makefile conf/example.conf conf/lvmlocal.conf conf/command_profile_template.profile conf/metadata_profile_template.profile lib/Makefile include/lvm-version.h libdaemon/Makefile liblvm/Makefile liblvm/liblvm2app.pc man/Makefile po/Makefile scripts/blkdeactivate.sh scripts/blk_availability_init_red_hat scripts/blk_availability_systemd_red_hat.service scripts/clvmd_init_red_hat scripts/cmirrord_init_red_hat scripts/com.redhat.lvmdbus1.service scripts/dm_event_systemd_red_hat.service scripts/dm_event_systemd_red_hat.socket scripts/lvm2_cluster_activation_red_hat.sh scripts/lvm2_cluster_activation_systemd_red_hat.service scripts/lvm2_clvmd_systemd_red_hat.service scripts/lvm2_cmirrord_systemd_red_hat.service scripts/lvm2_lvmdbusd_systemd_red_hat.service scripts/lvm2_lvmetad_init_red_hat scripts/lvm2_lvmetad_systemd_red_hat.service scripts/lvm2_lvmetad_systemd_red_hat.socket scripts/lvm2_lvmpolld_init_red_hat scripts/lvm2_lvmpolld_systemd_red_hat.service scripts/lvm2_lvmpolld_systemd_red_hat.socket scripts/lvm2_lvmlockd_systemd_red_hat.service scripts/lvm2_lvmlocking_systemd_red_hat.service scripts/lvm2_monitoring_init_red_hat scripts/lvm2_monitoring_systemd_red_hat.service scripts/lvm2_pvscan_systemd_red_hat@.service scripts/lvm2_tmpfiles_red_hat.conf scripts/lvmdump.sh scripts/Makefile test/Makefile test/api/Makefile unit-test/Makefile tools/Makefile udev/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -16533,7 +15316,6 @@ do
     "include/configure.h") CONFIG_HEADERS="$CONFIG_HEADERS include/configure.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "make.tmpl") CONFIG_FILES="$CONFIG_FILES make.tmpl" ;;
-    "daemons/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/Makefile" ;;
     "daemons/clvmd/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/clvmd/Makefile" ;;
     "daemons/cmirrord/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/cmirrord/Makefile" ;;
     "daemons/dmeventd/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/dmeventd/Makefile" ;;
@@ -16545,11 +15327,6 @@ do
     "daemons/dmeventd/plugins/snapshot/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/dmeventd/plugins/snapshot/Makefile" ;;
     "daemons/dmeventd/plugins/thin/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/dmeventd/plugins/thin/Makefile" ;;
     "daemons/dmfilemapd/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/dmfilemapd/Makefile" ;;
-    "daemons/lvmdbusd/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/lvmdbusd/Makefile" ;;
-    "daemons/lvmdbusd/lvmdbusd") CONFIG_FILES="$CONFIG_FILES daemons/lvmdbusd/lvmdbusd" ;;
-    "daemons/lvmdbusd/lvmdb.py") CONFIG_FILES="$CONFIG_FILES daemons/lvmdbusd/lvmdb.py" ;;
-    "daemons/lvmdbusd/lvm_shell_proxy.py") CONFIG_FILES="$CONFIG_FILES daemons/lvmdbusd/lvm_shell_proxy.py" ;;
-    "daemons/lvmdbusd/path.py") CONFIG_FILES="$CONFIG_FILES daemons/lvmdbusd/path.py" ;;
     "daemons/lvmetad/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/lvmetad/Makefile" ;;
     "daemons/lvmpolld/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/lvmpolld/Makefile" ;;
     "daemons/lvmlockd/Makefile") CONFIG_FILES="$CONFIG_FILES daemons/lvmlockd/Makefile" ;;
@@ -16559,19 +15336,12 @@ do
     "conf/command_profile_template.profile") CONFIG_FILES="$CONFIG_FILES conf/command_profile_template.profile" ;;
     "conf/metadata_profile_template.profile") CONFIG_FILES="$CONFIG_FILES conf/metadata_profile_template.profile" ;;
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
-    "lib/locking/Makefile") CONFIG_FILES="$CONFIG_FILES lib/locking/Makefile" ;;
     "include/lvm-version.h") CONFIG_FILES="$CONFIG_FILES include/lvm-version.h" ;;
     "libdaemon/Makefile") CONFIG_FILES="$CONFIG_FILES libdaemon/Makefile" ;;
-    "libdaemon/client/Makefile") CONFIG_FILES="$CONFIG_FILES libdaemon/client/Makefile" ;;
-    "libdaemon/server/Makefile") CONFIG_FILES="$CONFIG_FILES libdaemon/server/Makefile" ;;
-    "libdm/Makefile") CONFIG_FILES="$CONFIG_FILES libdm/Makefile" ;;
-    "libdm/libdevmapper.pc") CONFIG_FILES="$CONFIG_FILES libdm/libdevmapper.pc" ;;
     "liblvm/Makefile") CONFIG_FILES="$CONFIG_FILES liblvm/Makefile" ;;
     "liblvm/liblvm2app.pc") CONFIG_FILES="$CONFIG_FILES liblvm/liblvm2app.pc" ;;
     "man/Makefile") CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
     "po/Makefile") CONFIG_FILES="$CONFIG_FILES po/Makefile" ;;
-    "python/Makefile") CONFIG_FILES="$CONFIG_FILES python/Makefile" ;;
-    "python/setup.py") CONFIG_FILES="$CONFIG_FILES python/setup.py" ;;
     "scripts/blkdeactivate.sh") CONFIG_FILES="$CONFIG_FILES scripts/blkdeactivate.sh" ;;
     "scripts/blk_availability_init_red_hat") CONFIG_FILES="$CONFIG_FILES scripts/blk_availability_init_red_hat" ;;
     "scripts/blk_availability_systemd_red_hat.service") CONFIG_FILES="$CONFIG_FILES scripts/blk_availability_systemd_red_hat.service" ;;

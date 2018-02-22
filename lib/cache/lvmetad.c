@@ -12,18 +12,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "toolcontext.h"
-#include "metadata.h"
-#include "device.h"
-#include "lvmetad.h"
-#include "lvmcache.h"
-#include "lvmetad-client.h"
-#include "format-text.h" // TODO for disk_locn, used as a DA representation
-#include "crc.h"
-#include "lvm-signal.h"
-#include "lvmlockd.h"
-#include "str_list.h"
+#include "lib/misc/lib.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/metadata/metadata.h"
+#include "lib/device/device.h"
+#include "lib/cache/lvmetad.h"
+#include "lib/cache/lvmcache.h"
+#include "daemons/lvmetad/lvmetad-client.h"
+#include "lib/format_text/format-text.h"
+#include "lib/misc/crc.h"
+#include "lib/misc/lvm-signal.h"
+#include "lib/locking/lvmlockd.h"
+#include "lib/datastruct/str_list.h"
 
 #include <time.h>
 
@@ -198,7 +198,7 @@ void lvmetad_set_token(const struct dm_config_value *filter)
 {
 	int ft = 0;
 
-	dm_free(_lvmetad_token);
+	free(_lvmetad_token);
 
 	while (filter && filter->type == DM_CFG_STRING) {
 		ft = calc_crc(ft, (const uint8_t *) filter->v.str, strlen(filter->v.str));
@@ -211,7 +211,7 @@ void lvmetad_set_token(const struct dm_config_value *filter)
 
 void lvmetad_release_token(void)
 {
-	dm_free(_lvmetad_token);
+	free(_lvmetad_token);
 	_lvmetad_token = NULL;
 }
 

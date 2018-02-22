@@ -12,10 +12,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "segtype.h"
-#include "str_list.h"
-#include "activate.h"
+#include "lib/misc/lib.h"
+#include "lib/metadata/segtype.h"
+#include "lib/datastruct/str_list.h"
+#include "lib/activate/activate.h"
 
 static int _zero_merge_segments(struct lv_segment *seg1, struct lv_segment *seg2)
 {
@@ -71,7 +71,7 @@ static int _zero_modules_needed(struct dm_pool *mem,
 
 static void _zero_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _zero_ops = {
@@ -86,7 +86,7 @@ static struct segtype_handler _zero_ops = {
 
 struct segment_type *init_zero_segtype(struct cmd_context *cmd)
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype)
 		return_NULL;

@@ -14,7 +14,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 struct pvresize_params {
 	uint64_t new_size;

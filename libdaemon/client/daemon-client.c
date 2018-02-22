@@ -14,11 +14,11 @@
 
 #define _REENTRANT
 
-#include "tool.h"
+#include "tools/tool.h"
 
-#include "daemon-io.h"
-#include "daemon-client.h"
-#include "dm-logging.h"
+#include "libdaemon/client/daemon-io.h"
+#include "libdaemon/client/daemon-client.h"
+#include "libdm/misc/dm-logging.h"
 
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -85,7 +85,7 @@ error:
 	if (r.cft)
 		daemon_reply_destroy(r);
 
-	dm_free((char *)h.protocol);
+	free((char *)h.protocol);
 	h.protocol = NULL;
 
 	return h;
@@ -181,7 +181,7 @@ void daemon_close(daemon_handle h)
 			log_sys_error("close", "daemon_close");
 	}
 
-	dm_free((char *)h.protocol);
+	free((char *)h.protocol);
 }
 
 daemon_request daemon_request_make(const char *id)

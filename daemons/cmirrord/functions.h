@@ -12,8 +12,8 @@
 #ifndef _LVM_CLOG_FUNCTIONS_H
 #define _LVM_CLOG_FUNCTIONS_H
 
-#include "dm-log-userspace.h"
-#include "cluster.h"
+#include "libdm/misc/dm-log-userspace.h"
+#include "daemons/cmirrord/cluster.h"
 
 #define LOG_RESUMED   1
 #define LOG_SUSPENDED 2

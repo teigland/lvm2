@@ -13,19 +13,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "toolcontext.h"
-#include "segtype.h"
-#include "display.h"
-#include "text_export.h"
-#include "text_import.h"
-#include "config.h"
-#include "str_list.h"
-#include "targets.h"
-#include "lvm-string.h"
-#include "activate.h"
-#include "pv_alloc.h"
-#include "metadata.h"
+#include "lib/misc/lib.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/metadata/segtype.h"
+#include "lib/display/display.h"
+#include "lib/format_text/text_export.h"
+#include "lib/format_text/text_import.h"
+#include "lib/config/config.h"
+#include "lib/datastruct/str_list.h"
+#include "lib/activate/targets.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/activate/activate.h"
+#include "lib/metadata/pv_alloc.h"
+#include "lib/metadata/metadata.h"
 
 static const char *_striped_name(const struct lv_segment *seg)
 {
@@ -212,7 +212,7 @@ static int _striped_target_present(struct cmd_context *cmd,
 
 static void _striped_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _striped_ops = {
@@ -232,7 +232,7 @@ static struct segtype_handler _striped_ops = {
 
 struct segment_type *init_striped_segtype(struct cmd_context *cmd)
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype)
 		return_NULL;

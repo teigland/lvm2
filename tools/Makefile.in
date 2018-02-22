@@ -12,84 +12,92 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-top_builddir = @top_builddir@
+TOOLS_SOURCE=\
+	tools/command.c \
+	tools/dumpconfig.c \
+	tools/formats.c \
+	tools/lvchange.c \
+	tools/lvconvert.c \
+	tools/lvconvert_poll.c \
+	tools/lvcreate.c \
+	tools/lvdisplay.c \
+	tools/lvextend.c \
+	tools/lvmcmdline.c \
+	tools/lvmdiskscan.c \
+	tools/lvreduce.c \
+	tools/lvremove.c \
+	tools/lvrename.c \
+	tools/lvresize.c \
+	tools/lvscan.c \
+	tools/polldaemon.c \
+	tools/pvchange.c \
+	tools/pvck.c \
+	tools/pvcreate.c \
+	tools/pvdisplay.c \
+	tools/pvmove.c \
+	tools/pvmove_poll.c \
+	tools/pvremove.c \
+	tools/pvresize.c \
+	tools/pvscan.c \
+	tools/reporter.c \
+	tools/segtypes.c \
+	tools/tags.c \
+	tools/toollib.c \
+	tools/vgcfgbackup.c \
+	tools/vgcfgrestore.c \
+	tools/vgchange.c \
+	tools/vgck.c \
+	tools/vgcreate.c \
+	tools/vgconvert.c \
+	tools/vgdisplay.c \
+	tools/vgexport.c \
+	tools/vgextend.c \
+	tools/vgimport.c \
+	tools/vgmerge.c \
+	tools/vgmknodes.c \
+	tools/lvpoll.c \
+	tools/vgimportclone.c \
+	tools/vgreduce.c \
+	tools/vgremove.c \
+	tools/vgrename.c \
+	tools/vgscan.c \
+	tools/vgsplit.c
 
-SOURCES =\
-	command.c \
-	dumpconfig.c \
-	formats.c \
-	lvchange.c \
-	lvconvert.c \
-	lvconvert_poll.c \
-	lvcreate.c \
-	lvdisplay.c \
-	lvextend.c \
-	lvmcmdline.c \
-	lvmdiskscan.c \
-	lvreduce.c \
-	lvremove.c \
-	lvrename.c \
-	lvresize.c \
-	lvscan.c \
-	polldaemon.c \
-	pvchange.c \
-	pvck.c \
-	pvcreate.c \
-	pvdisplay.c \
-	pvmove.c \
-	pvmove_poll.c \
-	pvremove.c \
-	pvresize.c \
-	pvscan.c \
-	reporter.c \
-	segtypes.c \
-	tags.c \
-	toollib.c \
-	vgcfgbackup.c \
-	vgcfgrestore.c \
-	vgchange.c \
-	vgck.c \
-	vgcreate.c \
-	vgconvert.c \
-	vgdisplay.c \
-	vgexport.c \
-	vgextend.c \
-	vgimport.c \
-	vgmerge.c \
-	vgmknodes.c \
-	lvpoll.c \
-	vgimportclone.c \
-	vgreduce.c \
-	vgremove.c \
-	vgrename.c \
-	vgscan.c \
-	vgsplit.c
+TOOLS_DEPENDS=$(subst .c,.d,$(TOOLS_SOURCE))
+TOOLS_OBJECTS=$(subst .c,.o,$(TOOLS_SOURCE))
+CLEAN_TARGETS+=tools/*.o tools/*.d
 
-SOURCES2 =\
-	dmsetup.c \
-	lvm.c \
-	lvm2cmd-static.c \
-	lvm2cmd.c \
-	lvmcmdlib.c \
-	man-generator.c
+-include $(TOOLS_DEPENDS)
 
-TARGETS =\
-	.commands \
-	liblvm2cmd.a \
-	lvm \
-	man-generator
+TOOLS_SOURCES2=\
+	tools/dmsetup.c \
+	tools/lvm.c \
+	tools/lvm2cmd-static.c \
+	tools/lvm2cmd.c \
+	tools/lvmcmdlib.c \
+	tools/man-generator.c
+TOOLS_DEPENDS2=$(subst .c,.d,$(TOOLS_SOURCE2))
+TOOLS_OBJECTS2=$(subst .c,.o,$(TOOLS_SOURCE2))
 
-TARGETS_DM = dmsetup
+-include $(TOOLS_DEPENDS2)
+
+$(TOOLS_SOURCE) $(TOOLS_SOURCE2): tools/cmds.h tools/command-count.h tools/command-lines-input.h
+
+TARGETS=\
+	tools/.commands \
+	tools/liblvm2cmd.a \
+	tools/lvm \
+	tools/man-generator
+
+TARGETS_DM = tools/dmsetup
 
 INSTALL_LVM_TARGETS = install_tools_dynamic
 INSTALL_DMSETUP_TARGETS = install_dmsetup_dynamic
-INSTALL_CMDLIB_TARGETS = install_cmdlib_dynamic install_cmdlib_include 
+INSTALL_CMDLIB_TARGETS = install_cmdlib_dynamic install_cmdlib_include
 
 ifeq ("@STATIC_LINK@", "yes")
-  TARGETS += lvm.static
-  TARGETS_DM += dmsetup.static
+  TARGETS += tools/lvm.static
+  TARGETS_DM += tools/dmsetup.static
   INSTALL_LVM_TARGETS += install_tools_static
   INSTALL_DMSETUP_TARGETS += install_dmsetup_static
   INSTALL_CMDLIB_TARGETS += install_cmdlib_static
@@ -98,171 +106,182 @@ endif
 LVMLIBS = $(LVMINTERNAL_LIBS) -ldevmapper -laio
 LIB_VERSION = $(LIB_VERSION_LVM)
 
-CLEAN_TARGETS = liblvm2cmd.$(LIB_SUFFIX) $(TARGETS_DM) \
-	liblvm2cmd.$(LIB_SUFFIX).$(LIB_VERSION) lvm-static.o \
-	liblvm2cmd-static.a dmsetup.static lvm.static \
-	$(LDDEPS) .exported_symbols_generated \
-	cmds.h command-lines-input.h command-count.h man-generator.c
+CLEAN_TARGETS += \
+	tools/liblvm2cmd.$(LIB_SUFFIX) $(TARGETS_DM) \
+	tools/liblvm2cmd.$(LIB_SUFFIX).$(LIB_VERSION) tools/lvm-static.o \
+	tools/liblvm2cmd-static.a dmsetup.static lvm.static \
+	$(LDDEPS) tools/.exported_symbols_generated \
+	tools/cmds.h tools/command-lines-input.h tools/command-count.h tools/man-generator.c
+
+-include tools/lvm-static.d
 
 ifeq ("@CMDLIB@", "yes")
-	TARGETS += liblvm2cmd.$(LIB_SUFFIX).$(LIB_VERSION)
+	TARGETS += tools/liblvm2cmd.$(LIB_SUFFIX).$(LIB_VERSION)
 	INSTALL_LVM_TARGETS += $(INSTALL_CMDLIB_TARGETS)
 endif
 
-EXPORTED_HEADER = $(srcdir)/lvm2cmd.h
+CLEAN_TARGETS+=$(TARGETS) $(TARGETS_DM)
+
+EXPORTED_HEADER = tools/lvm2cmd.h
 EXPORTED_FN_PREFIX = lvm2
 
-CFLOW_LIST = lvmcmdlib.c lvm2cmd.c
-CFLOW_LIST_TARGET = liblvm2cmd.cflow
-CFLOW_TARGET = lvm
-
-include $(top_builddir)/make.tmpl
+#CFLOW_LIST = lvmcmdlib.c lvm2cmd.c
+#CFLOW_LIST_TARGET = liblvm2cmd.cflow
+#CFLOW_TARGET = lvm
 
 device-mapper: $(TARGETS_DM)
 
 CFLAGS_dmsetup.o += $(UDEV_CFLAGS) $(EXTRA_EXEC_CFLAGS)
 
-dmsetup: dmsetup.o $(top_builddir)/libdm/libdevmapper.$(LIB_SUFFIX)
+-include tools/dmsetup.d
+
+tools/dmsetup: tools/dmsetup.o libdm/libdevmapper.$(LIB_SUFFIX)
 	@echo "    [CC] $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) \
-	      -o $@ dmsetup.o -ldevmapper $(LIBS)
+	      -o $@ tools/dmsetup.o -ldevmapper $(LIBS)
 
-dmsetup.static: dmsetup.o $(interfacebuilddir)/libdevmapper.a
+tools/dmsetup.static: tools/dmsetup.o $(interfacebuilddir)/libdevmapper.a
 	@echo "    [CC] $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) -static -L$(interfacebuilddir) \
 	      -o $@ dmsetup.o -ldevmapper $(M_LIBS) $(PTHREAD_LIBS) $(STATIC_LIBS) $(LIBS)
 
-all: device-mapper
-
 CFLAGS_lvm.o += $(EXTRA_EXEC_CFLAGS)
 
-INCLUDES += -I$(top_builddir)/tools
+INCLUDES += -I./tools
 
-lvm: $(OBJECTS) lvm.o $(top_builddir)/lib/liblvm-internal.a
+-include tools/lvm.d
+
+tools/lvm: $(TOOLS_OBJECTS) tools/lvm.o lib/liblvm-internal.a libdaemon/client/libdaemonclient.a
 	@echo "    [CC] $@"
-	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) -o $@ $(OBJECTS) lvm.o \
+	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(EXTRA_EXEC_LDFLAGS) $(ELDFLAGS) -o $@ $(TOOLS_OBJECTS) tools/lvm.o \
 		$(LVMLIBS) $(READLINE_LIBS) $(LIBS)
 
-DEFS_man-generator.o += -DMAN_PAGE_GENERATOR
-
-man-generator.c: command.c
+CLEAN_TARGETS+=tools/man-generator.c
+tools/man-generator.c: tools/command.c
 	@echo "    [LN] $@"
-	$(Q) $(LN_S) -f $< $@
+	$(Q) $(LN_S) -f command.c $@
 
-man-generator: man-generator.o
-	@echo "    [CC] $@"
-	$(CC) $(CFLAGS) -o $@ $<
+tools/man-generator.o: CFLAGS += -DMAN_PAGE_GENERATOR
+tools/man-generator: tools/man-generator.o
+	@echo "    [LD] $@"
+	$(Q) $(CC) $(CFLAGS) -o $@ $<
+
+-include tools/man-generator.d
 
 ifeq ("@BUILD_LVMETAD@", "yes")
-lvm: $(top_builddir)/libdaemon/client/libdaemonclient.a
+tools/lvm: $(top_builddir)/libdaemon/client/libdaemonclient.a
 endif
 
-lvm.static: $(OBJECTS) lvm-static.o $(top_builddir)/lib/liblvm-internal.a  $(interfacebuilddir)/libdevmapper.a
+tools/lvm.static: $(TOOLS_OBJECTS) tools/lvm-static.o lib/liblvm-internal.a libdm/ioctl/libdevmapper.a libdaemon/client/libdaemonclient.a
 	@echo "    [CC] $@"
 	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) -static -L$(interfacebuilddir) -o $@ \
-	      $(OBJECTS) lvm-static.o $(LVMLIBS) $(STATIC_LIBS) $(LIBS)
+	      $(TOOLS_OBJECTS) tools/lvm-static.o $(LVMLIBS) $(STATIC_LIBS) $(LIBS)
 
-liblvm2cmd.a: $(top_builddir)/lib/liblvm-internal.a $(OBJECTS) lvmcmdlib.o lvm2cmd.o
+-include tools/lvmcmdlib.d tools/lvm2cmd.d tools/lvm2cmd-static.d
+
+tools/liblvm2cmd.a: lib/liblvm-internal.a $(TOOLS_OBJECTS) tools/lvmcmdlib.o tools/lvm2cmd.o
 	@echo "    [AR] $@"
-	$(Q) cat $(top_builddir)/lib/liblvm-internal.a > $@
-	$(Q) $(AR) rs $@ $(OBJECTS) lvmcmdlib.o lvm2cmd.o > /dev/null
+	$(Q) cat lib/liblvm-internal.a > $@
+	$(Q) $(AR) rs $@ $(TOOLS_OBJECTS) tools/lvmcmdlib.o tools/lvm2cmd.o > /dev/null
 
-liblvm2cmd-static.a: $(top_builddir)/lib/liblvm-internal.a $(OBJECTS) lvmcmdlib.o lvm2cmd-static.o
+tools/liblvm2cmd-static.a: lib/liblvm-internal.a $(TOOLS_OBJECTS) tools/lvmcmdlib.o tools/lvm2cmd-static.o
 	@echo "    [AR] $@"
-	$(Q) cat $(top_builddir)/lib/liblvm-internal.a > $@
-	$(Q) $(AR) rs $@ $(OBJECTS) lvmcmdlib.o lvm2cmd-static.o > /dev/null
+	$(Q) cat lib/liblvm-internal.a > $@
+	$(Q) $(AR) rs $@ $(TOOLS_OBJECTS) tools/lvmcmdlib.o tools/lvm2cmd-static.o > /dev/null
 
-liblvm2cmd.$(LIB_SUFFIX): liblvm2cmd.a $(LDDEPS)
+tools/liblvm2cmd.$(LIB_SUFFIX): tools/liblvm2cmd.a $(LDDEPS)
 	@echo "    [CC] $@"
 	$(Q) $(CC) -shared -Wl,-soname,$@.$(LIB_VERSION) \
 		$(CFLAGS) $(CLDFLAGS) -o $@ \
-		@CLDWHOLEARCHIVE@ liblvm2cmd.a @CLDNOWHOLEARCHIVE@ \
+		@CLDWHOLEARCHIVE@ tools/liblvm2cmd.a @CLDNOWHOLEARCHIVE@ \
 		$(LVMLIBS) $(LIBS)
 
-liblvm2cmd.$(LIB_SUFFIX).$(LIB_VERSION): liblvm2cmd.$(LIB_SUFFIX)
+tools/liblvm2cmd.$(LIB_SUFFIX).$(LIB_VERSION): tools/liblvm2cmd.$(LIB_SUFFIX)
 	@echo "    [LN] $@"
 	$(Q) $(LN_S) -f $< $@
 
-.commands: $(srcdir)/commands.h $(srcdir)/cmdnames.h Makefile
+tools/.commands: tools/commands.h tools/cmdnames.h tools/Makefile
 	@echo "    [CC] $<"
-	$(Q) $(CC) -E -P $(srcdir)/cmdnames.h 2> /dev/null | \
+	$(Q) $(CC) -E -P tools/cmdnames.h 2> /dev/null | \
 		$(EGREP) -v '^ *(|#.*|config|devtypes|dumpconfig|formats|fullreport|help|lastlog|lvmchange|lvpoll|pvdata|segtypes|systemid|tags|version) *$$' > .commands
 
-command-count.h: $(srcdir)/command-lines.in Makefile
+tools/command-count.h: tools/command-lines.in tools/Makefile
 	@echo "    [GEN] $@"
 	$(Q) set -o pipefail && \
-	( cat $(top_srcdir)/tools/license.inc && \
+	( cat tools/license.inc && \
 	  echo "/* Do not edit. This file is generated by the Makefile. */" && \
 	  echo -n "#define COMMAND_COUNT " && \
-	  $(GREP) '^ID:' $(srcdir)/command-lines.in | $(WC) -l \
+	  $(GREP) '^ID:' tools/command-lines.in | $(WC) -l \
 	) > $@
 
-cmds.h: $(srcdir)/command-lines.in Makefile
+tools/cmds.h: tools/command-lines.in tools/Makefile
 	@echo "    [GEN] $@"
 	$(Q) set -o pipefail && \
-	( cat $(top_srcdir)/tools/license.inc && \
+	( cat tools/license.inc && \
 	  echo "/* Do not edit. This file is generated by the Makefile. */" && \
 	  echo "cmd(CMD_NONE, none)" && \
-	  $(GREP) '^ID:' $(srcdir)/command-lines.in | $(SORT) -u | $(AWK) '{print "cmd(" $$2 "_CMD, " $$2 ")"}' && \
+	  $(GREP) '^ID:' tools/command-lines.in | $(SORT) -u | $(AWK) '{print "cmd(" $$2 "_CMD, " $$2 ")"}' && \
 	  echo "cmd(CMD_COUNT, count)" \
 	) > $@
 
-command-lines-input.h: $(srcdir)/command-lines.in Makefile
+tools/command-lines-input.h: tools/command-lines.in tools/Makefile
 	@echo "    [GEN] $@"
 	$(Q) set -o pipefail && \
-	( cat $(top_srcdir)/tools/license.inc && \
+	( cat tools/license.inc && \
 	  echo "/* Do not edit. This file is generated by the Makefile. */" && \
 	  echo -en "const char _command_input[] =\n\n\"" && \
-	  $(EGREP) -v '^#|\-\-\-|^$$' $(srcdir)/command-lines.in | $(AWK) 'BEGIN {ORS = "\\n\"\n\""} //' && \
+	  $(EGREP) -v '^#|\-\-\-|^$$' tools/command-lines.in | $(AWK) 'BEGIN {ORS = "\\n\"\n\""} //' && \
 	  echo "\\n\";" \
 	) > $@
 
-$(SOURCES:%.c=%.d) $(SOURCES2:%.c=%.d): command-lines-input.h command-count.h cmds.h
-$(SOURCES:%.c=%.o) $(SOURCES2:%.c=%.o): command-lines-input.h command-count.h cmds.h
+# FIXME: dep generation takes care of this surely?
+#$(SOURCES:%.c=%.d) $(SOURCES2:%.c=%.d): command-lines-input.h command-count.h cmds.h
+#$(SOURCES:%.c=%.o) $(SOURCES2:%.c=%.o): command-lines-input.h command-count.h cmds.h
 
-ifneq ("$(CFLOW_CMD)", "")
-CFLOW_SOURCES = $(addprefix $(srcdir)/, $(SOURCES))
--include $(top_builddir)/libdm/libdevmapper.cflow
--include $(top_builddir)/lib/liblvm-internal.cflow
-endif
+# FIXME: put back
+#ifneq ("$(CFLOW_CMD)", "")
+#CFLOW_SOURCES = $(addprefix $(srcdir)/, $(SOURCES))
+#-include $(top_builddir)/libdm/libdevmapper.cflow
+#-include $(top_builddir)/lib/liblvm-internal.cflow
+#endif
 
 .PHONY: install_cmdlib_dynamic install_cmdlib_static install_cmdlib_include \
 	install_tools_dynamic install_tools_static \
 	install_dmsetup_dynamic install_dmsetup_static
 
-install_cmdlib_include: $(srcdir)/lvm2cmd.h
+install_cmdlib_include: tools/lvm2cmd.h
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_DATA) -D $< $(includedir)/$(<F)
 
-install_cmdlib_dynamic: liblvm2cmd.$(LIB_SUFFIX)
+install_cmdlib_dynamic: tools/liblvm2cmd.$(LIB_SUFFIX)
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_PROGRAM) -D $< $(libdir)/$(<F).$(LIB_VERSION)
 	$(Q) $(INSTALL_DIR) $(usrlibdir)
 	$(Q) $(LN_S) -f $(USRLIB_RELPATH)$(<F).$(LIB_VERSION) $(usrlibdir)/$(<F)
 
-install_cmdlib_static: liblvm2cmd-static.a
+install_cmdlib_static: tools/liblvm2cmd-static.a
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_DATA) -D $< $(usrlibdir)/liblvm2cmd.a
 
-install_tools_dynamic: lvm .commands
+install_tools_dynamic: tools/lvm tools/.commands
 	@echo "    [INSTALL] $<"
-	$(Q) $(INSTALL_PROGRAM) -D lvm $(sbindir)/lvm
+	$(Q) $(INSTALL_PROGRAM) -D tools/lvm $(sbindir)/lvm
 	@echo Creating symbolic links for individual commands in $(sbindir)
 	@for v in `cat .commands`; do \
 		echo "$(LN_S) -f lvm $(sbindir)/$$v"; \
 		$(LN_S) -f lvm $(sbindir)/$$v; \
 	done;
 
-install_tools_static: lvm.static
+install_tools_static: tools/lvm.static
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_PROGRAM) -D $< $(staticdir)/$(<F)
 
-install_dmsetup_dynamic: dmsetup
+install_dmsetup_dynamic: tools/dmsetup
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_PROGRAM) -D $< $(sbindir)/$(<F)
 	$(Q) $(LN_S) -f $(<F) $(sbindir)/dmstats
 
-install_dmsetup_static: dmsetup.static
+install_dmsetup_static: tools/dmsetup.static
 	@echo "    [INSTALL] $<"
 	$(Q) $(INSTALL_PROGRAM) -D $< $(staticdir)/$(<F)
 	$(Q) $(LN_S) -f $(<F) $(staticdir)/dmstats

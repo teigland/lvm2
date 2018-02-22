@@ -12,12 +12,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "filter.h"
-#include "activate.h" /* device_is_usable */
+#include "lib/misc/lib.h"
+#include "lib/filters/filter.h"
+#include "lib/activate/activate.h"
 #ifdef UDEV_SYNC_SUPPORT
 #include <libudev.h>
-#include "dev-ext-udev-constants.h"
+#include "lib/device/dev-ext-udev-constants.h"
 #endif
 
 static const char *_too_small_to_hold_pv_msg = "Too small to hold a PV";
@@ -166,15 +166,15 @@ static void _usable_filter_destroy(struct dev_filter *f)
 	if (f->use_count)
 		log_error(INTERNAL_ERROR "Destroying usable device filter while in use %u times.", f->use_count);
 
-	dm_free(f->private);
-	dm_free(f);
+	free(f->private);
+	free(f);
 }
 
 struct dev_filter *usable_filter_create(struct dev_types *dt __attribute__((unused)), filter_mode_t mode)
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(struct dev_filter)))) {
+	if (!(f = zalloc(sizeof(struct dev_filter)))) {
 		log_error("Usable device filter allocation failed");
 		return NULL;
 	}
@@ -182,9 +182,9 @@ struct dev_filter *usable_filter_create(struct dev_types *dt __attribute__((unus
 	f->passes_filter = _passes_usable_filter;
 	f->destroy = _usable_filter_destroy;
 	f->use_count = 0;
-	if (!(f->private = dm_zalloc(sizeof(filter_mode_t)))) {
+	if (!(f->private = zalloc(sizeof(filter_mode_t)))) {
 		log_error("Usable device filter mode allocation failed");
-		dm_free(f);
+		free(f);
 		return NULL;
 	}
 	*((filter_mode_t *) f->private) = mode;

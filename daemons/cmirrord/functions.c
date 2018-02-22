@@ -9,8 +9,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "logging.h"
-#include "functions.h"
+#include "daemons/cmirrord/logging.h"
+#include "daemons/cmirrord/functions.h"
 
 #include <sys/sysmacros.h>
 #include <dirent.h>
@@ -435,7 +435,7 @@ static int _clog_ctr(char *uuid, uint64_t luid,
 			block_on_error = 1;
 	}
 
-	lc = dm_zalloc(sizeof(*lc));
+	lc = zalloc(sizeof(*lc));
 	if (!lc) {
 		LOG_ERROR("Unable to allocate cluster log context");
 		r = -ENOMEM;
@@ -458,7 +458,7 @@ static int _clog_ctr(char *uuid, uint64_t luid,
 	    get_pending_log(lc->uuid, lc->luid)) {
 		LOG_ERROR("[%s/%" PRIu64 "u] Log already exists, unable to create.",
 			  SHORT_UUID(lc->uuid), lc->luid);
-		dm_free(lc);
+		free(lc);
 		return -EINVAL;
 	}
 
@@ -528,9 +528,9 @@ fail:
 			LOG_ERROR("Close device error, %s: %s",
 				  disk_path, strerror(errno));
 		free(lc->disk_buffer);
-		dm_free(lc->sync_bits);
-		dm_free(lc->clean_bits);
-		dm_free(lc);
+		free(lc->sync_bits);
+		free(lc->clean_bits);
+		free(lc);
 	}
 	return r;
 }
@@ -655,9 +655,9 @@ static int clog_dtr(struct dm_ulog_request *rq)
 			  strerror(errno));
 	if (lc->disk_buffer)
 		free(lc->disk_buffer);
-	dm_free(lc->clean_bits);
-	dm_free(lc->sync_bits);
-	dm_free(lc);
+	free(lc->clean_bits);
+	free(lc->sync_bits);
+	free(lc);
 
 	return 0;
 }

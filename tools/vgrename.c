@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 struct vgrename_params {
 	const char *vg_name_old;

@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 int segtypes(struct cmd_context *cmd, int argc __attribute__((unused)),
 	     char **argv __attribute__((unused)))

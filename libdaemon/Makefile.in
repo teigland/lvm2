@@ -11,24 +11,34 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-top_builddir = @top_builddir@
+DCLIENT_SOURCE=\
+	libdaemon/client/daemon-io.c \
+	libdaemon/client/config-util.c \
+	libdaemon/client/daemon-client.c
+DCLIENT_DEPENDS=$(subst .c,.d,$(DCLIENT_SOURCE))
+DCLIENT_OBJECTS=$(subst .c,.o,$(DCLIENT_SOURCE))
+CLEAN_TARGETS+=$(DCLIENT_DEPENDS) $(DCLIENT_OBJECTS)
 
-.PHONY: client server
+DSERVER_SOURCE=\
+	libdaemon/server/daemon-server.c \
+	libdaemon/server/daemon-log.c
+DSERVER_DEPENDS=$(subst .c,.d,$(DSERVER_SOURCE))
+DSERVER_OBJECTS=$(subst .c,.o,$(DSERVER_SOURCE))
+CLEAN_TARGETS+=\
+	$(DSERVER_DEPENDS) \
+	$(DSERVER_OBJECTS) \
+	libdaemon/client/libdaemonclient.a \
+	libdaemon/server/libdaemonserver.a
 
-SUBDIRS += client
+libdaemon/client/libdaemonclient.a: $(DCLIENT_OBJECTS)
+	@echo "    [AR] $@"
+	$(Q) $(RM) $@
+	$(Q) $(AR) rsv $@ $(DCLIENT_OBJECTS) > /dev/null
 
-ifeq (@BUILD_LVMETAD@,yes)
-  SUBDIRS += server
-server: client
-else ifeq (@BUILD_LVMPOLLD@,yes)
-  SUBDIRS += server
-server: client
-endif
+libdaemon/server/libdaemonserver.a: $(DSERVER_OBJECTS)
+	@echo "    [AR] $@"
+	$(Q) $(RM) $@
+	$(Q) $(AR) rsv $@ $(DSERVER_OBJECTS) > /dev/null
 
-ifeq ($(MAKECMDGOALS),distclean)
-  SUBDIRS = client server
-endif
+-include $(DCLIENT_DEPENDS) $(DSERVER_DEPENDS)
 
-include $(top_builddir)/make.tmpl

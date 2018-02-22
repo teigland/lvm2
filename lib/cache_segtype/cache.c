@@ -12,18 +12,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "toolcontext.h"
-#include "segtype.h"
-#include "display.h"
-#include "text_export.h"
-#include "config.h"
-#include "str_list.h"
-#include "lvm-string.h"
-#include "activate.h"
-#include "metadata.h"
-#include "lv_alloc.h"
-#include "defaults.h"
+#include "lib/misc/lib.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/metadata/segtype.h"
+#include "lib/display/display.h"
+#include "lib/format_text/text_export.h"
+#include "lib/config/config.h"
+#include "lib/datastruct/str_list.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/activate/activate.h"
+#include "lib/metadata/metadata.h"
+#include "lib/metadata/lv_alloc.h"
+#include "lib/config/defaults.h"
 
 static const char _cache_module[] = "cache";
 #define CACHE_POLICY_WHEN_MISSING   "mq"
@@ -261,7 +261,7 @@ static int _cache_pool_text_export(const struct lv_segment *seg,
 
 static void _destroy(struct segment_type *segtype)
 {
-	dm_free((void *) segtype);
+	free((void *) segtype);
 }
 
 #ifdef DEVMAPPER_SUPPORT
@@ -611,7 +611,7 @@ int init_cache_segtypes(struct cmd_context *cmd,
 			struct segtype_library *seglib)
 #endif
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype) {
 		log_error("Failed to allocate memory for cache_pool segtype");
@@ -626,7 +626,7 @@ int init_cache_segtypes(struct cmd_context *cmd,
 		return_0;
 	log_very_verbose("Initialised segtype: %s", segtype->name);
 
-	segtype = dm_zalloc(sizeof(*segtype));
+	segtype = zalloc(sizeof(*segtype));
 	if (!segtype) {
 		log_error("Failed to allocate memory for cache segtype");
 		return 0;

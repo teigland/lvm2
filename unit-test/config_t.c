@@ -12,8 +12,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "units.h"
-#include "libdevmapper.h"
+#include "unit-test/units.h"
+#include "libdm/libdevmapper.h"
 
 static void *_mem_init(void)
 {

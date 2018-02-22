@@ -12,12 +12,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "filter.h"
+#include "lib/misc/lib.h"
+#include "lib/filters/filter.h"
 
 #ifdef UDEV_SYNC_SUPPORT
 #include <libudev.h>
-#include "dev-ext-udev-constants.h"
+#include "lib/device/dev-ext-udev-constants.h"
 #endif
 
 #ifdef __linux__
@@ -96,14 +96,14 @@ static void _destroy(struct dev_filter *f)
 	if (f->use_count)
 		log_error(INTERNAL_ERROR "Destroying firmware RAID filter while in use %u times.", f->use_count);
 
-	dm_free(f);
+	free(f);
 }
 
 struct dev_filter *fwraid_filter_create(struct dev_types *dt __attribute__((unused)))
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(*f)))) {
+	if (!(f = zalloc(sizeof(*f)))) {
 		log_error("Firmware RAID filter allocation failed");
 		return NULL;
 	}

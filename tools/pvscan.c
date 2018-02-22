@@ -13,10 +13,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "lvmetad.h"
-#include "lvmcache.h"
+#include "lib/cache/lvmetad.h"
+#include "lib/cache/lvmcache.h"
 
 struct pvscan_params {
 	int new_pvs_found;

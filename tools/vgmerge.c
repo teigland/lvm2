@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 static struct volume_group *_vgmerge_vg_read(struct cmd_context *cmd,
 					     const char *vg_name)

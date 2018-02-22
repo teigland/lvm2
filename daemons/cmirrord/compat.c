@@ -5,10 +5,10 @@
  * modify, copy, or redistribute it subject to the terms and conditions
  * of the GNU Lesser General Public License v.2.1.
  */
-#include "logging.h"
-#include "cluster.h"
-#include "compat.h"
-#include "xlate.h"
+#include "daemons/cmirrord/logging.h"
+#include "daemons/cmirrord/cluster.h"
+#include "daemons/cmirrord/compat.h"
+#include "lib/mm/xlate.h"
 
 #include <errno.h>
 

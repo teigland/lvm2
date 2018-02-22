@@ -13,12 +13,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "device.h"
-#include "metadata.h"
-#include "lvmcache.h"
-#include "memlock.h"
-#include "locking.h"
+#include "lib/misc/lib.h"
+#include "lib/device/device.h"
+#include "lib/metadata/metadata.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/mm/memlock.h"
+#include "lib/locking/locking.h"
 
 #include <limits.h>
 #include <sys/stat.h>
@@ -258,7 +258,7 @@ static int _aligned_io(struct device_area *where, char *buffer,
 		return _io(where, buffer, should_write, reason);
 
 	/* Allocate a bounce buffer with an extra block */
-	if (!(bounce_buf = bounce = dm_malloc((size_t) widened.size + block_size))) {
+	if (!(bounce_buf = bounce = malloc((size_t) widened.size + block_size))) {
 		log_error("Bounce buffer malloc failed");
 		return 0;
 	}
@@ -296,7 +296,7 @@ static int _aligned_io(struct device_area *where, char *buffer,
 	r = 1;
 
 out:
-	dm_free(bounce_buf);
+	free(bounce_buf);
 	return r;
 }
 

@@ -51,11 +51,6 @@ do { \
 	printf(fmt "\n", ##args); \
 } while (0)
 
-#define dm_malloc malloc
-#define dm_strdup strdup
-#define dm_free free
-#define dm_snprintf snprintf
-
 static int dm_strncpy(char *dest, const char *src, size_t n)
 {
 	if (memccpy(dest, src, 0, n))
@@ -146,7 +141,7 @@ static inline int configtype_arg(struct cmd_context *cmd __attribute__((unused))
 
 enum {
 #define cmd(a, b) a ,
-#include "cmds.h"
+#include "tools/cmds.h"
 #undef cmd
 };
 
@@ -154,7 +149,7 @@ enum {
 
 enum {
 #define val(a, b, c, d) a ,
-#include "vals.h"
+#include "tools/vals.h"
 #undef val
 };
 
@@ -162,7 +157,7 @@ enum {
 
 enum {
 #define arg(a, b, c, d, e, f, g) a ,
-#include "args.h"
+#include "tools/args.h"
 #undef arg
 };
 
@@ -170,7 +165,7 @@ enum {
 
 enum {
 #define lvp(a, b, c) a,
-#include "lv_props.h"
+#include "tools/lv_props.h"
 #undef lvp
 };
 
@@ -178,18 +173,18 @@ enum {
 
 enum {
 #define lvt(a, b, c) a,
-#include "lv_types.h"
+#include "tools/lv_types.h"
 #undef lvt
 };
 
 #else  /* MAN_PAGE_GENERATOR */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 #endif /* MAN_PAGE_GENERATOR */
 
-#include "command.h"       /* defines struct command */
-#include "command-count.h" /* defines COMMAND_COUNT */
+#include "tools/command.h"
+#include "tools/command-count.h"
 
 /* see cmd_names[] below, one for each unique "ID" in command-lines.in */
 
@@ -203,7 +198,7 @@ struct cmd_name {
 
 struct val_name val_names[VAL_COUNT + 1] = {
 #define val(a, b, c, d) { # a, a, b, c, d },
-#include "vals.h"
+#include "tools/vals.h"
 #undef val
 };
 
@@ -211,7 +206,7 @@ struct val_name val_names[VAL_COUNT + 1] = {
 
 struct opt_name opt_names[ARG_COUNT + 1] = {
 #define arg(a, b, c, d, e, f, g) { # a, a, b, "", "--" c, d, e, f, g },
-#include "args.h"
+#include "tools/args.h"
 #undef arg
 };
 
@@ -219,7 +214,7 @@ struct opt_name opt_names[ARG_COUNT + 1] = {
 
 struct lv_prop lv_props[LVP_COUNT + 1] = {
 #define lvp(a, b, c) { # a, a, b, c },
-#include "lv_props.h"
+#include "tools/lv_props.h"
 #undef lvp
 };
 
@@ -227,7 +222,7 @@ struct lv_prop lv_props[LVP_COUNT + 1] = {
 
 struct lv_type lv_types[LVT_COUNT + 1] = {
 #define lvt(a, b, c) { # a, a, b, c },
-#include "lv_types.h"
+#include "tools/lv_types.h"
 #undef lvt
 };
 
@@ -235,7 +230,7 @@ struct lv_type lv_types[LVT_COUNT + 1] = {
 
 struct cmd_name cmd_names[CMD_COUNT + 1] = {
 #define cmd(a, b) { # a, a, # b },
-#include "cmds.h"
+#include "tools/cmds.h"
 #undef cmd
 };
 
@@ -248,7 +243,7 @@ struct cmd_name cmd_names[CMD_COUNT + 1] = {
 
 struct command_name command_names[MAX_COMMAND_NAMES] = {
 #define xx(a, b, c...) { # a, b, c },
-#include "commands.h"
+#include "tools/commands.h"
 #undef xx
 };
 struct command commands[COMMAND_COUNT];
@@ -257,7 +252,7 @@ struct command commands[COMMAND_COUNT];
 
 struct command_name command_names[MAX_COMMAND_NAMES] = {
 #define xx(a, b, c...) { # a, b, c, a},
-#include "commands.h"
+#include "tools/commands.h"
 #undef xx
 };
 extern struct command commands[COMMAND_COUNT]; /* defined in lvmcmdline.c */
@@ -296,7 +291,7 @@ static struct oo_line _oo_lines[MAX_OO_LINES];
  * removed and wrapped as a string.  The _command_input[] string is
  * used to populate commands[].
  */
-#include "command-lines-input.h"
+#include "tools/command-lines-input.h"
 
 static void __add_optional_opt_line(struct cmd_context *cmdtool, struct command *cmd, int argc, char *argv[]);
 
@@ -779,14 +774,14 @@ static void _append_oo_definition_line(const char *new_line)
 
 	/* +2 = 1 space between old and new + 1 terminating \0 */
 	len = strlen(old_line) + strlen(new_line) + 2;
-	line = dm_malloc(len);
+	line = malloc(len);
 	if (!line) {
 		log_error("Parsing command defs: no memory.");
 		return;
 	}
 
 	(void) dm_snprintf(line, len, "%s %s", old_line, new_line);
-	dm_free(oo->line);
+	free(oo->line);
 	oo->line = line;
 }
 
@@ -840,7 +835,7 @@ static void _include_optional_opt_args(struct cmd_context *cmdtool, struct comma
 
 	_split_line(line, &line_argc, line_argv, ' ');
 	__add_optional_opt_line(cmdtool, cmd, line_argc, line_argv);
-	dm_free(line);
+	free(line);
 }
 
 /*
@@ -1096,7 +1091,7 @@ static void _include_required_opt_args(struct cmd_context *cmdtool, struct comma
 
 	_split_line(line, &line_argc, line_argv, ' ');
 	_add_required_opt_line(cmdtool, cmd, line_argc, line_argv);
-	dm_free(line);
+	free(line);
 }
 
 /* Process what follows command_name, which are required opt/pos args. */
@@ -1567,8 +1562,8 @@ int define_commands(struct cmd_context *cmdtool, const char *run_name)
 
 	for (i = 0; i < _oo_line_count; i++) {
 		struct oo_line *oo = &_oo_lines[i];
-		dm_free(oo->name);
-		dm_free(oo->line);
+		free(oo->name);
+		free(oo->line);
 	}
 	memset(&_oo_lines, 0, sizeof(_oo_lines));
 	_oo_line_count = 0;
@@ -2307,7 +2302,7 @@ static void _print_val_man(struct command_name *cname, int opt_enum, int val_enu
 			else
 				printf("\\fB%s\\fP", line_argv[i]);
 		}
-		dm_free(line);
+		free(line);
 		return;
 	}
 
@@ -3316,7 +3311,7 @@ static int _include_description_file(char *name, char *des_file)
 		goto out_close;
 	}
 
-	if (!(buf = dm_malloc(statbuf.st_size + 1))) {
+	if (!(buf = malloc(statbuf.st_size + 1))) {
 		log_error("Failed to allocate buffer for description file %s.", des_file);
 		goto out_close;
 	}
@@ -3331,7 +3326,7 @@ static int _include_description_file(char *name, char *des_file)
 	r = 1;
 
 out_free:
-	dm_free(buf);
+	free(buf);
 out_close:
 	(void) close(fd);
 
@@ -3518,7 +3513,7 @@ int main(int argc, char *argv[])
 
 	memset(&commands, 0, sizeof(commands));
 
-	if (!(stdout_buf = dm_malloc(sz)))
+	if (!(stdout_buf = malloc(sz)))
 		log_error("Failed to allocate stdout buffer; carrying on with default buffering.");
 	else
 		setbuffer(stdout, stdout_buf, sz);

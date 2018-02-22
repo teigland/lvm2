@@ -16,13 +16,13 @@
 
 #define _REENTRANT
 
-#include "tool.h"
+#include "tools/tool.h"
 
-#include "daemon-io.h"
-#include "daemon-server.h"
-#include "daemon-log.h"
-#include "lvm-version.h"
-#include "lvmetad-client.h"
+#include "libdaemon/client/daemon-io.h"
+#include "libdaemon/server/daemon-server.h"
+#include "libdaemon/server/daemon-log.h"
+#include "include/lvm-version.h"
+#include "daemons/lvmetad/lvmetad-client.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -259,19 +259,19 @@ static void destroy_metadata_hashes(lvmetad_state *s)
 		dm_config_destroy(dm_hash_get_data(s->pvid_to_pvmeta, n));
 
 	dm_hash_iterate(n, s->vgid_to_vgname)
-		dm_free(dm_hash_get_data(s->vgid_to_vgname, n));
+		free(dm_hash_get_data(s->vgid_to_vgname, n));
 
 	dm_hash_iterate(n, s->vgname_to_vgid)
-		dm_free(dm_hash_get_data(s->vgname_to_vgid, n));
+		free(dm_hash_get_data(s->vgname_to_vgid, n));
 
 	dm_hash_iterate(n, s->vgid_to_info)
-		dm_free(dm_hash_get_data(s->vgid_to_info, n));
+		free(dm_hash_get_data(s->vgid_to_info, n));
 
 	dm_hash_iterate(n, s->device_to_pvid)
-		dm_free(dm_hash_get_data(s->device_to_pvid, n));
+		free(dm_hash_get_data(s->device_to_pvid, n));
 
 	dm_hash_iterate(n, s->pvid_to_vgid)
-		dm_free(dm_hash_get_data(s->pvid_to_vgid, n));
+		free(dm_hash_get_data(s->pvid_to_vgid, n));
 
 	dm_hash_destroy(s->pvid_to_pvmeta);
 	dm_hash_destroy(s->vgid_to_metadata);
@@ -825,12 +825,12 @@ static int _update_pvid_to_vgid(lvmetad_state *s, struct dm_config_tree *vg,
 
 		if (!dm_hash_insert(s->pvid_to_vgid, pvid, vgid_dup)) {
 			ERROR(s, "update_pvid_to_vgid out of memory for hash insert vgid %s", vgid_dup);
-			dm_free(vgid_dup);
+			free(vgid_dup);
 			goto abort_daemon;
 		}
 
 		/* pvid_to_vgid no longer references vgid_old */
-		dm_free(vgid_old);
+		free(vgid_old);
 
 		DEBUGLOG(s, "moving PV %s to VG %s", pvid, vgid);
 	}
@@ -889,9 +889,9 @@ static int remove_metadata(lvmetad_state *s, const char *vgid, int update_pvids)
 		dm_config_destroy(meta_lookup);
 	if (outdated_pvs_lookup)
 		dm_config_destroy(outdated_pvs_lookup);
-	dm_free(info_lookup);
-	dm_free(name_lookup);
-	dm_free(vgid_lookup);
+	free(info_lookup);
+	free(name_lookup);
+	free(vgid_lookup);
 	return 1;
 }
 
@@ -950,7 +950,7 @@ static void _purge_metadata(lvmetad_state *s, const char *arg_name, const char *
 
 	if ((rem_vgid = dm_hash_lookup_with_val(s->vgname_to_vgid, arg_name, arg_vgid, strlen(arg_vgid) + 1))) {
 		dm_hash_remove_with_val(s->vgname_to_vgid, arg_name, arg_vgid, strlen(arg_vgid) + 1);
-		dm_free(rem_vgid);
+		free(rem_vgid);
 	}
 }
 
@@ -999,7 +999,7 @@ static int _update_metadata_new_vgid(lvmetad_state *s,
 
 	if ((rem_info = dm_hash_lookup(s->vgid_to_info, old_vgid))) {
 		dm_hash_remove(s->vgid_to_info, old_vgid);
-		dm_free(rem_info);
+		free(rem_info);
 	}
 
 	if ((rem_outdated = dm_hash_lookup(s->vgid_to_outdated_pvs, old_vgid))) {
@@ -1013,7 +1013,7 @@ static int _update_metadata_new_vgid(lvmetad_state *s,
 
 	dm_hash_remove_with_val(s->vgname_to_vgid, arg_name, old_vgid, strlen(old_vgid) + 1);
 	dm_hash_remove(s->vgid_to_vgname, old_vgid);
-	dm_free((char *)old_vgid);
+	free((char *)old_vgid);
 	old_vgid = NULL;
 
 	/*
@@ -1106,7 +1106,7 @@ static int _update_metadata_new_name(lvmetad_state *s,
 
 	if ((rem_info = dm_hash_lookup(s->vgid_to_info, arg_vgid))) {
 		dm_hash_remove(s->vgid_to_info, arg_vgid);
-		dm_free(rem_info);
+		free(rem_info);
 	}
 
 	if ((rem_outdated = dm_hash_lookup(s->vgid_to_outdated_pvs, arg_vgid))) {
@@ -1120,7 +1120,7 @@ static int _update_metadata_new_name(lvmetad_state *s,
 
 	dm_hash_remove(s->vgid_to_vgname, arg_vgid);
 	dm_hash_remove_with_val(s->vgname_to_vgid, old_name, arg_vgid, strlen(arg_vgid) + 1);
-	dm_free((char *)old_name);
+	free((char *)old_name);
 	old_name = NULL;
 
 	/*
@@ -1218,8 +1218,8 @@ static int _update_metadata_add_new(lvmetad_state *s, const char *new_name, cons
 out:
 out_free:
 	if (!new_name_dup || !new_vgid_dup || abort_daemon) {
-		dm_free(new_name_dup);
-		dm_free(new_vgid_dup);
+		free(new_name_dup);
+		free(new_vgid_dup);
 		ERROR(s, "lvmetad could not be updated and is aborting.");
 		exit(EXIT_FAILURE);
 	}
@@ -1803,13 +1803,13 @@ static response pv_gone(lvmetad_state *s, request r)
 			return reply_fail("out of memory");
 
 		vg_remove_if_missing(s, vgid_dup, 1);
-		dm_free(vgid_dup);
+		free(vgid_dup);
 		vgid_dup = NULL;
 		vgid = NULL;
 	}
 
 	dm_config_destroy(pvmeta);
-	dm_free(old_pvid);
+	free(old_pvid);
 
 	return daemon_reply_simple("OK", NULL );
 }
@@ -2122,7 +2122,7 @@ static response pv_found(lvmetad_state *s, request r)
 				         arg_device, arg_pvid);
 				dm_config_destroy(new_pvmeta);
 				/* device_to_pvid no longer references prev_pvid_lookup */
-				dm_free((void*)prev_pvid_on_dev);
+				free((void*)prev_pvid_on_dev);
 				s->flags |= GLFL_DISABLE;
 				s->flags |= GLFL_DISABLE_REASON_DUPLICATES;
 				return reply_fail("Ignore duplicate PV");
@@ -2222,18 +2222,18 @@ static response pv_found(lvmetad_state *s, request r)
 			/* vg_remove_if_missing will clear and free
 			   the string pointed to by prev_vgid_on_dev. */
 			vg_remove_if_missing(s, tmp_vgid, 1);
-			dm_free(tmp_vgid);
+			free(tmp_vgid);
 		}
 
 		/* vg_remove_if_missing may have remapped prev_pvid_on_dev to orphan */
 		if ((tmp_vgid = dm_hash_lookup(s->pvid_to_vgid, prev_pvid_on_dev))) {
 			dm_hash_remove(s->pvid_to_vgid, prev_pvid_on_dev);
-			dm_free(tmp_vgid);
+			free(tmp_vgid);
 		}
 	}
 
 	/* This was unhashed from device_to_pvid above. */
-	dm_free((void *)prev_pvid_on_dev);
+	free((void *)prev_pvid_on_dev);
 
 	return daemon_reply_simple("OK",
 				   "status = %s", vg_status,
@@ -2245,7 +2245,7 @@ static response pv_found(lvmetad_state *s, request r)
 				   NULL);
 
  nomem_free2:
-	dm_free(new_pvid_dup);
+	free(new_pvid_dup);
  nomem_free1:
 	dm_config_destroy(new_pvmeta);
  nomem:
@@ -2578,7 +2578,7 @@ static void _dump_pairs(struct buffer *buf, struct dm_hash_table *ht, const char
 			(void) dm_asprintf(&append, "    %s = \"%s\"\n", key, val);
 		if (append)
 			buffer_append(buf, append);
-		dm_free(append);
+		free(append);
 	}
 	buffer_append(buf, "}\n");
 }
@@ -2598,7 +2598,7 @@ static void _dump_info_version(struct buffer *buf, struct dm_hash_table *ht, con
 		(void) dm_asprintf(&append, "    %s = %lld\n", key, (long long)info->external_version);
 		if (append)
 			buffer_append(buf, append);
-		dm_free(append);
+		free(append);
 		n = dm_hash_get_next(ht, n);
 	}
 	buffer_append(buf, "}\n");
@@ -2619,7 +2619,7 @@ static void _dump_info_flags(struct buffer *buf, struct dm_hash_table *ht, const
 		(void) dm_asprintf(&append, "    %s = %llx\n", key, (long long)info->flags);
 		if (append)
 			buffer_append(buf, append);
-		dm_free(append);
+		free(append);
 		n = dm_hash_get_next(ht, n);
 	}
 	buffer_append(buf, "}\n");

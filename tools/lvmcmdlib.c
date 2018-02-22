@@ -13,13 +13,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "lvm2cmdline.h"
-#include "label.h"
-#include "memlock.h"
+#include "tools/lvm2cmdline.h"
+#include "lib/label/label.h"
+#include "lib/mm/memlock.h"
 
-#include "lvm2cmd.h"
+#include "tools/lvm2cmd.h"
 
 #include <signal.h>
 #include <sys/stat.h>
@@ -91,7 +91,7 @@ int lvm2_run(void *handle, const char *cmdline)
 		ret = lvm_run_command(cmd, argc, argv);
 
       out:
-	dm_free(cmdcopy);
+	free(cmdcopy);
 
 	if (oneoff)
 		lvm2_exit(handle);

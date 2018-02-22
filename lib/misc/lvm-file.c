@@ -13,8 +13,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "lvm-file.h"
+#include "lib/misc/lib.h"
+#include "lib/misc/lvm-file.h"
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -194,7 +194,7 @@ void sync_dir(const char *file)
 		log_sys_error("close", dir);
 
       out:
-	dm_free(dir);
+	free(dir);
 }
 
 /*
@@ -219,11 +219,11 @@ int fcntl_lock_file(const char *file, short lock_type, int warn_if_read_only)
 		*c = '\0';
 
 	if (!dm_create_dir(dir)) {
-		dm_free(dir);
+		free(dir);
 		return -1;
 	}
 
-	dm_free(dir);
+	free(dir);
 
 	log_very_verbose("Locking %s (%s, %hd)", file,
 			 (lock_type == F_WRLCK) ? "F_WRLCK" : "F_RDLCK",

@@ -13,23 +13,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "format-text.h"
-#include "import-export.h"
-#include "device.h"
-#include "lvm-file.h"
-#include "config.h"
-#include "display.h"
-#include "toolcontext.h"
-#include "lvm-string.h"
-#include "uuid.h"
-#include "layout.h"
-#include "crc.h"
-#include "xlate.h"
-#include "label.h"
-#include "lvmcache.h"
-#include "lvmetad.h"
-#include "memlock.h"
+#include "lib/misc/lib.h"
+#include "lib/format_text/format-text.h"
+#include "lib/format_text/import-export.h"
+#include "lib/device/device.h"
+#include "lib/misc/lvm-file.h"
+#include "lib/config/config.h"
+#include "lib/display/display.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/uuid/uuid.h"
+#include "lib/format_text/layout.h"
+#include "lib/misc/crc.h"
+#include "lib/mm/xlate.h"
+#include "lib/label/label.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/cache/lvmetad.h"
+#include "lib/mm/memlock.h"
 
 #include <unistd.h>
 #include <sys/param.h>
@@ -227,7 +227,7 @@ static int _pv_analyze_mda_raw (const struct format_type * fmt,
 		 * "dm_config_maybe_section" returning true when there's no valid
 		 * metadata in a sector (sectors with all nulls).
 		 */
-		if (!(buf = dm_malloc(size + size2)))
+		if (!(buf = malloc(size + size2)))
 			goto_out;
 
 		if (!dev_read_circular(area->dev, offset, size, offset2, size2, MDA_CONTENT_REASON(mda_is_primary(mda)), buf))
@@ -261,13 +261,13 @@ static int _pv_analyze_mda_raw (const struct format_type * fmt,
 				size += SECTOR_SIZE;
 			}
 		}
-		dm_free(buf);
+		free(buf);
 		buf = NULL;
 	}
 
 	r = 1;
  out:
-	dm_free(buf);
+	free(buf);
 	if (!dev_close(area->dev))
 		stack;
 	return r;
@@ -284,7 +284,7 @@ static int _text_lv_setup(struct format_instance *fid __attribute__((unused)),
 	if (lv->size > max_size) {
 		char *dummy = display_size(max_size);
 		log_error("logical volumes cannot be larger than %s", dummy);
-		dm_free(dummy);
+		free(dummy);
 		return 0;
 	}
 */
@@ -727,7 +727,7 @@ static int _vg_write_raw(struct format_instance *fid, struct volume_group *vg,
 		if (!dev_close(mdac->area.dev))
 			stack;
 
-		dm_free(fidtc->raw_metadata_buf);
+		free(fidtc->raw_metadata_buf);
 		fidtc->raw_metadata_buf = NULL;
 	}
 
@@ -826,7 +826,7 @@ static int _vg_commit_raw_rlocn(struct format_instance *fid,
 		if (!dev_close(mdac->area.dev))
 			stack;
 
-		dm_free(fidtc->raw_metadata_buf);
+		free(fidtc->raw_metadata_buf);
 		fidtc->raw_metadata_buf = NULL;
 	}
 
@@ -1557,7 +1557,7 @@ static int _add_raw(struct dm_list *raw_list, struct device_area *dev_area)
 			return 1;
 	}
 
-	if (!(rl = dm_malloc(sizeof(struct raw_list)))) {
+	if (!(rl = malloc(sizeof(struct raw_list)))) {
 		log_error("_add_raw allocation failed");
 		return 0;
 	}
@@ -1725,7 +1725,7 @@ static void _free_dirs(struct dm_list *dir_list)
 
 	dm_list_iterate_safe(dl, tmp, dir_list) {
 		dm_list_del(dl);
-		dm_free(dl);
+		free(dl);
 	}
 }
 
@@ -1735,7 +1735,7 @@ static void _free_raws(struct dm_list *raw_list)
 
 	dm_list_iterate_safe(rl, tmp, raw_list) {
 		dm_list_del(rl);
-		dm_free(rl);
+		free(rl);
 	}
 }
 
@@ -1747,10 +1747,10 @@ static void _text_destroy(struct format_type *fmt)
 	if (fmt->private) {
 		_free_dirs(&((struct mda_lists *) fmt->private)->dirs);
 		_free_raws(&((struct mda_lists *) fmt->private)->raws);
-		dm_free(fmt->private);
+		free(fmt->private);
 	}
 
-	dm_free(fmt);
+	free(fmt);
 }
 
 static struct metadata_area_ops _metadata_text_file_ops = {
@@ -2089,7 +2089,7 @@ static int _add_metadata_area_to_pv(struct physical_volume *pv,
 
 	if (!(mdac = dm_pool_zalloc(pv->fid->mem, sizeof(struct mda_context)))) {
 		log_error("struct mda_context allocation failed");
-		dm_free(mda);
+		free(mda);
 		return 0;
 	}
 
@@ -2468,7 +2468,7 @@ static int _add_dir(const char *dir, struct dm_list *dir_list)
 	struct dir_list *dl;
 
 	if (dm_create_dir(dir)) {
-		if (!(dl = dm_malloc(sizeof(struct dm_list) + strlen(dir) + 1))) {
+		if (!(dl = malloc(sizeof(struct dm_list) + strlen(dir) + 1))) {
 			log_error("_add_dir allocation failed");
 			return 0;
 		}
@@ -2543,7 +2543,7 @@ struct format_type *create_text_format(struct cmd_context *cmd)
 	const struct dm_config_value *cv;
 	struct mda_lists *mda_lists;
 
-	if (!(fmt = dm_malloc(sizeof(*fmt)))) {
+	if (!(fmt = malloc(sizeof(*fmt)))) {
 		log_error("Failed to allocate text format type structure.");
 		return NULL;
 	}
@@ -2558,9 +2558,9 @@ struct format_type *create_text_format(struct cmd_context *cmd)
 			FMT_UNLIMITED_STRIPESIZE | FMT_BAS | FMT_CONFIG_PROFILE |
 			FMT_NON_POWER2_EXTENTS | FMT_PV_FLAGS;
 
-	if (!(mda_lists = dm_malloc(sizeof(struct mda_lists)))) {
+	if (!(mda_lists = malloc(sizeof(struct mda_lists)))) {
 		log_error("Failed to allocate dir_list");
-		dm_free(fmt);
+		free(fmt);
 		return NULL;
 	}
 
