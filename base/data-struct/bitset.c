@@ -15,10 +15,11 @@
 
 #include "base/data-struct/bitset.h"
 
-#include "device-mapper/misc/dmlib.h"
+#include "base/log/log.h"
 #include "base/memory/zalloc.h"
 
 #include <ctype.h>
+#include <strings.h>
 
 /* FIXME: calculate this. */
 #define INT_SHIFT 5
@@ -28,7 +29,7 @@ dm_bitset_t dm_bitset_create(struct dm_pool *mem, unsigned num_bits)
 	unsigned n = (num_bits / DM_BITS_PER_INT) + 2;
 	size_t size = sizeof(int) * n;
 	dm_bitset_t bs;
-	
+
 	if (mem)
 		bs = dm_pool_zalloc(mem, size);
 	else
@@ -83,7 +84,7 @@ static int _test_word_rev(uint32_t test, int bit)
 {
 	uint32_t tb = test << (DM_BITS_PER_INT - 1 - bit);
 
-	return (tb ? bit - clz(tb) : -1);
+	return (tb ? bit - __builtin_clz(tb) : -1);
 }
 
 int dm_bit_get_next(dm_bitset_t bs, int last_bit)
@@ -255,7 +256,6 @@ dm_bitset_t dm_bitset_parse_list_v1_02_129(const char *str, struct dm_pool *mem)
 {
 	return dm_bitset_parse_list(str, mem, 0);
 }
-DM_EXPORT_SYMBOL(dm_bitset_parse_list, 1_02_129);
 
 #else /* if defined(__GNUC__) */
 

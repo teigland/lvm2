@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "device-mapper/misc/dmlib.h"
+#include "base/log/log.h"
 #include "base/regex/parse_rx.h"
 #include "base/regex/ttree.h"
 

@@ -171,28 +171,7 @@ INSTALL_SCRIPT = $(INSTALL) -p $(M_INSTALL_PROGRAM)
 .SUFFIXES: .c .cpp .d .o .so .a .po .pot .mo .dylib
 
 ifeq ("$(notdir $(CC))", "gcc")
-WFLAGS +=\
- -Wall\
- -Wcast-align\
- -Wfloat-equal\
- -Wformat-security\
- -Winline\
- -Wmissing-format-attribute\
- -Wmissing-include-dirs\
- -Wmissing-noreturn\
- -Wpointer-arith\
- -Wredundant-decls\
- -Wshadow\
- -Wundef\
- -Wwrite-strings
-
-WCFLAGS +=\
- -Wmissing-declarations\
- -Wmissing-prototypes\
- -Wnested-externs\
- -Wold-style-definition\
- -Wstrict-prototypes\
- -Wuninitialized
+WFLAGS += -Wall
 
 ifeq ("@HAVE_WJUMP@", "yes")
 WCFLAGS += -Wjump-misses-init
@@ -262,6 +241,8 @@ endif
   endif
   endif
 endif
+
+CFLAGS += -std=c99
 
 # end of fPIC protection
 endif

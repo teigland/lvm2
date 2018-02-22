@@ -13,7 +13,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "device-mapper/misc/dmlib.h"
+#include "base/memory/pool.h"
+
+#include "base/data-struct/list.h"
+#include "base/log/log.h"
+
 #include <sys/mman.h>
 #include <pthread.h>
 
@@ -147,7 +151,7 @@ int dm_pool_lock(struct dm_pool *p, int crc)
 
 	p->locked = 1;
 
-	log_debug_mem("Pool %s is locked.", p->name);
+	log_debug("Pool %s is locked.", p->name);
 
 	return 1;
 }
@@ -178,7 +182,7 @@ int dm_pool_unlock(struct dm_pool *p, int crc)
 	if (!_pool_protect(p, PROT_READ | PROT_WRITE))
 		return_0;
 
-	log_debug_mem("Pool %s is unlocked.", p->name);
+	log_debug("Pool %s is unlocked.", p->name);
 
 	if (crc && (p->crc != _pool_crc(p))) {
 		log_error(INTERNAL_ERROR "Pool %s crc mismatch.", p->name);

@@ -3818,7 +3818,6 @@ void dm_tree_node_set_callback(struct dm_tree_node *dnode,
 
 /* Backward compatible dm_tree_node_size_changed() implementations. */
 int dm_tree_node_size_changed_base(const struct dm_tree_node *dnode);
-DM_EXPORT_SYMBOL_BASE(dm_tree_node_size_changed);
 int dm_tree_node_size_changed_base(const struct dm_tree_node *dnode)
 {
 	/* Base does not make difference between smaller and bigger */
@@ -3842,7 +3841,6 @@ int dm_tree_node_add_cache_target_base(struct dm_tree_node *node,
 				       const char *policy_name,
 				       const struct dm_config_node *policy_settings,
 				       uint32_t data_block_size);
-DM_EXPORT_SYMBOL_BASE(dm_tree_node_add_cache_target);
 int dm_tree_node_add_cache_target_base(struct dm_tree_node *node,
 				       uint64_t size,
 				       uint64_t feature_flags,

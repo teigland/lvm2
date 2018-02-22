@@ -2159,7 +2159,6 @@ void dm_lib_exit(void)
  */
 
 int dm_task_get_info_base(struct dm_task *dmt, struct dm_info *info);
-DM_EXPORT_SYMBOL_BASE(dm_task_get_info);
 int dm_task_get_info_base(struct dm_task *dmt, struct dm_info *info)
 {
 	struct dm_info new_info;

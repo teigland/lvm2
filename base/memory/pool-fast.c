@@ -17,8 +17,11 @@
 #include "memcheck.h"
 #endif
 
+#include "base/log/log.h"
 #include "base/memory/zalloc.h"
-#include "device-mapper/misc/dmlib.h"
+
+// FIXME: for PRIsize_t, remove
+#include "lib/misc/util.h"
 
 #include <stddef.h>	/* For musl libc */
 #include <malloc.h>
