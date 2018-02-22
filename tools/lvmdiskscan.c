@@ -19,7 +19,7 @@
  *   05/02/2002 - First drop [HM]
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 int disks_found;
 int parts_found;

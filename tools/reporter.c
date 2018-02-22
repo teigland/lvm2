@@ -13,9 +13,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "report.h"
+#include "lib/report/report.h"
 
 typedef enum {
 	REPORT_IDX_NULL = -1,

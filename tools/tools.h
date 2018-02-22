@@ -16,33 +16,33 @@
 #ifndef _LVM_TOOLS_H
 #define _LVM_TOOLS_H
 
-#include "tool.h"
+#include "tools/tool.h"
 
-#include "lvm-logging.h"
+#include "lib/log/lvm-logging.h"
 
-#include "activate.h"
-#include "archiver.h"
-#include "lvmcache.h"
-#include "lvmetad.h"
-#include "lvmlockd.h"
-#include "lvm-version.h"
-#include "config.h"
-#include "defaults.h"
-#include "dev-cache.h"
-#include "device.h"
-#include "display.h"
-#include "errors.h"
-#include "metadata-exported.h"
-#include "locking.h"
-#include "lvm-exec.h"
-#include "lvm-file.h"
-#include "lvm-signal.h"
-#include "lvm-string.h"
-#include "segtype.h"
-#include "str_list.h"
-#include "toolcontext.h"
-#include "toollib.h"
-#include "lvmnotify.h"
+#include "lib/activate/activate.h"
+#include "lib/format_text/archiver.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/cache/lvmetad.h"
+#include "lib/locking/lvmlockd.h"
+#include "include/lvm-version.h"
+#include "lib/config/config.h"
+#include "lib/config/defaults.h"
+#include "lib/device/dev-cache.h"
+#include "lib/device/device.h"
+#include "lib/display/display.h"
+#include "tools/errors.h"
+#include "lib/metadata/metadata-exported.h"
+#include "lib/locking/locking.h"
+#include "lib/misc/lvm-exec.h"
+#include "lib/misc/lvm-file.h"
+#include "lib/misc/lvm-signal.h"
+#include "lib/misc/lvm-string.h"
+#include "lib/metadata/segtype.h"
+#include "lib/datastruct/str_list.h"
+#include "lib/commands/toolcontext.h"
+#include "tools/toollib.h"
+#include "lib/notify/lvmnotify.h"
 
 #include <ctype.h>
 #include <sys/types.h>
@@ -53,45 +53,45 @@
 /* define the enums for each unique ID in command defs in command-lines.in */
 enum {
 #define cmd(a, b) a ,
-#include "cmds.h"
+#include "tools/cmds.h"
 #undef cmd
 };
 
 /* define the enums for the values accepted by command line --options, foo_VAL */
 enum {
 #define val(a, b, c, d) a ,
-#include "vals.h"
+#include "tools/vals.h"
 #undef val
 };
 
 /* define the enums for the command line --options, foo_ARG */
 enum {
 #define arg(a, b, c, d, e, f, g) a ,
-#include "args.h"
+#include "tools/args.h"
 #undef arg
 };
 
 /* command functions */
 #define xx(a, b...) int a(struct cmd_context *cmd, int argc, char **argv);
-#include "commands.h"
+#include "tools/commands.h"
 #undef xx
 
 /* define enums for LV properties, foo_LVP */
 enum {
 #define lvp(a, b, c) a ,
-#include "lv_props.h"
+#include "tools/lv_props.h"
 #undef lvp
 };
 
 /* define enums for LV types, foo_LVT */
 enum {
 #define lvt(a, b, c) a ,
-#include "lv_types.h"
+#include "tools/lv_types.h"
 #undef lvt
 };
 
-#include "command.h"
-#include "command-count.h"
+#include "tools/command.h"
+#include "tools/command-count.h"
 
 #define ARG_COUNTABLE 0x00000001	/* E.g. -vvvv */
 #define ARG_GROUPABLE 0x00000002	/* E.g. --addtag */

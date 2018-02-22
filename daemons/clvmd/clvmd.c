@@ -17,14 +17,14 @@
  * CLVMD: Cluster LVM daemon
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
-#include "clvmd-comms.h"
-#include "clvm.h"
-#include "clvmd.h"
-#include "lvm-functions.h"
-#include "lvm-version.h"
-#include "refresh_clvmd.h"
+#include "daemons/clvmd/clvmd-comms.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/clvmd.h"
+#include "daemons/clvmd/lvm-functions.h"
+#include "include/lvm-version.h"
+#include "daemons/clvmd/refresh_clvmd.h"
 
 #ifdef HAVE_COROSYNC_CONFDB_H
 #include <corosync/confdb.h>

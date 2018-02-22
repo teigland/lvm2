@@ -13,9 +13,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "pvmove_poll.h"
+#include "tools/pvmove_poll.h"
 
 static int _is_pvmove_image_removable(struct logical_volume *mimage_lv,
 				      void *baton)

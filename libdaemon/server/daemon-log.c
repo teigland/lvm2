@@ -12,10 +12,10 @@
 
 #define _REENTRANT
 
-#include "tool.h"
+#include "tools/tool.h"
 
-#include "daemon-server.h"
-#include "daemon-log.h"
+#include "libdaemon/server/daemon-server.h"
+#include "libdaemon/server/daemon-log.h"
 
 #include <syslog.h>
 

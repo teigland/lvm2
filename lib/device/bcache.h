@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "libdevmapper.h"
+#include "libdm/libdevmapper.h"
 
 /*----------------------------------------------------------------*/
 

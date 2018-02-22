@@ -19,10 +19,10 @@
  * Send a command to a running clvmd from the command-line
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
-#include "clvm.h"
-#include "refresh_clvmd.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/refresh_clvmd.h"
 
 #include <stddef.h>
 #include <sys/socket.h>

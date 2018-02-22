@@ -13,12 +13,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "polldaemon.h"
-#include "display.h"
-#include "pvmove_poll.h"
-#include "lvmpolld-client.h"
+#include "lib/lvmpolld/polldaemon.h"
+#include "lib/display/display.h"
+#include "tools/pvmove_poll.h"
+#include "lib/lvmpolld/lvmpolld-client.h"
 
 #define PVMOVE_FIRST_TIME   0x00000001      /* Called for first time */
 

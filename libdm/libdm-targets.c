@@ -12,8 +12,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dmlib.h"
-#include "libdm-common.h"
+#include "libdm/misc/dmlib.h"
+#include "libdm/libdm-common.h"
 
 int dm_get_status_snapshot(struct dm_pool *mem, const char *params,
 			   struct dm_status_snapshot **status)

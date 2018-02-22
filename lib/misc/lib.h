@@ -19,7 +19,7 @@
 #ifndef _LVM_LIB_H
 #define _LVM_LIB_H
 
-#include "configure.h"
+#include "include/configure.h"
 
 #define _REENTRANT
 #define _GNU_SOURCE
@@ -79,17 +79,17 @@
 #endif
 
 
-#include "intl.h"
-#include "libdevmapper.h"
-#include "util.h"
+#include "lib/misc/intl.h"
+#include "libdm/libdevmapper.h"
+#include "lib/misc/util.h"
 
 #ifdef DM
 #  include "dm-logging.h"
 #else
-#  include "lvm-logging.h"
-#  include "lvm-globals.h"
-#  include "lvm-wrappers.h"
-#  include "lvm-maths.h"
+#  include "lib/log/lvm-logging.h"
+#  include "lib/misc/lvm-globals.h"
+#  include "lib/misc/lvm-wrappers.h"
+#  include "lib/misc/lvm-maths.h"
 #endif
 
 #include <unistd.h>

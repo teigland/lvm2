@@ -12,9 +12,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lvmpolld-common.h"
+#include "daemons/lvmpolld/lvmpolld-common.h"
 
-#include "config-util.h"
+#include "libdaemon/client/config-util.h"
 
 #include <fcntl.h>
 #include <signal.h>

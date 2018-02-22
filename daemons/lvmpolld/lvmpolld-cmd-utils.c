@@ -12,7 +12,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lvmpolld-common.h"
+#include "daemons/lvmpolld/lvmpolld-common.h"
 
 /* extract this info from autoconf/automake files */
 #define LVPOLL_CMD "lvpoll"

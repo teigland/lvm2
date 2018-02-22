@@ -9,8 +9,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "logging.h"
-#include "link_mon.h"
+#include "daemons/cmirrord/logging.h"
+#include "daemons/cmirrord/link_mon.h"
 
 #include <errno.h>
 #include <poll.h>

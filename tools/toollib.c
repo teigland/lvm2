@@ -13,8 +13,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
-#include "format-text.h"
+#include "tools/tools.h"
+#include "lib/format_text/format-text.h"
 
 #include <sys/stat.h>
 #include <signal.h>

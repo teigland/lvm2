@@ -15,7 +15,7 @@
 #ifndef _LVM_LVMPOLLD_CMD_UTILS_H
 #define _LVM_LVMPOLLD_CMD_UTILS_H
 
-#include "lvmpolld-data-utils.h"
+#include "daemons/lvmpolld/lvmpolld-data-utils.h"
 
 const char **cmdargv_ctr(const struct lvmpolld_lv *pdlv, const char *lvm_binary, unsigned abort, unsigned handle_missing_pvs);
 const char **cmdenvp_ctr(const struct lvmpolld_lv *pdlv);

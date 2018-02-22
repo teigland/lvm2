@@ -12,9 +12,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lvm_prop.h"
-#include "libdevmapper.h"
-#include "metadata.h"
+#include "liblvm/lvm_prop.h"
+#include "libdm/libdevmapper.h"
+#include "lib/metadata/metadata.h"
 
 /* lv create parameters */
 GET_LVCREATEPARAMS_NUM_PROPERTY_FN(skip_zero, lvcp->zero)
@@ -40,7 +40,7 @@ GET_PVCREATEPARAMS_NUM_PROPERTY_FN(zero, pvcp->zero)
 SET_PVCREATEPARAMS_NUM_PROPERTY_FN(zero, pvcp->zero)
 
 struct lvm_property_type _lib_properties[] = {
-#include "lvm_prop_fields.h"
+#include "liblvm/lvm_prop_fields.h"
 	{ 0, "", 0, 0, 0, 0, { .integer = 0 }, prop_not_implemented_get,
 			prop_not_implemented_set },
 };

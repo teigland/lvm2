@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 static int _lv_is_in_vg(struct volume_group *vg, struct logical_volume *lv)
 {

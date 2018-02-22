@@ -50,14 +50,14 @@
 
 */
 
-#include "clvmd-common.h"
-#include "clvmd-comms.h"
-#include "clvm.h"
-#include "clvmd.h"
-#include "lvm-globals.h"
-#include "lvm-functions.h"
+#include "daemons/clvmd/clvmd-common.h"
+#include "daemons/clvmd/clvmd-comms.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/clvmd.h"
+#include "lib/misc/lvm-globals.h"
+#include "daemons/clvmd/lvm-functions.h"
 
-#include "locking.h"
+#include "lib/locking/locking.h"
 
 #include <sys/utsname.h>
 

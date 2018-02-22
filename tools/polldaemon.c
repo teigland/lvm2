@@ -13,11 +13,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "polldaemon.h"
-#include "lvm2cmdline.h"
-#include "lvmpolld-client.h"
+#include "lib/lvmpolld/polldaemon.h"
+#include "tools/lvm2cmdline.h"
+#include "lib/lvmpolld/lvmpolld-client.h"
 
 #include <time.h>
 

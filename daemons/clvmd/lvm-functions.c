@@ -13,22 +13,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
 #include <pthread.h>
 
-#include "clvm.h"
-#include "clvmd-comms.h"
-#include "clvmd.h"
-#include "lvm-functions.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/clvmd-comms.h"
+#include "daemons/clvmd/clvmd.h"
+#include "daemons/clvmd/lvm-functions.h"
 
 /* LVM2 headers */
-#include "toolcontext.h"
-#include "lvmcache.h"
-#include "lvm-globals.h"
-#include "activate.h"
-#include "archiver.h"
-#include "memlock.h"
+#include "lib/commands/toolcontext.h"
+#include "lib/cache/lvmcache.h"
+#include "lib/misc/lvm-globals.h"
+#include "lib/activate/activate.h"
+#include "lib/format_text/archiver.h"
+#include "lib/mm/memlock.h"
 
 #include <syslog.h>
 

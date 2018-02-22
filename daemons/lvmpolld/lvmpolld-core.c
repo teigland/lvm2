@@ -12,11 +12,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lvmpolld-common.h"
+#include "daemons/lvmpolld/lvmpolld-common.h"
 
-#include "lvm-version.h"
-#include "daemon-server.h"
-#include "daemon-log.h"
+#include "include/lvm-version.h"
+#include "libdaemon/server/daemon-server.h"
+#include "libdaemon/server/daemon-log.h"
 
 #include <getopt.h>
 #include <poll.h>

@@ -12,11 +12,11 @@
 
 #define _REENTRANT
 
-#include "tool.h"
+#include "tools/tool.h"
 
-#include "daemon-io.h"
-#include "daemon-server.h"
-#include "daemon-log.h"
+#include "libdaemon/client/daemon-io.h"
+#include "libdaemon/server/daemon-server.h"
+#include "libdaemon/server/daemon-log.h"
 
 #include <dlfcn.h>
 #include <errno.h>

@@ -22,7 +22,7 @@
 #ifndef _CLVM_H
 #define _CLVM_H
 
-#include "configure.h"
+#include "include/configure.h"
 #include <inttypes.h>
 
 struct clvm_header {

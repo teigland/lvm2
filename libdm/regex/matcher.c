@@ -13,9 +13,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dmlib.h"
-#include "parse_rx.h"
-#include "ttree.h"
+#include "libdm/misc/dmlib.h"
+#include "libdm/regex/parse_rx.h"
+#include "libdm/regex/ttree.h"
 #include "assert.h"
 
 struct dfa_state {

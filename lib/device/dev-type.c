@@ -12,11 +12,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lib.h"
-#include "dev-type.h"
-#include "xlate.h"
-#include "config.h"
-#include "metadata.h"
+#include "lib/misc/lib.h"
+#include "lib/device/dev-type.h"
+#include "lib/mm/xlate.h"
+#include "lib/config/config.h"
+#include "lib/metadata/metadata.h"
 
 #include <libgen.h>
 #include <ctype.h>
@@ -27,10 +27,10 @@
 
 #ifdef UDEV_SYNC_SUPPORT
 #include <libudev.h>
-#include "dev-ext-udev-constants.h"
+#include "lib/device/dev-ext-udev-constants.h"
 #endif
 
-#include "device-types.h"
+#include "lib/device/device-types.h"
 
 struct dev_types *create_dev_types(const char *proc_dir,
 				   const struct dm_config_node *cn)

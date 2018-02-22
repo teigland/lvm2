@@ -12,12 +12,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "polldaemon.h"
-#include "pvmove_poll.h"
-#include "lvconvert_poll.h"
-#include "polling_ops.h"
+#include "lib/lvmpolld/polldaemon.h"
+#include "tools/pvmove_poll.h"
+#include "tools/lvconvert_poll.h"
+#include "daemons/lvmpolld/polling_ops.h"
 
 static struct poll_functions _pvmove_fns = {
 	.poll_progress = poll_mirror_progress,

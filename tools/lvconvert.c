@@ -12,11 +12,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
+#include "tools/tools.h"
 
-#include "polldaemon.h"
-#include "lv_alloc.h"
-#include "lvconvert_poll.h"
+#include "lib/lvmpolld/polldaemon.h"
+#include "lib/metadata/lv_alloc.h"
+#include "tools/lvconvert_poll.h"
 
 #define MAX_PDATA_ARGS	10	/* Max number of accepted args for d-m-p-d tools */
 

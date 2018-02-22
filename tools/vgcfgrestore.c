@@ -13,8 +13,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
-#include "lvmetad-client.h"
+#include "tools/tools.h"
+#include "daemons/lvmetad/lvmetad-client.h"
 
 int vgcfgrestore(struct cmd_context *cmd, int argc, char **argv)
 {

@@ -12,14 +12,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
 #include <pthread.h>
 
-#include "locking.h"
-#include "clvm.h"
-#include "clvmd-comms.h"
-#include "clvmd.h"
+#include "lib/locking/locking.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/clvmd-comms.h"
+#include "daemons/clvmd/clvmd.h"
 
 #include <sys/un.h>
 #include <sys/socket.h>

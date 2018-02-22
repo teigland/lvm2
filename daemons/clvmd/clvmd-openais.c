@@ -17,7 +17,7 @@
  * and lock manager.
  */
 
-#include "clvmd-common.h"
+#include "daemons/clvmd/clvmd-common.h"
 
 #include <pthread.h>
 #include <fcntl.h>
@@ -29,11 +29,11 @@
 #include <corosync/corotypes.h>
 #include <corosync/cpg.h>
 
-#include "locking.h"
-#include "clvm.h"
-#include "clvmd-comms.h"
-#include "lvm-functions.h"
-#include "clvmd.h"
+#include "lib/locking/locking.h"
+#include "daemons/clvmd/clvm.h"
+#include "daemons/clvmd/clvmd-comms.h"
+#include "daemons/clvmd/lvm-functions.h"
+#include "daemons/clvmd/clvmd.h"
 
 /* Timeout value for several openais calls */
 #define TIMEOUT 10

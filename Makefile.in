@@ -49,6 +49,7 @@ DISTCLEAN_DIRS += lcov_reports*
 DISTCLEAN_TARGETS += config.cache config.log config.status make.tmpl
 
 include make.tmpl
+include base/Makefile
 include libdm/Makefile
 include lib/Makefile
 include tools/Makefile
@@ -56,19 +57,7 @@ include man/Makefile
 include libdaemon/Makefile
 include daemons/clvmd/Makefile
 include daemons/lvmetad/Makefile
-
-#lib: lib/liblvm-internal.a libdm libdaemon
-#liblvm: lib/liblvm-internal.a
-#daemons: lib/liblvm-internal.a libdaemon tools
-#tools: lib/liblvm-internal.a libdaemon device-mapper
-#po: tools daemons
-#man: tools
-#all_man: tools
-#scripts: liblvm libdm
-
-#daemons.device-mapper: libdm.device-mapper
-#tools.device-mapper: libdm.device-mapper
-#device-mapper: tools.device-mapper daemons.device-mapper man.device-mapper
+include unit-test/Makefile
 
 ifeq ("@INTL@", "yes")
 tools.pofile: lib.pofile
@@ -76,23 +65,6 @@ daemons.pofile: lib.pofile
 po.pofile: tools.pofile daemons.pofile
 pofile: po.pofile
 endif
-
-ifeq ("@PYTHON_BINDINGS@", "yes")
-python: liblvm
-endif
-
-ifneq ("$(CFLOW_CMD)", "")
-tools.cflow: libdm.cflow lib.cflow
-daemons.cflow: tools.cflow
-endif
-
-ifneq ("@CSCOPE_CMD@", "")
-cscope.out:
-	@CSCOPE_CMD@ -b -R -s$(top_srcdir)
-all: cscope.out
-endif
-DISTCLEAN_TARGETS += cscope.out
-CLEAN_DIRS += autom4te.cache
 
 check check_system check_cluster check_local check_lvmetad check_lvmpolld check_lvmlockd_test check_lvmlockd_dlm check_lvmlockd_sanlock unit-test: all
 	$(MAKE) -C test $(@)
@@ -134,87 +106,4 @@ generate: conf.generate man.generate
 all_man:
 	$(MAKE) -C man all_man
 
-install_system_dirs:
-	$(INSTALL_DIR) $(DESTDIR)$(DEFAULT_SYS_DIR)
-	$(INSTALL_ROOT_DIR) $(DESTDIR)$(DEFAULT_ARCHIVE_DIR)
-	$(INSTALL_ROOT_DIR) $(DESTDIR)$(DEFAULT_BACKUP_DIR)
-	$(INSTALL_ROOT_DIR) $(DESTDIR)$(DEFAULT_CACHE_DIR)
-	$(INSTALL_ROOT_DIR) $(DESTDIR)$(DEFAULT_LOCK_DIR)
-	$(INSTALL_ROOT_DIR) $(DESTDIR)$(DEFAULT_RUN_DIR)
-	$(INSTALL_ROOT_DATA) /dev/null $(DESTDIR)$(DEFAULT_CACHE_DIR)/.cache
 
-install_initscripts: 
-	$(MAKE) -C scripts install_initscripts
-
-install_systemd_generators:
-	$(MAKE) -C scripts install_systemd_generators
-	$(MAKE) -C man install_systemd_generators
-
-install_systemd_units:
-	$(MAKE) -C scripts install_systemd_units
-
-install_all_man:
-	$(MAKE) -C man install_all_man
-
-ifeq ("@PYTHON_BINDINGS@", "yes")
-install_python_bindings:
-	$(MAKE) -C liblvm/python install_python_bindings
-endif
-
-install_tmpfiles_configuration:
-	$(MAKE) -C scripts install_tmpfiles_configuration
-
-LCOV_TRACES = libdm.info lib.info liblvm.info tools.info \
-	libdaemon/client.info libdaemon/server.info \
-	daemons/clvmd.info \
-	daemons/dmeventd.info \
-	daemons/lvmetad.info \
-	daemons/lvmlockd.info \
-	daemons/lvmpolld.info
-
-CLEAN_TARGETS += $(LCOV_TRACES)
-
-ifneq ("$(LCOV)", "")
-.PHONY: lcov-reset lcov lcov-dated $(LCOV_TRACES)
-
-ifeq ($(MAKECMDGOALS),lcov-dated)
-LCOV_REPORTS_DIR := lcov_reports-$(shell date +%Y%m%d%k%M%S)
-lcov-dated: lcov
-else
-LCOV_REPORTS_DIR := lcov_reports
-endif
-
-lcov-reset:
-	$(LCOV) --zerocounters $(addprefix -d , $(basename $(LCOV_TRACES)))
-
-# maybe use subdirs processing to create tracefiles...
-$(LCOV_TRACES):
-	$(LCOV) -b $(basename $@) -d $(basename $@) \
-		--ignore-errors source -c -o - | $(SED) \
-		-e "s/\(dmeventd_lvm.[ch]\)/plugins\/lvm2\/\1/" \
-		-e "s/dmeventd_\(mirror\|snapshot\|thin\|raid\)\.c/plugins\/\1\/dmeventd_\1\.c/" \
-		>$@
-
-ifneq ("$(GENHTML)", "")
-lcov: $(LCOV_TRACES)
-	$(RM) -r $(LCOV_REPORTS_DIR)
-	$(MKDIR_P) $(LCOV_REPORTS_DIR)
-	for i in $(LCOV_TRACES); do \
-		test -s $$i -a $$(wc -w <$$i) -ge 100 && lc="$$lc $$i"; \
-	done; \
-	test -z "$$lc" || $(GENHTML) -p @abs_top_builddir@ \
-		-o $(LCOV_REPORTS_DIR) $$lc
-endif
-
-endif
-
-include unit-test/Makefile
-
-ifneq ($(shell which ctags),)
-.PHONY: tags
-tags:
-	test -z "$(shell find $(top_srcdir) -type f -name '*.[ch]' -newer tags 2>/dev/null | head -1)" || $(RM) tags
-	test -f tags || find $(top_srcdir) -maxdepth 5 -type f -name '*.[ch]' -exec ctags -a '{}' +
-
-CLEAN_TARGETS += tags
-endif

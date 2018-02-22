@@ -12,10 +12,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "tools.h"
-#include "lvmcache.h"
-#include "lvmetad-client.h"
-#include "filter.h"
+#include "tools/tools.h"
+#include "lib/cache/lvmcache.h"
+#include "daemons/lvmetad/lvmetad-client.h"
+#include "lib/filters/filter.h"
 
 struct vgimportclone_params {
 	unsigned done;

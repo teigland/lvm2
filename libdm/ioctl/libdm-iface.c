@@ -13,9 +13,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dmlib.h"
-#include "libdm-targets.h"
-#include "libdm-common.h"
+#include "libdm/misc/dmlib.h"
+#include "libdm/ioctl/libdm-targets.h"
+#include "libdm/libdm-common.h"
 
 #include <stddef.h>
 #include <fcntl.h>
@@ -33,7 +33,7 @@
 #  define MKDEV(x,y) makedev((x),(y))
 #endif
 
-#include "dm-ioctl.h"
+#include "libdm/misc/dm-ioctl.h"
 
 /*
  * Ensure build compatibility.  

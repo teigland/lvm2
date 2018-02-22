@@ -9,14 +9,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "logging.h"
-#include "cluster.h"
-#include "common.h"
-#include "compat.h"
-#include "functions.h"
-#include "link_mon.h"
-#include "local.h"
-#include "xlate.h"
+#include "daemons/cmirrord/logging.h"
+#include "daemons/cmirrord/cluster.h"
+#include "daemons/cmirrord/common.h"
+#include "daemons/cmirrord/compat.h"
+#include "daemons/cmirrord/functions.h"
+#include "daemons/cmirrord/link_mon.h"
+#include "daemons/cmirrord/local.h"
+#include "lib/mm/xlate.h"
 
 #include <corosync/cpg.h>
 #include <errno.h>

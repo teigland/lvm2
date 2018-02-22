@@ -16,13 +16,13 @@
 
 #define _REENTRANT
 
-#include "tool.h"
+#include "tools/tool.h"
 
-#include "daemon-io.h"
-#include "daemon-server.h"
-#include "daemon-log.h"
-#include "lvm-version.h"
-#include "lvmetad-client.h"
+#include "libdaemon/client/daemon-io.h"
+#include "libdaemon/server/daemon-server.h"
+#include "libdaemon/server/daemon-log.h"
+#include "include/lvm-version.h"
+#include "daemons/lvmetad/lvmetad-client.h"
 
 #include <assert.h>
 #include <errno.h>

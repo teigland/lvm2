@@ -146,7 +146,7 @@ static inline int configtype_arg(struct cmd_context *cmd __attribute__((unused))
 
 enum {
 #define cmd(a, b) a ,
-#include "cmds.h"
+#include "tools/cmds.h"
 #undef cmd
 };
 
@@ -154,7 +154,7 @@ enum {
 
 enum {
 #define val(a, b, c, d) a ,
-#include "vals.h"
+#include "tools/vals.h"
 #undef val
 };
 
@@ -162,7 +162,7 @@ enum {
 
 enum {
 #define arg(a, b, c, d, e, f, g) a ,
-#include "args.h"
+#include "tools/args.h"
 #undef arg
 };
 
@@ -170,7 +170,7 @@ enum {
 
 enum {
 #define lvp(a, b, c) a,
-#include "lv_props.h"
+#include "tools/lv_props.h"
 #undef lvp
 };
 
@@ -178,18 +178,18 @@ enum {
 
 enum {
 #define lvt(a, b, c) a,
-#include "lv_types.h"
+#include "tools/lv_types.h"
 #undef lvt
 };
 
 #else  /* MAN_PAGE_GENERATOR */
 
-#include "tools.h"
+#include "tools/tools.h"
 
 #endif /* MAN_PAGE_GENERATOR */
 
-#include "command.h"       /* defines struct command */
-#include "command-count.h" /* defines COMMAND_COUNT */
+#include "tools/command.h"
+#include "tools/command-count.h"
 
 /* see cmd_names[] below, one for each unique "ID" in command-lines.in */
 
@@ -203,7 +203,7 @@ struct cmd_name {
 
 struct val_name val_names[VAL_COUNT + 1] = {
 #define val(a, b, c, d) { # a, a, b, c, d },
-#include "vals.h"
+#include "tools/vals.h"
 #undef val
 };
 
@@ -211,7 +211,7 @@ struct val_name val_names[VAL_COUNT + 1] = {
 
 struct opt_name opt_names[ARG_COUNT + 1] = {
 #define arg(a, b, c, d, e, f, g) { # a, a, b, "", "--" c, d, e, f, g },
-#include "args.h"
+#include "tools/args.h"
 #undef arg
 };
 
@@ -219,7 +219,7 @@ struct opt_name opt_names[ARG_COUNT + 1] = {
 
 struct lv_prop lv_props[LVP_COUNT + 1] = {
 #define lvp(a, b, c) { # a, a, b, c },
-#include "lv_props.h"
+#include "tools/lv_props.h"
 #undef lvp
 };
 
@@ -227,7 +227,7 @@ struct lv_prop lv_props[LVP_COUNT + 1] = {
 
 struct lv_type lv_types[LVT_COUNT + 1] = {
 #define lvt(a, b, c) { # a, a, b, c },
-#include "lv_types.h"
+#include "tools/lv_types.h"
 #undef lvt
 };
 
@@ -235,7 +235,7 @@ struct lv_type lv_types[LVT_COUNT + 1] = {
 
 struct cmd_name cmd_names[CMD_COUNT + 1] = {
 #define cmd(a, b) { # a, a, # b },
-#include "cmds.h"
+#include "tools/cmds.h"
 #undef cmd
 };
 
@@ -248,7 +248,7 @@ struct cmd_name cmd_names[CMD_COUNT + 1] = {
 
 struct command_name command_names[MAX_COMMAND_NAMES] = {
 #define xx(a, b, c...) { # a, b, c },
-#include "commands.h"
+#include "tools/commands.h"
 #undef xx
 };
 struct command commands[COMMAND_COUNT];
@@ -257,7 +257,7 @@ struct command commands[COMMAND_COUNT];
 
 struct command_name command_names[MAX_COMMAND_NAMES] = {
 #define xx(a, b, c...) { # a, b, c, a},
-#include "commands.h"
+#include "tools/commands.h"
 #undef xx
 };
 extern struct command commands[COMMAND_COUNT]; /* defined in lvmcmdline.c */
@@ -296,7 +296,7 @@ static struct oo_line _oo_lines[MAX_OO_LINES];
  * removed and wrapped as a string.  The _command_input[] string is
  * used to populate commands[].
  */
-#include "command-lines-input.h"
+#include "tools/command-lines-input.h"
 
 static void __add_optional_opt_line(struct cmd_context *cmdtool, struct command *cmd, int argc, char *argv[]);
 

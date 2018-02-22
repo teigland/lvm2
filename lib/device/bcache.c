@@ -28,9 +28,9 @@
 #include <sys/ioctl.h>
 #include <sys/user.h>
 
-#include "bcache.h"
-#include "dm-logging.h"
-#include "log.h"
+#include "lib/device/bcache.h"
+#include "libdm/misc/dm-logging.h"
+#include "lib/log/log.h"
 
 #define SECTOR_SHIFT 9L
 

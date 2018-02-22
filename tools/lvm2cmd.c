@@ -12,8 +12,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "lvm2cmdline.h"
-#include "lvm2cmd.h"
+#include "tools/lvm2cmdline.h"
+#include "tools/lvm2cmd.h"
 
 void *lvm2_init(void)
 {
