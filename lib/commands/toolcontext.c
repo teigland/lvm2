@@ -1776,7 +1776,7 @@ struct cmd_context *create_config_context(void)
 {
 	struct cmd_context *cmd;
 
-	if (!(cmd = dm_zalloc(sizeof(*cmd))))
+	if (!(cmd = zalloc(sizeof(*cmd))))
 		goto_out;
 
 	strcpy(cmd->system_dir, DEFAULT_SYS_DIR);
@@ -1840,7 +1840,7 @@ struct cmd_context *create_toolcontext(unsigned is_long_lived,
 
 	init_syslog(DEFAULT_LOG_FACILITY);
 
-	if (!(cmd = dm_zalloc(sizeof(*cmd)))) {
+	if (!(cmd = zalloc(sizeof(*cmd)))) {
 		log_error("Failed to allocate command context");
 		return NULL;
 	}

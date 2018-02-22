@@ -278,7 +278,7 @@ struct dev_filter *mpath_filter_create(struct dev_types *dt)
 		return NULL;
 	}
 
-	if (!(f = dm_zalloc(sizeof(*f)))) {
+	if (!(f = zalloc(sizeof(*f)))) {
 		log_error("mpath filter allocation failed");
 		return NULL;
 	}

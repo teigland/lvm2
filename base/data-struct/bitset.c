@@ -13,7 +13,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libdm/misc/dmlib.h"
+#include "base/data-struct/bitset.h"
+
+#include "device-mapper/misc/dmlib.h"
+#include "base/memory/zalloc.h"
 
 #include <ctype.h>
 
@@ -29,7 +32,7 @@ dm_bitset_t dm_bitset_create(struct dm_pool *mem, unsigned num_bits)
 	if (mem)
 		bs = dm_pool_zalloc(mem, size);
 	else
-		bs = dm_zalloc(size);
+		bs = zalloc(size);
 
 	if (!bs)
 		return NULL;

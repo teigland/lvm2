@@ -13,7 +13,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libdm/misc/dmlib.h"
+#include "device-mapper/misc/dmlib.h"
 #include <sys/mman.h>
 #include <pthread.h>
 

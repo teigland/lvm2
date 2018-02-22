@@ -60,7 +60,7 @@ static struct segtype_handler _unknown_ops = {
 
 struct segment_type *init_unknown_segtype(struct cmd_context *cmd, const char *name)
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype) {
 		log_error("Failed to allocate memory for unknown segtype");

@@ -103,7 +103,7 @@ struct dev_filter *fwraid_filter_create(struct dev_types *dt __attribute__((unus
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(*f)))) {
+	if (!(f = zalloc(sizeof(*f)))) {
 		log_error("Firmware RAID filter allocation failed");
 		return NULL;
 	}

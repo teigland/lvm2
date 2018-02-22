@@ -13,8 +13,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libdm/misc/dmlib.h"
-#include "libdm/regex/ttree.h"
+#include "device-mapper/misc/dmlib.h"
+#include "base/regex/ttree.h"
 
 struct node {
 	unsigned k;

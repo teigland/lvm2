@@ -92,7 +92,7 @@ static struct segtype_handler _error_ops = {
 
 struct segment_type *init_error_segtype(struct cmd_context *cmd)
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype)
 		return_NULL;

@@ -238,7 +238,7 @@ struct label *label_create(struct labeller *labeller)
 {
 	struct label *label;
 
-	if (!(label = dm_zalloc(sizeof(*label)))) {
+	if (!(label = zalloc(sizeof(*label)))) {
 		log_error("label allocaction failed");
 		return NULL;
 	}
@@ -649,7 +649,7 @@ int label_read(struct device *dev, struct label **labelp, uint64_t unused_sector
 	int ret;
 
 	/* scanning is done by list, so make a single item list for this dev */
-	if (!(devl = dm_zalloc(sizeof(*devl))))
+	if (!(devl = zalloc(sizeof(*devl))))
 		return 0;
 	devl->dev = dev;
 	dm_list_init(&one_dev);

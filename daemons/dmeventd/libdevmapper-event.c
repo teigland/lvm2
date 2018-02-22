@@ -57,7 +57,7 @@ struct dm_event_handler *dm_event_handler_create(void)
 {
 	struct dm_event_handler *dmevh;
 
-	if (!(dmevh = dm_zalloc(sizeof(*dmevh)))) {
+	if (!(dmevh = zalloc(sizeof(*dmevh)))) {
 		log_error("Failed to allocate event handler.");
 		return NULL;
 	}

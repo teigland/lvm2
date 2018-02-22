@@ -174,7 +174,7 @@ struct dev_filter *usable_filter_create(struct dev_types *dt __attribute__((unus
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(struct dev_filter)))) {
+	if (!(f = zalloc(sizeof(struct dev_filter)))) {
 		log_error("Usable device filter allocation failed");
 		return NULL;
 	}
@@ -182,7 +182,7 @@ struct dev_filter *usable_filter_create(struct dev_types *dt __attribute__((unus
 	f->passes_filter = _passes_usable_filter;
 	f->destroy = _usable_filter_destroy;
 	f->use_count = 0;
-	if (!(f->private = dm_zalloc(sizeof(filter_mode_t)))) {
+	if (!(f->private = zalloc(sizeof(filter_mode_t)))) {
 		log_error("Usable device filter mode allocation failed");
 		free(f);
 		return NULL;

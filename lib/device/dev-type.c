@@ -47,7 +47,7 @@ struct dev_types *create_dev_types(const char *proc_dir,
 	const char *name;
 	char *nl;
 
-	if (!(dt = dm_zalloc(sizeof(struct dev_types)))) {
+	if (!(dt = zalloc(sizeof(struct dev_types)))) {
 		log_error("Failed to allocate device type register.");
 		return NULL;
 	}

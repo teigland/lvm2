@@ -65,7 +65,7 @@ struct dev_filter *internal_filter_create(void)
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(*f)))) {
+	if (!(f = zalloc(sizeof(*f)))) {
 		log_error("md filter allocation failed");
 		return NULL;
 	}

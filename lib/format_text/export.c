@@ -1036,7 +1036,7 @@ int text_vg_export_file(struct volume_group *vg, const char *desc, FILE *fp)
 
 	_init();
 
-	if (!(f = dm_zalloc(sizeof(*f))))
+	if (!(f = zalloc(sizeof(*f))))
 		return_0;
 
 	f->data.fp = fp;
@@ -1060,7 +1060,7 @@ size_t text_vg_export_raw(struct volume_group *vg, const char *desc, char **buf)
 
 	_init();
 
-	if (!(f = dm_zalloc(sizeof(*f))))
+	if (!(f = zalloc(sizeof(*f))))
 		return_0;
 
 	f->data.buf.size = 65536;	/* Initial metadata limit */

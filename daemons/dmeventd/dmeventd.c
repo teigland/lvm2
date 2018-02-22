@@ -270,7 +270,7 @@ static void _free_dso_data(struct dso_data *data)
 
 static struct dso_data *_alloc_dso_data(struct message_data *data)
 {
-	struct dso_data *ret = (typeof(ret)) dm_zalloc(sizeof(*ret));
+	struct dso_data *ret = (typeof(ret)) zalloc(sizeof(*ret));
 
 	if (!ret)
 		return_NULL;
@@ -408,7 +408,7 @@ static struct thread_status *_alloc_thread_status(const struct message_data *dat
 {
 	struct thread_status *thread;
 
-	if (!(thread = dm_zalloc(sizeof(*thread)))) {
+	if (!(thread = zalloc(sizeof(*thread)))) {
 		log_error("Cannot create new thread, out of memory.");
 		return NULL;
 	}

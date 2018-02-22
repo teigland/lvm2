@@ -43,7 +43,7 @@ struct dev_filter *lvm_type_filter_create(struct dev_types *dt)
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(struct dev_filter)))) {
+	if (!(f = zalloc(sizeof(struct dev_filter)))) {
 		log_error("LVM type filter allocation failed");
 		return NULL;
 	}

@@ -50,7 +50,7 @@ struct dm_pool {
 
 struct dm_pool *dm_pool_create(const char *name, size_t chunk_hint)
 {
-	struct dm_pool *mem = dm_zalloc(sizeof(*mem));
+	struct dm_pool *mem = zalloc(sizeof(*mem));
 
 	if (!mem) {
 		log_error("Couldn't create memory pool %s (size %"

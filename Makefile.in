@@ -50,7 +50,7 @@ DISTCLEAN_TARGETS += config.cache config.log config.status make.tmpl
 
 include make.tmpl
 include base/Makefile
-include libdm/Makefile
+include device-mapper/Makefile
 include lib/Makefile
 include tools/Makefile
 include man/Makefile

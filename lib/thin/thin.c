@@ -807,7 +807,7 @@ int init_multiple_segtypes(struct cmd_context *cmd, struct segtype_library *segl
 	unsigned i;
 
 	for (i = 0; i < DM_ARRAY_SIZE(reg_segtypes); ++i) {
-		segtype = dm_zalloc(sizeof(*segtype));
+		segtype = zalloc(sizeof(*segtype));
 
 		if (!segtype) {
 			log_error("Failed to allocate memory for %s segtype",

@@ -611,7 +611,7 @@ int init_cache_segtypes(struct cmd_context *cmd,
 			struct segtype_library *seglib)
 #endif
 {
-	struct segment_type *segtype = dm_zalloc(sizeof(*segtype));
+	struct segment_type *segtype = zalloc(sizeof(*segtype));
 
 	if (!segtype) {
 		log_error("Failed to allocate memory for cache_pool segtype");
@@ -626,7 +626,7 @@ int init_cache_segtypes(struct cmd_context *cmd,
 		return_0;
 	log_very_verbose("Initialised segtype: %s", segtype->name);
 
-	segtype = dm_zalloc(sizeof(*segtype));
+	segtype = zalloc(sizeof(*segtype));
 	if (!segtype) {
 		log_error("Failed to allocate memory for cache segtype");
 		return 0;

@@ -93,11 +93,11 @@ struct device *dev_create_file(const char *filename, struct device *dev,
 
 	if (allocate) {
 		if (use_malloc) {
-			if (!(dev = dm_zalloc(sizeof(*dev)))) {
+			if (!(dev = zalloc(sizeof(*dev)))) {
 				log_error("struct device allocation failed");
 				return NULL;
 			}
-			if (!(alias = dm_zalloc(sizeof(*alias)))) {
+			if (!(alias = zalloc(sizeof(*alias)))) {
 				log_error("struct dm_str_list allocation failed");
 				free(dev);
 				return NULL;

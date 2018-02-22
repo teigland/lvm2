@@ -1132,7 +1132,7 @@ next:
 
 		dm_list_move(add_cache_devs, &alt->list);
 
-		if ((del = dm_zalloc(sizeof(*del)))) {
+		if ((del = zalloc(sizeof(*del)))) {
 			del->dev = info->dev;
 			dm_list_add(del_cache_devs, &del->list);
 		}
@@ -1790,7 +1790,7 @@ static int _lvmcache_update_vgname(struct lvmcache_info *info,
 			}
 		} else {
 ***/
-		if (!(vginfo = dm_zalloc(sizeof(*vginfo)))) {
+		if (!(vginfo = zalloc(sizeof(*vginfo)))) {
 			log_error("lvmcache_update_vgname: list alloc failed");
 			return 0;
 		}
@@ -2096,7 +2096,7 @@ static struct lvmcache_info * _create_info(struct labeller *labeller, struct dev
 
 	if (!(label = label_create(labeller)))
 		return_NULL;
-	if (!(info = dm_zalloc(sizeof(*info)))) {
+	if (!(info = zalloc(sizeof(*info)))) {
 		log_error("lvmcache_info allocation failed");
 		label_destroy(label);
 		return NULL;
@@ -2178,7 +2178,7 @@ struct lvmcache_info *lvmcache_add(struct labeller *labeller,
 			 * use it.
 			 */
 
-			if (!(devl = dm_zalloc(sizeof(*devl))))
+			if (!(devl = zalloc(sizeof(*devl))))
 				return_NULL;
 			devl->dev = dev;
 

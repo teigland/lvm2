@@ -46,7 +46,7 @@ struct dev_filter *partitioned_filter_create(struct dev_types *dt)
 {
 	struct dev_filter *f;
 
-	if (!(f = dm_zalloc(sizeof(struct dev_filter)))) {
+	if (!(f = zalloc(sizeof(struct dev_filter)))) {
 		log_error("Partitioned filter allocation failed");
 		return NULL;
 	}

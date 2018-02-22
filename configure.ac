@@ -1184,26 +1184,6 @@ if test "$BUILD_DMFILEMAPD" = yes; then
 fi
 
 ################################################################################
-dnl -- Build notifydbus
-AC_MSG_CHECKING(whether to build notifydbus)
-AC_ARG_ENABLE(notify-dbus,
-	      AC_HELP_STRING([--enable-notify-dbus],
-			     [enable LVM notification using dbus]),
-	      NOTIFYDBUS_SUPPORT=$enableval, NOTIFYDBUS_SUPPORT=no)
-AC_MSG_RESULT($NOTIFYDBUS_SUPPORT)
-
-if test "$NOTIFYDBUS_SUPPORT" = yes; then
-	AC_DEFINE([NOTIFYDBUS_SUPPORT], 1, [Define to 1 to include code that uses dbus notification.])
-	SYSTEMD_LIBS="-lsystemd"
-fi
-
-################################################################################
-dnl -- Look for dbus libraries
-if test "$NOTIFYDBUS_SUPPORT" = yes; then
-	PKG_CHECK_MODULES(NOTIFY_DBUS, systemd >= 221, [HAVE_NOTIFY_DBUS=yes], $bailout)
-fi
-
-################################################################################
 
 dnl -- Enable blkid wiping functionality
 AC_ARG_ENABLE(blkid_wiping,
@@ -1370,81 +1350,6 @@ AC_SUBST([LVM2CMD_LIB])
 test "$CMDLIB" = yes \
   && LVM2CMD_LIB=-llvm2cmd \
   || LVM2CMD_LIB=
-
-################################################################################
-dnl -- Enable D-Bus service
-AC_MSG_CHECKING(whether to include Python D-Bus support)
-AC_ARG_ENABLE(dbus-service,
-	      AC_HELP_STRING([--enable-dbus-service], [install D-Bus support]),
-	      BUILD_LVMDBUSD=$enableval, BUILD_LVMDBUSD=no)
-AC_MSG_RESULT($BUILD_LVMDBUSD)
-AS_IF([test "$NOTIFYDBUS_SUPPORT" = yes && test "BUILD_LVMDBUSD" = yes],
-      [AC_MSG_WARN([Building D-Bus support without D-Bus notifications.])])
-
-################################################################################
-dnl -- Enable Python liblvm2app bindings
-AC_MSG_CHECKING(whether to build Python wrapper for liblvm2app.so)
-AC_ARG_ENABLE(python_bindings,
-	      AC_HELP_STRING([--enable-python_bindings], [build default Python applib bindings]),
-	      PYTHON_BINDINGS=$enableval, PYTHON_BINDINGS=no)
-AC_MSG_RESULT($PYTHON_BINDINGS)
-
-AC_MSG_CHECKING(whether to build Python2 wrapper for liblvm2app.so)
-AC_ARG_ENABLE(python2_bindings,
-	      AC_HELP_STRING([--enable-python2_bindings], [build Python2 applib bindings]),
-	      PYTHON2_BINDINGS=$enableval, PYTHON2_BINDINGS=no)
-AC_MSG_RESULT($PYTHON2_BINDINGS)
-
-
-AC_MSG_CHECKING(whether to build Python3 wrapper for liblvm2app.so)
-AC_ARG_ENABLE(python3_bindings,
-	      AC_HELP_STRING([--enable-python3_bindings], [build Python3 applib bindings]),
-	      PYTHON3_BINDINGS=$enableval, PYTHON3_BINDINGS=no)
-AC_MSG_RESULT($PYTHON3_BINDINGS)
-
-if test "$PYTHON_BINDINGS" = yes; then
-	AC_MSG_ERROR([--enable-python-bindings is replaced by --enable-python2-bindings and --enable-python3-bindings])
-fi
-
-if test "$PYTHON2_BINDINGS" = yes; then
-	AM_PATH_PYTHON([2])
-	AC_PATH_TOOL(PYTHON2, python2)
-	test -z "$PYTHON2" && AC_MSG_ERROR([python2 is required for --enable-python2_bindings but cannot be found])
-	AC_PATH_TOOL(PYTHON2_CONFIG, python2-config)
-	test -z "$PYTHON2_CONFIG" && AC_PATH_TOOL(PYTHON2_CONFIG, python-config)
-	test -z "$PYTHON2_CONFIG" && AC_MSG_ERROR([python headers are required for --enable-python2_bindings but cannot be found])
-	PYTHON2_INCDIRS=`"$PYTHON2_CONFIG" --includes`
-	PYTHON2_LIBDIRS=`"$PYTHON2_CONFIG" --libs`
-	PYTHON2DIR=$pythondir
-	PYTHON_BINDINGS=yes
-fi
-	
-if test "$PYTHON3_BINDINGS" = yes -o "$BUILD_LVMDBUSD" = yes; then
-	unset PYTHON PYTHON_CONFIG
-	unset am_cv_pathless_PYTHON ac_cv_path_PYTHON am_cv_python_platform
-	unset am_cv_python_pythondir am_cv_python_version am_cv_python_pyexecdir
-	unset ac_cv_path_PYTHON_CONFIG ac_cv_path_ac_pt_PYTHON_CONFIG
-	AM_PATH_PYTHON([3])
-	PYTHON3=$PYTHON
-	test -z "$PYTHON3" && AC_MSG_ERROR([python3 is required for --enable-python3_bindings or --enable-dbus-service but cannot be found])
-	AC_PATH_TOOL(PYTHON3_CONFIG, python3-config)
-	test -z "$PYTHON3_CONFIG" && AC_MSG_ERROR([python3 headers are required for --enable-python3_bindings or --enable-dbus-service but cannot be found])
-	PYTHON3_INCDIRS=`"$PYTHON3_CONFIG" --includes`
-	PYTHON3_LIBDIRS=`"$PYTHON3_CONFIG" --libs`
-	PYTHON3DIR=$pythondir
-	test "$PYTHON3_BINDINGS" = yes && PYTHON_BINDINGS=yes
-fi
-
-if test "$BUILD_LVMDBUSD" = yes; then
-	# To get this macro, install autoconf-archive package then run autoreconf
-	AC_PYTHON_MODULE([pyudev], [Required], python3)
-	AC_PYTHON_MODULE([dbus], [Required], python3)
-fi
-
-if test "$PYTHON_BINDINGS" = yes -o "$PYTHON2_BINDINGS" = yes -o "$PYTHON3_BINDINGS" = yes; then
-	AC_MSG_WARN([Python bindings are deprecated. Use D-Bus API])
-	test "$APPLIB" != yes && AC_MSG_ERROR([Python_bindings require --enable-applib])
-fi
 
 ################################################################################
 dnl -- Enable pkg-config
@@ -1911,7 +1816,6 @@ AC_SUBST(AWK)
 AC_SUBST(BLKID_PC)
 AC_SUBST(BUILD_CMIRRORD)
 AC_SUBST(BUILD_DMEVENTD)
-AC_SUBST(BUILD_LVMDBUSD)
 AC_SUBST(BUILD_LVMETAD)
 AC_SUBST(BUILD_LVMPOLLD)
 AC_SUBST(BUILD_LVMLOCKD)
@@ -2084,11 +1988,6 @@ daemons/dmeventd/plugins/mirror/Makefile
 daemons/dmeventd/plugins/snapshot/Makefile
 daemons/dmeventd/plugins/thin/Makefile
 daemons/dmfilemapd/Makefile
-daemons/lvmdbusd/Makefile
-daemons/lvmdbusd/lvmdbusd
-daemons/lvmdbusd/lvmdb.py
-daemons/lvmdbusd/lvm_shell_proxy.py
-daemons/lvmdbusd/path.py
 daemons/lvmetad/Makefile
 daemons/lvmpolld/Makefile
 daemons/lvmlockd/Makefile
@@ -2100,14 +1999,10 @@ conf/metadata_profile_template.profile
 lib/Makefile
 include/lvm-version.h
 libdaemon/Makefile
-libdm/Makefile
-libdm/libdevmapper.pc
 liblvm/Makefile
 liblvm/liblvm2app.pc
 man/Makefile
 po/Makefile
-python/Makefile
-python/setup.py
 scripts/blkdeactivate.sh
 scripts/blk_availability_init_red_hat
 scripts/blk_availability_systemd_red_hat.service

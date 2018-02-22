@@ -331,7 +331,7 @@ struct dev_filter *persistent_filter_create(struct dev_types *dt,
 	struct dev_filter *f = NULL;
 	struct stat info;
 
-	if (!(pf = dm_zalloc(sizeof(*pf)))) {
+	if (!(pf = zalloc(sizeof(*pf)))) {
 		log_error("Allocation of persistent filter failed.");
 		return NULL;
 	}
@@ -350,7 +350,7 @@ struct dev_filter *persistent_filter_create(struct dev_types *dt,
 		goto bad;
 	}
 
-	if (!(f = dm_zalloc(sizeof(*f)))) {
+	if (!(f = zalloc(sizeof(*f)))) {
 		log_error("Allocation of device filter for persistent filter failed.");
 		goto bad;
 	}

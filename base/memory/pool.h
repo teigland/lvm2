@@ -1,6 +1,8 @@
 #ifndef BASE_MEMORY_POOL_H
 #define BASE_MEMORY_POOL_H
 
+#include <stdlib.h>
+
 //----------------------------------------------------------------
 
 /*

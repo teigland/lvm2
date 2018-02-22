@@ -16,6 +16,8 @@
 #ifndef _DM_PARSE_REGEX_H
 #define _DM_PARSE_REGEX_H
 
+#include "base/data-struct/bitset.h"
+
 enum {
 	CAT,
 	STAR,

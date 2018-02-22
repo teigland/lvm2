@@ -3,6 +3,10 @@
 
 #include "base/memory/pool.h"
 
+#include <limits.h>
+#include <stdint.h>
+#include <string.h>
+
 //----------------------------------------------------------------
 
 typedef uint32_t *dm_bitset_t;

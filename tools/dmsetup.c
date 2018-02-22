@@ -1531,7 +1531,7 @@ static int _message(CMD_ARGS)
 	for (i = 0; i < argc; i++)
 		sz += strlen(argv[i]) + 1;
 
-	if (!(str = dm_zalloc(sz))) {
+	if (!(str = zalloc(sz))) {
 		err("message string allocation failed");
 		goto out;
 	}

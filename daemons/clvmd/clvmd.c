@@ -624,7 +624,7 @@ int main(int argc, char *argv[])
 	_local_client_count++;
 
 	/* Add the local socket to the list */
-	if (!(newfd = dm_zalloc(sizeof(struct local_client)))) {
+	if (!(newfd = zalloc(sizeof(struct local_client)))) {
 		child_init_signal_and_exit(DFAIL_MALLOC);
 		/* NOTREACHED */
 	}
@@ -727,7 +727,7 @@ static int local_rendezvous_callback(struct local_client *thisfd, char *buf,
 		return 1;
 
 	if (client_fd >= 0) {
-		if (!(newfd = dm_zalloc(sizeof(*newfd)))) {
+		if (!(newfd = zalloc(sizeof(*newfd)))) {
 			if (close(client_fd))
 				log_sys_error("close", "socket");
 			return 1;
@@ -1438,7 +1438,7 @@ static int read_from_local_sock(struct local_client *thisfd)
 		return len;
 	}
 
-	if (!(newfd = dm_zalloc(sizeof(*newfd)))) {
+	if (!(newfd = zalloc(sizeof(*newfd)))) {
 		struct clvm_header reply = {
 			.cmd = CLVMD_CMD_REPLY,
 			.status = ENOMEM
@@ -1673,7 +1673,7 @@ static void add_reply_to_list(struct local_client *client, int status,
 	struct node_reply *reply;
 
 	/* Add it to the list of replies */
-	if (!(reply = dm_zalloc(sizeof(*reply)))) {
+	if (!(reply = zalloc(sizeof(*reply)))) {
 		/* It's all gone horribly wrong... */
 		send_local_reply(client, ENOMEM, client->fd);
 		return;

@@ -17,7 +17,9 @@
 #include "memcheck.h"
 #endif
 
-#include "libdm/misc/dmlib.h"
+#include "base/memory/zalloc.h"
+#include "device-mapper/misc/dmlib.h"
+
 #include <stddef.h>	/* For musl libc */
 #include <malloc.h>
 
@@ -48,7 +50,7 @@ static void _free_chunk(struct chunk *c);
 struct dm_pool *dm_pool_create(const char *name, size_t chunk_hint)
 {
 	size_t new_size = 1024;
-	struct dm_pool *p = dm_zalloc(sizeof(*p));
+	struct dm_pool *p = zalloc(sizeof(*p));
 
 	if (!p) {
 		log_error("Couldn't create memory pool %s (size %"
