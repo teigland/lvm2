@@ -166,8 +166,8 @@ static void _usable_filter_destroy(struct dev_filter *f)
 	if (f->use_count)
 		log_error(INTERNAL_ERROR "Destroying usable device filter while in use %u times.", f->use_count);
 
-	dm_free(f->private);
-	dm_free(f);
+	free(f->private);
+	free(f);
 }
 
 struct dev_filter *usable_filter_create(struct dev_types *dt __attribute__((unused)), filter_mode_t mode)
@@ -184,7 +184,7 @@ struct dev_filter *usable_filter_create(struct dev_types *dt __attribute__((unus
 	f->use_count = 0;
 	if (!(f->private = dm_zalloc(sizeof(filter_mode_t)))) {
 		log_error("Usable device filter mode allocation failed");
-		dm_free(f);
+		free(f);
 		return NULL;
 	}
 	*((filter_mode_t *) f->private) = mode;

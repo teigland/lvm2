@@ -35,7 +35,7 @@ void print_log_libdm(int level, const char *file, int line, int dm_errno_or_clas
 #define LOG_LINE_WITH_CLASS(l, c, x...) \
     print_log(l, __FILE__, __LINE__ , c, ## x)
 
-#include "lib/log/log.h"
+#include "base/log/log.h"
 
 int init_custom_log_streams(struct custom_fds *custom_fds);
 int reopen_standard_stream(FILE **stream, const char *mode);

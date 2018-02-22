@@ -13,8 +13,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _LVM_LOG_H
-#define _LVM_LOG_H
+#ifndef BASE_LOG_LOG_H
+#define BASE_LOG_LOG_H
 
 /*
  * printf()-style macros to use for messages:
@@ -36,6 +36,8 @@
  *      /dev/fd/7: stat failed: No such file or directory
  *
  */
+
+#include "base/log/lvm-logging.h"
 
 #include <errno.h>
 

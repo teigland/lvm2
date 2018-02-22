@@ -317,10 +317,10 @@ static void _persistent_destroy(struct dev_filter *f)
 		log_error(INTERNAL_ERROR "Destroying persistent filter while in use %u times.", f->use_count);
 
 	dm_hash_destroy(pf->devices);
-	dm_free(pf->file);
+	free(pf->file);
 	pf->real->destroy(pf->real);
-	dm_free(pf);
-	dm_free(f);
+	free(pf);
+	free(f);
 }
 
 struct dev_filter *persistent_filter_create(struct dev_types *dt,
@@ -371,10 +371,10 @@ struct dev_filter *persistent_filter_create(struct dev_types *dt,
 	return f;
 
       bad:
-	dm_free(pf->file);
+	free(pf->file);
 	if (pf->devices)
 		dm_hash_destroy(pf->devices);
-	dm_free(pf);
-	dm_free(f);
+	free(pf);
+	free(f);
 	return NULL;
 }

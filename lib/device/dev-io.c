@@ -258,7 +258,7 @@ static int _aligned_io(struct device_area *where, char *buffer,
 		return _io(where, buffer, should_write, reason);
 
 	/* Allocate a bounce buffer with an extra block */
-	if (!(bounce_buf = bounce = dm_malloc((size_t) widened.size + block_size))) {
+	if (!(bounce_buf = bounce = malloc((size_t) widened.size + block_size))) {
 		log_error("Bounce buffer malloc failed");
 		return 0;
 	}
@@ -296,7 +296,7 @@ static int _aligned_io(struct device_area *where, char *buffer,
 	r = 1;
 
 out:
-	dm_free(bounce_buf);
+	free(bounce_buf);
 	return r;
 }
 

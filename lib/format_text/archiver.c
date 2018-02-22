@@ -71,7 +71,7 @@ void archive_exit(struct cmd_context *cmd)
 {
 	if (!cmd->archive_params)
 		return;
-	dm_free(cmd->archive_params->dir);
+	free(cmd->archive_params->dir);
 	memset(cmd->archive_params, 0, sizeof(*cmd->archive_params));
 }
 
@@ -206,7 +206,7 @@ void backup_exit(struct cmd_context *cmd)
 {
 	if (!cmd->backup_params)
 		return;
-	dm_free(cmd->backup_params->dir);
+	free(cmd->backup_params->dir);
 	memset(cmd->backup_params, 0, sizeof(*cmd->backup_params));
 }
 

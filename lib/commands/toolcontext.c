@@ -1765,7 +1765,7 @@ void destroy_config_context(struct cmd_context *cmd)
 	if (cmd->libmem)
 		dm_pool_destroy(cmd->libmem);
 
-	dm_free(cmd);
+	free(cmd);
 }
 
 /*
@@ -1871,7 +1871,7 @@ struct cmd_context *create_toolcontext(unsigned is_long_lived,
 #endif
 	   ) {
 		/* Allocate 2 buffers */
-		if (!(cmd->linebuffer = dm_malloc(2 * _linebuffer_size))) {
+		if (!(cmd->linebuffer = malloc(2 * _linebuffer_size))) {
 			log_error("Failed to allocate line buffer.");
 			goto out;
 		}
@@ -2059,7 +2059,7 @@ static void _destroy_dev_types(struct cmd_context *cmd)
 	if (!cmd->dev_types)
 		return;
 
-	dm_free(cmd->dev_types);
+	free(cmd->dev_types);
 	cmd->dev_types = NULL;
 }
 
@@ -2269,10 +2269,10 @@ void destroy_toolcontext(struct cmd_context *cmd)
 				cmd->linebuffer = NULL;	/* Leave buffer in place (deliberate leak) */
 		}
 
-		dm_free(cmd->linebuffer);
+		free(cmd->linebuffer);
 	}
 #endif
-	dm_free(cmd);
+	free(cmd);
 
 	lvmetad_release_token();
 	lvmetad_disconnect();

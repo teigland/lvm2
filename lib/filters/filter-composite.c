@@ -48,8 +48,8 @@ static void _composite_destroy(struct dev_filter *f)
 	for (filters = (struct dev_filter **) f->private; *filters; ++filters)
 		(*filters)->destroy(*filters);
 
-	dm_free(f->private);
-	dm_free(f);
+	free(f->private);
+	free(f);
 }
 
 static int _dump(struct dev_filter *f, int merge_existing)
@@ -80,7 +80,7 @@ struct dev_filter *composite_filter_create(int n, int use_dev_ext_info, struct d
 	if (!filters)
 		return_NULL;
 
-	if (!(filters_copy = dm_malloc(sizeof(*filters) * (n + 1)))) {
+	if (!(filters_copy = malloc(sizeof(*filters) * (n + 1)))) {
 		log_error("Composite filters allocation failed.");
 		return NULL;
 	}
@@ -90,7 +90,7 @@ struct dev_filter *composite_filter_create(int n, int use_dev_ext_info, struct d
 
 	if (!(cft = dm_zalloc(sizeof(*cft)))) {
 		log_error("Composite filters allocation failed.");
-		dm_free(filters_copy);
+		free(filters_copy);
 		return NULL;
 	}
 

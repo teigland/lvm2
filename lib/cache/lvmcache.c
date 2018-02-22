@@ -203,7 +203,7 @@ static void _suspended_vg_free(struct lvmcache_vginfo *vginfo, int free_old, int
 {
 	if (free_old) {
 		if (vginfo->suspended_vg_old_buf)
-			dm_free(vginfo->suspended_vg_old_buf);
+			free(vginfo->suspended_vg_old_buf);
 		if (vginfo->suspended_vg_old_cft)
 			dm_config_destroy(vginfo->suspended_vg_old_cft);
 		if (vginfo->suspended_vg_old)
@@ -216,7 +216,7 @@ static void _suspended_vg_free(struct lvmcache_vginfo *vginfo, int free_old, int
 
 	if (free_new) {
 		if (vginfo->suspended_vg_new_buf)
-			dm_free(vginfo->suspended_vg_new_buf);
+			free(vginfo->suspended_vg_new_buf);
 		if (vginfo->suspended_vg_new_cft)
 			dm_config_destroy(vginfo->suspended_vg_new_cft);
 		if (vginfo->suspended_vg_new)
@@ -527,7 +527,7 @@ static void _destroy_duplicate_device_list(struct dm_list *head)
 
 	dm_list_iterate_items_safe(devl, devl2, head) {
 		dm_list_del(&devl->list);
-		dm_free(devl);
+		free(devl);
 	}
 	dm_list_init(head);
 }
@@ -622,7 +622,7 @@ const struct format_type *lvmcache_fmt_from_vgname(struct cmd_context *cmd,
  	 */
 	dm_list_init(&devs);
 	dm_list_iterate_items(info, &vginfo->infos) {
-		if (!(devl = dm_malloc(sizeof(*devl)))) {
+		if (!(devl = malloc(sizeof(*devl)))) {
 			log_error("device_list element allocation failed");
 			return NULL;
 		}
@@ -636,7 +636,7 @@ const struct format_type *lvmcache_fmt_from_vgname(struct cmd_context *cmd,
 		devl = dm_list_item(devh, struct device_list);
 		label_read(devl->dev, NULL, UINT64_C(0));
 		dm_list_del(&devl->list);
-		dm_free(devl);
+		free(devl);
 	}
 
 	/* If vginfo changed, caller needs to rescan */
@@ -1209,7 +1209,7 @@ int lvmcache_label_rescan_vg(struct cmd_context *cmd, const char *vgname, const 
 		return 1;
 
 	dm_list_iterate_items(info, &vginfo->infos) {
-		if (!(devl = dm_malloc(sizeof(*devl)))) {
+		if (!(devl = malloc(sizeof(*devl)))) {
 			log_error("device_list element allocation failed");
 			return 0;
 		}
@@ -1556,9 +1556,9 @@ static int _free_vginfo(struct lvmcache_vginfo *vginfo)
 			vginfo2 = vginfo2->next;
 		}
 
-	dm_free(vginfo->system_id);
-	dm_free(vginfo->vgname);
-	dm_free(vginfo->creation_host);
+	free(vginfo->system_id);
+	free(vginfo->vgname);
+	free(vginfo->creation_host);
 	_suspended_vg_free(vginfo, 1, 1);
 
 	if (*vginfo->vgid && _vgid_hash &&
@@ -1567,7 +1567,7 @@ static int _free_vginfo(struct lvmcache_vginfo *vginfo)
 
 	dm_list_del(&vginfo->list);
 
-	dm_free(vginfo);
+	free(vginfo);
 
 	return r;
 }
@@ -1600,7 +1600,7 @@ void lvmcache_del(struct lvmcache_info *info)
 
 	info->label->labeller->ops->destroy_label(info->label->labeller,
 						  info->label);
-	dm_free(info);
+	free(info);
 }
 
 /*
@@ -1776,7 +1776,7 @@ static int _lvmcache_update_vgname(struct lvmcache_info *info,
 			} while ((old_vginfo = old_vginfo->next));
 			vginfo->next = NULL;
 
-			dm_free(vginfo->vgname);
+			free(vginfo->vgname);
 			if (!(vginfo->vgname = dm_strdup(vgname))) {
 				log_error("cache vgname alloc failed for %s", vgname);
 				return 0;
@@ -1795,7 +1795,7 @@ static int _lvmcache_update_vgname(struct lvmcache_info *info,
 			return 0;
 		}
 		if (!(vginfo->vgname = dm_strdup(vgname))) {
-			dm_free(vginfo);
+			free(vginfo);
 			log_error("cache vgname alloc failed for %s", vgname);
 			return 0;
 		}
@@ -1811,8 +1811,8 @@ static int _lvmcache_update_vgname(struct lvmcache_info *info,
 			if (!orphan_vginfo) {
 				log_error(INTERNAL_ERROR "Orphan vginfo %s lost from cache.",
 					  primary_vginfo->fmt->orphan_vg_name);
-				dm_free(vginfo->vgname);
-				dm_free(vginfo);
+				free(vginfo->vgname);
+				free(vginfo);
 				return 0;
 			}
 			dm_list_iterate_items_safe(info2, info3, &primary_vginfo->infos) {
@@ -1836,8 +1836,8 @@ static int _lvmcache_update_vgname(struct lvmcache_info *info,
 
 		if (!_insert_vginfo(vginfo, vgid, vgstatus, creation_host,
 				    primary_vginfo)) {
-			dm_free(vginfo->vgname);
-			dm_free(vginfo);
+			free(vginfo->vgname);
+			free(vginfo);
 			return 0;
 		}
 		/* Ensure orphans appear last on list_iterate */
@@ -1897,7 +1897,7 @@ static int _lvmcache_update_vgstatus(struct lvmcache_info *info, uint32_t vgstat
 						   info->vginfo->creation_host))
 		goto set_lock_type;
 
-	dm_free(info->vginfo->creation_host);
+	free(info->vginfo->creation_host);
 
 	if (!(info->vginfo->creation_host = dm_strdup(creation_host))) {
 		log_error("cache creation host alloc failed for %s.",
@@ -1916,7 +1916,7 @@ set_lock_type:
 	if (info->vginfo->lock_type && !strcmp(lock_type, info->vginfo->lock_type))
 		goto set_system_id;
 
-	dm_free(info->vginfo->lock_type);
+	free(info->vginfo->lock_type);
 
 	if (!(info->vginfo->lock_type = dm_strdup(lock_type))) {
 		log_error("cache lock_type alloc failed for %s", lock_type);
@@ -1934,7 +1934,7 @@ set_system_id:
 	if (info->vginfo->system_id && !strcmp(system_id, info->vginfo->system_id))
 		goto out;
 
-	dm_free(info->vginfo->system_id);
+	free(info->vginfo->system_id);
 
 	if (!(info->vginfo->system_id = dm_strdup(system_id))) {
 		log_error("cache system_id alloc failed for %s", system_id);
@@ -2234,8 +2234,8 @@ update_vginfo:
 		if (created) {
 			dm_hash_remove(_pvid_hash, pvid_s);
 			strcpy(info->dev->pvid, "");
-			dm_free(info->label);
-			dm_free(info);
+			free(info->label);
+			free(info);
 		}
 		return NULL;
 	}
@@ -2248,7 +2248,7 @@ static void _lvmcache_destroy_entry(struct lvmcache_info *info)
 	_vginfo_detach_info(info);
 	info->dev->pvid[0] = 0;
 	label_destroy(info->label);
-	dm_free(info);
+	free(info);
 }
 
 static void _lvmcache_destroy_vgnamelist(struct lvmcache_vginfo *vginfo)

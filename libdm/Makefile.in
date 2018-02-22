@@ -13,9 +13,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 LIBDM_SOURCE =\
-	libdm/datastruct/bitset.c \
-	libdm/datastruct/hash.c \
-	libdm/datastruct/list.c \
 	libdm/libdm-common.c \
 	libdm/libdm-config.c \
 	libdm/libdm-deptree.c \
@@ -25,8 +22,6 @@ LIBDM_SOURCE =\
 	libdm/libdm-string.c \
 	libdm/libdm-targets.c \
 	libdm/libdm-timestamp.c \
-	libdm/mm/dbg_malloc.c \
-	libdm/mm/pool.c \
 	libdm/regex/matcher.c \
 	libdm/regex/parse_rx.c \
 	libdm/regex/ttree.c \

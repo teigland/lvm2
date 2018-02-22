@@ -215,9 +215,9 @@ retry:
 			goto_bad;
 		}
 		/* Add new locked resource */
-		if (!(head = dm_malloc(sizeof(struct dm_list))) ||
+		if (!(head = malloc(sizeof(struct dm_list))) ||
 		    !dm_hash_insert(_locks, resource, head)) {
-			dm_free(head);
+			free(head);
 			goto_bad;
 		}
 
@@ -259,7 +259,7 @@ retry:
 		}
 
 	if (!(flags & LCKF_CONVERT)) {
-		if (!(lck = dm_malloc(sizeof(struct lock))))
+		if (!(lck = malloc(sizeof(struct lock))))
 			goto_bad;
 
 		*lockid = lck->lockid = ++_lockid;
@@ -306,7 +306,7 @@ static int _unlock_resource(const char *resource, int lockid)
 	dm_list_iterate_items(lck, head)
 		if (lck->lockid == lockid) {
 			dm_list_del(&lck->list);
-			dm_free(lck);
+			free(lck);
 			r = 0;
 			goto out;
 		}
@@ -316,7 +316,7 @@ out:
 	if (dm_list_empty(head)) {
 		//DEBUGLOG("Resource %s is no longer hashed (lockid=%d).\n", resource, lockid);
 		dm_hash_remove(_locks, resource);
-		dm_free(head);
+		free(head);
 	}
 
 	pthread_mutex_unlock(&_lock_mutex);

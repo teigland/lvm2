@@ -263,7 +263,7 @@ int read_segtype_lvflags(uint64_t *status, char *segtype_str)
 	else
 		*str = '\0'; /* Cut away 1st. '+' */
 
-	dm_free(buffer);
+	free(buffer);
 
 	return 1;
 }

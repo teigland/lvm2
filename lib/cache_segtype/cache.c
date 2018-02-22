@@ -261,7 +261,7 @@ static int _cache_pool_text_export(const struct lv_segment *seg,
 
 static void _destroy(struct segment_type *segtype)
 {
-	dm_free((void *) segtype);
+	free((void *) segtype);
 }
 
 #ifdef DEVMAPPER_SUPPORT

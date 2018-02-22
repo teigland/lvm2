@@ -44,7 +44,7 @@ int dm_bit_get_prev(dm_bitset_t bs, int last_bit);
  * notation used is identical to the kernel bitmap parser (cpuset etc.)
  * and supports both lists ("1,2,3") and ranges ("1-2,5-8"). If the mem
  * parameter is NULL memory for the bitset will be allocated using
- * dm_malloc(). Otherwise the bitset will be allocated using the supplied
+ * malloc(). Otherwise the bitset will be allocated using the supplied
  * dm_pool.
  */
 dm_bitset_t dm_bitset_parse_list(const char *str, struct dm_pool *mem,

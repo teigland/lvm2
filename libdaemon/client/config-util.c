@@ -63,12 +63,12 @@ int buffer_append_vf(struct buffer *buf, va_list ap)
 		    !buffer_append(buf, append))
 			goto fail;
 
-		dm_free(append);
+		free(append);
 	}
 
 	return 1;
 fail:
-	dm_free(append);
+	free(append);
 	return 0;
 }
 
@@ -369,7 +369,7 @@ int buffer_realloc(struct buffer *buf, int needed)
 	if (new)
 		buf->mem = new;
 	else { /* utter failure */
-		dm_free(buf->mem);
+		free(buf->mem);
 		buf->mem = 0;
 		buf->allocated = buf->used = 0;
 		return 0;
@@ -402,7 +402,7 @@ int buffer_line(const char *line, void *baton)
 
 void buffer_destroy(struct buffer *buf)
 {
-	dm_free(buf->mem);
+	free(buf->mem);
 	buffer_init(buf);
 }
 

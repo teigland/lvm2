@@ -71,7 +71,7 @@ static int _zero_modules_needed(struct dm_pool *mem,
 
 static void _zero_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _zero_ops = {

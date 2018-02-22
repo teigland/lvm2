@@ -41,7 +41,7 @@ dm_bitset_t dm_bitset_create(struct dm_pool *mem, unsigned num_bits)
 
 void dm_bitset_destroy(dm_bitset_t bs)
 {
-	dm_free(bs);
+	free(bs);
 }
 
 int dm_bitset_equal(dm_bitset_t in1, dm_bitset_t in2)

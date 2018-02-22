@@ -212,7 +212,7 @@ static int _striped_target_present(struct cmd_context *cmd,
 
 static void _striped_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _striped_ops = {

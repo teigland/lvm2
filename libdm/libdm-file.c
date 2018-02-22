@@ -83,7 +83,7 @@ static int _create_dir_recursive(const char *dir)
 
 	r = 1;
 out:
-	dm_free(orig);
+	free(orig);
 	return r;
 }
 

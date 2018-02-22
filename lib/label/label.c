@@ -49,7 +49,7 @@ static struct labeller_i *_alloc_li(const char *name, struct labeller *l)
 
 	len = sizeof(*li) + strlen(name) + 1;
 
-	if (!(li = dm_malloc(len))) {
+	if (!(li = malloc(len))) {
 		log_error("Couldn't allocate memory for labeller list object.");
 		return NULL;
 	}
@@ -73,7 +73,7 @@ void label_exit(void)
 	dm_list_iterate_items_safe(li, tli, &_labellers) {
 		dm_list_del(&li->list);
 		li->l->ops->destroy(li->l);
-		dm_free(li);
+		free(li);
 	}
 
 	dm_list_init(&_labellers);
@@ -231,7 +231,7 @@ int label_write(struct device *dev, struct label *label)
 void label_destroy(struct label *label)
 {
 	label->labeller->ops->destroy_label(label->labeller, label);
-	dm_free(label);
+	free(label);
 }
 
 struct label *label_create(struct labeller *labeller)

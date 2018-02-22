@@ -653,7 +653,7 @@ int device_is_usable(struct device *dev, struct dev_usable_check_params check)
 	r = 1;
 
       out:
-	dm_free(vgname);
+	free(vgname);
 	dm_task_destroy(dmt);
 	return r;
 }

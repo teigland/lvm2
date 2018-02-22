@@ -58,7 +58,7 @@ static void _destroy(struct dev_filter *f)
 	if (f->use_count)
 		log_error(INTERNAL_ERROR "Destroying internal filter while in use %u times.", f->use_count);
 
-	dm_free(f);
+	free(f);
 }
 
 struct dev_filter *internal_filter_create(void)

@@ -101,7 +101,7 @@ struct dm_timestamp *dm_timestamp_alloc(void)
 {
 	struct dm_timestamp *ts;
 
-	if (!(ts = dm_malloc(sizeof(*ts))))
+	if (!(ts = malloc(sizeof(*ts))))
 		stack;
 
 	return ts;
@@ -174,5 +174,5 @@ void dm_timestamp_copy(struct dm_timestamp *ts_new, struct dm_timestamp *ts_old)
 
 void dm_timestamp_destroy(struct dm_timestamp *ts)
 {
-	dm_free(ts);
+	free(ts);
 }

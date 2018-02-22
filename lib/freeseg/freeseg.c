@@ -18,7 +18,7 @@
 
 static void _freeseg_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _freeseg_ops = {

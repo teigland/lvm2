@@ -469,10 +469,10 @@ int vg_extend(struct volume_group *vg, int pv_count, const char *const *pv_names
 		if (!_vg_extend_single_pv(vg, pv_name, pp, &max_phys_block_size)) {
 			log_error("Unable to add physical volume '%s' to "
 				  "volume group '%s'.", pv_name, vg->name);
-			dm_free(pv_name);
+			free(pv_name);
 			return 0;
 		}
-		dm_free(pv_name);
+		free(pv_name);
 	}
 
 	(void) check_pv_dev_sizes(vg);

@@ -538,8 +538,8 @@ static void _filemap_monitor_destroy(struct filemap_monitor *fm)
 		_filemap_monitor_end_notify(fm);
 		_filemap_monitor_close_fd(fm);
 	}
-	dm_free((void *) fm->program_id);
-	dm_free(fm->path);
+	free((void *) fm->program_id);
+	free(fm->path);
 }
 
 static int _filemap_monitor_check_same_file(int fd1, int fd2)
@@ -699,7 +699,7 @@ static int _update_regions(struct dm_stats *dms, struct filemap_monitor *fm)
 			 fm->group_id, regions[0]);
 		fm->group_id = regions[0];
 	}
-	dm_free(regions);
+	free(regions);
 	fm->nr_regions = nr_regions;
 	return 1;
 }
@@ -817,7 +817,7 @@ int main(int argc, char **argv)
 	memset(&fm, 0, sizeof(fm));
 
 	if (!_parse_args(argc, argv, &fm)) {
-		dm_free(fm.path);
+		free(fm.path);
 		return 1;
 	}
 

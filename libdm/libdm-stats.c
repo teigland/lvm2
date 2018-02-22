@@ -188,7 +188,7 @@ struct dm_stats *dm_stats_create(const char *program_id)
 
 	/* FIXME: better hint. */
 	if (!(dms->mem = dm_pool_create("stats_pool", 4096))) {
-		dm_free(dms);
+		free(dms);
 		return_NULL;
 	}
 
@@ -234,7 +234,7 @@ bad:
 		dm_pool_destroy(dms->hist_mem);
 	if (dms->group_mem)
 		dm_pool_destroy(dms->group_mem);
-	dm_free(dms);
+	free(dms);
 	return NULL;
 }
 
@@ -324,15 +324,15 @@ static void _stats_region_destroy(struct dm_stats_region *region)
 	 * dropped from the pool along with the corresponding
 	 * regions table.
 	 *
-	 * The following objects are all allocated with dm_malloc.
+	 * The following objects are all allocated with malloc.
 	 */
 
 	region->counters = NULL;
 	region->bounds = NULL;
 
-	dm_free(region->program_id);
+	free(region->program_id);
 	region->program_id = NULL;
-	dm_free(region->aux_data);
+	free(region->aux_data);
 	region->aux_data = NULL;
 	region->region_id = DM_STATS_REGION_NOT_PRESENT;
 }
@@ -363,7 +363,7 @@ static void _stats_group_destroy(struct dm_stats_group *group)
 	group->histogram = NULL;
 
 	if (group->alias) {
-		dm_free((char *) group->alias);
+		free((char *) group->alias);
 		group->alias = NULL;
 	}
 	if (group->regions) {
@@ -413,7 +413,7 @@ static void _stats_clear_binding(struct dm_stats *dms)
 		dm_pool_free(dms->mem, dms->bind_name);
 	if (dms->bind_uuid)
 		dm_pool_free(dms->mem, dms->bind_uuid);
-	dm_free((char *) dms->name);
+	free((char *) dms->name);
 
 	dms->bind_name = dms->bind_uuid = NULL;
 	dms->bind_major = dms->bind_minor = -1;
@@ -586,7 +586,7 @@ static char *_build_histogram_arg(struct dm_histogram *bounds, int *precise)
 
 bad:
 	log_error("Could not build histogram arguments.");
-	dm_free(hist_arg);
+	free(hist_arg);
 
 	return NULL;
 }
@@ -776,7 +776,7 @@ static int _parse_aux_data_group(struct dm_stats *dms,
 		goto bad_alias;
 	}
 
-	dm_free(region->aux_data);
+	free(region->aux_data);
 	region->aux_data = c;
 
 	log_debug("Found group_id " FMTu64 ": alias=\"%s\"", group->group_id,
@@ -785,7 +785,7 @@ static int _parse_aux_data_group(struct dm_stats *dms,
 	return 1;
 
 bad_alias:
-	dm_free((char *) group->alias);
+	free((char *) group->alias);
 bad:
 	dm_bitset_destroy(regions);
 	return 0;
@@ -973,7 +973,7 @@ static int _stats_parse_list_region(struct dm_stats *dms,
 	if (!(region->program_id = dm_strdup(program_id)))
 		return_0;
 	if (!(region->aux_data = dm_strdup(aux_data))) {
-		dm_free(region->program_id);
+		free(region->program_id);
 		return_0;
 	}
 
@@ -1842,7 +1842,7 @@ static char *_build_group_tag(struct dm_stats *dms, uint64_t group_id)
 	buflen += DMS_GROUP_TAG_LEN;
 	buflen += 1 + (alias ? strlen(alias) : 0); /* 'alias:' */
 
-	buf = aux_string = dm_malloc(buflen);
+	buf = aux_string = malloc(buflen);
 	if (!buf) {
 		log_error("Could not allocate memory for aux_data string.");
 		return NULL;
@@ -1868,7 +1868,7 @@ static char *_build_group_tag(struct dm_stats *dms, uint64_t group_id)
 	return aux_string;
 bad:
 	log_error("Could not format group aux_data.");
-	dm_free(aux_string);
+	free(aux_string);
 	return NULL;
 }
 
@@ -1905,14 +1905,14 @@ static int _stats_set_aux(struct dm_stats *dms,
 	if (!(dmt = _stats_send_message(dms, msg)))
 		goto_bad;
 
-	dm_free((char *) group_tag);
+	free((char *) group_tag);
 
 	/* no response to a @stats_set_aux message */
 	dm_task_destroy(dmt);
 
 	return 1;
 bad:
-	dm_free((char *) group_tag);
+	free((char *) group_tag);
 	return 0;
 }
 
@@ -1977,7 +1977,7 @@ static int _stats_create_region(struct dm_stats *dms, uint64_t *region_id,
 			 (uint64_t)llabs(step),
 			 opt_args, program_id, aux_data)) {
 		log_error(err_fmt, "message");
-		dm_free((void *) opt_args);
+		free((void *) opt_args);
 		return 0;
 	}
 
@@ -2002,7 +2002,7 @@ static int _stats_create_region(struct dm_stats *dms, uint64_t *region_id,
 out:
 	if (dmt)
 		dm_task_destroy(dmt);
-	dm_free((void *) opt_args);
+	free((void *) opt_args);
 
 	return r;
 }
@@ -2027,7 +2027,7 @@ int dm_stats_create_region(struct dm_stats *dms, uint64_t *region_id,
 
 	r = _stats_create_region(dms, region_id, start, len, step,
 				 precise, hist_arg, program_id, user_data);
-	dm_free(hist_arg);
+	free(hist_arg);
 
 out:
 	return r;
@@ -2396,9 +2396,9 @@ void dm_stats_destroy(struct dm_stats *dms)
 	dm_pool_destroy(dms->mem);
 	dm_pool_destroy(dms->hist_mem);
 	dm_pool_destroy(dms->group_mem);
-	dm_free(dms->program_id);
-	dm_free((char *) dms->name);
-	dm_free(dms);
+	free(dms->program_id);
+	free((char *) dms->name);
+	free(dms);
 }
 
 /*
@@ -2993,7 +2993,7 @@ int dm_stats_set_program_id(struct dm_stats *dms, int allow_empty,
 	if (!program_id)
 		program_id = "";
 
-	dm_free(dms->program_id);
+	free(dms->program_id);
 
 	if (!(dms->program_id = dm_strdup(program_id)))
 		return_0;
@@ -3224,12 +3224,12 @@ int dm_stats_set_alias(struct dm_stats *dms, uint64_t group_id, const char *alia
 		goto bad;
 	}
 
-	dm_free((char *) old_alias);
+	free((char *) old_alias);
 
 	return 1;
 
 bad:
-	dm_free((char *) group->alias);
+	free((char *) group->alias);
 	group->alias = old_alias;
 	return 0;
 }
@@ -3593,7 +3593,7 @@ struct dm_histogram *dm_histogram_bounds_from_string(const char *bounds_str)
 badchar:
 	log_error("Invalid character in histogram: %c", *c);
 bad:
-	dm_free(dmh);
+	free(dmh);
 	return NULL;
 }
 
@@ -3644,8 +3644,8 @@ void dm_histogram_bounds_destroy(struct dm_histogram *bounds)
 			  (void *) bounds);
 		stack;
 	}
-	/* dm_free() expects a (void *). */
-	dm_free((void *) bounds);
+	/* free() expects a (void *). */
+	free((void *) bounds);
 }
 
 /*
@@ -4229,7 +4229,7 @@ static int _stats_group_file_regions(struct dm_stats *dms, uint64_t *region_ids,
 		dm_bit_set(regions, region_ids[i]);
 
 	buflen = _stats_group_tag_len(dms, regions);
-	members = dm_malloc(buflen);
+	members = malloc(buflen);
 
 	if (!members) {
 		log_error("Cannot map file: failed to allocate group "
@@ -4251,11 +4251,11 @@ static int _stats_group_file_regions(struct dm_stats *dms, uint64_t *region_ids,
 	if (!_stats_create_group(dms, regions, alias, &group_id))
 		goto bad;
 
-	dm_free(members);
+	free(members);
 	return 1;
 bad:
 	dm_bitset_destroy(regions);
-	dm_free(members);
+	free(members);
 	return 0;
 }
 
@@ -4460,14 +4460,14 @@ static struct _extent *_stats_get_extents_for_file(struct dm_pool *mem, int fd,
 	extents = dm_pool_end_object(mem);
 
 	/* free FIEMAP buffer. */
-	dm_free(buf);
+	free(buf);
 
 	return extents;
 
 bad:
 	*count = 0;
 	dm_pool_abandon_object(mem);
-	dm_free(buf);
+	free(buf);
 	return NULL;
 }
 
@@ -4675,7 +4675,7 @@ static uint64_t *_stats_map_file_regions(struct dm_stats *dms, int fd,
                         goto_out;
 
 	/* make space for end-of-table marker */
-	if (!(regions = dm_malloc((1 + *count) * sizeof(*regions)))) {
+	if (!(regions = malloc((1 + *count) * sizeof(*regions)))) {
 		log_error("Could not allocate memory for region IDs.");
 		goto_out;
 	}
@@ -4734,7 +4734,7 @@ static uint64_t *_stats_map_file_regions(struct dm_stats *dms, int fd,
 			log_error("Failed to update group aux_data.");
 
 	if (bounds)
-		dm_free(hist_arg);
+		free(hist_arg);
 
 	/* the extent table will be empty if the file has been truncated. */
 	if (extents)
@@ -4761,8 +4761,8 @@ out_remove:
 
 out:
 	dm_pool_destroy(extent_mem);
-	dm_free(hist_arg);
-	dm_free(regions);
+	free(hist_arg);
+	free(regions);
 	return NULL;
 }
 
@@ -4797,7 +4797,7 @@ uint64_t *dm_stats_create_regions_from_fd(struct dm_stats *dms, int fd,
 	return regions;
 out:
 	_stats_cleanup_region_ids(dms, regions, count);
-	dm_free(regions);
+	free(regions);
 	return NULL;
 }
 
@@ -4876,15 +4876,15 @@ uint64_t *dm_stats_update_regions_from_fd(struct dm_stats *dms, int fd,
 		if (!_stats_group_file_regions(dms, regions, count, alias))
 			goto bad;
 
-	dm_free(bounds);
-	dm_free((char *) alias);
+	free(bounds);
+	free((char *) alias);
 	return regions;
 bad:
 	_stats_cleanup_region_ids(dms, regions, count);
-	dm_free(bounds);
-	dm_free(regions);
+	free(bounds);
+	free(regions);
 out:
-	dm_free((char *) alias);
+	free((char *) alias);
 	return NULL;
 }
 #else /* !HAVE_LINUX_FIEMAP */

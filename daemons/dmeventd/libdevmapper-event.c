@@ -47,8 +47,8 @@ struct dm_event_handler {
 
 static void _dm_event_handler_clear_dev_info(struct dm_event_handler *dmevh)
 {
-	dm_free(dmevh->dev_name);
-	dm_free(dmevh->uuid);
+	free(dmevh->dev_name);
+	free(dmevh->uuid);
 	dmevh->dev_name = dmevh->uuid = NULL;
 	dmevh->major = dmevh->minor = 0;
 }
@@ -68,9 +68,9 @@ struct dm_event_handler *dm_event_handler_create(void)
 void dm_event_handler_destroy(struct dm_event_handler *dmevh)
 {
 	_dm_event_handler_clear_dev_info(dmevh);
-	dm_free(dmevh->dso);
-	dm_free(dmevh->dmeventd_path);
-	dm_free(dmevh);
+	free(dmevh->dso);
+	free(dmevh->dmeventd_path);
+	free(dmevh);
 }
 
 int dm_event_handler_set_dmeventd_path(struct dm_event_handler *dmevh, const char *dmeventd_path)
@@ -78,7 +78,7 @@ int dm_event_handler_set_dmeventd_path(struct dm_event_handler *dmevh, const cha
 	if (!dmeventd_path) /* noop */
 		return 0;
 
-	dm_free(dmevh->dmeventd_path);
+	free(dmevh->dmeventd_path);
 
 	if (!(dmevh->dmeventd_path = dm_strdup(dmeventd_path)))
 		return -ENOMEM;
@@ -91,7 +91,7 @@ int dm_event_handler_set_dso(struct dm_event_handler *dmevh, const char *path)
 	if (!path) /* noop */
 		return 0;
 
-	dm_free(dmevh->dso);
+	free(dmevh->dso);
 
 	if (!(dmevh->dso = dm_strdup(path)))
 		return -ENOMEM;
@@ -259,7 +259,7 @@ static int _daemon_read(struct dm_event_fifos *fifos,
 		if (header && (bytes == 2 * sizeof(uint32_t))) {
 			msg->cmd = ntohl(header[0]);
 			msg->size = ntohl(header[1]);
-			buf = msg->data = dm_malloc(msg->size);
+			buf = msg->data = malloc(msg->size);
 			size = msg->size;
 			bytes = 0;
 			header = 0;
@@ -267,7 +267,7 @@ static int _daemon_read(struct dm_event_fifos *fifos,
 	}
 
 	if (bytes != size) {
-		dm_free(msg->data);
+		free(msg->data);
 		msg->data = NULL;
 	}
 	return bytes == size;
@@ -370,13 +370,13 @@ int daemon_talk(struct dm_event_fifos *fifos,
 	 */
 	if (!_daemon_write(fifos, msg)) {
 		stack;
-		dm_free(msg->data);
+		free(msg->data);
 		msg->data = NULL;
 		return -EIO;
 	}
 
 	do {
-		dm_free(msg->data);
+		free(msg->data);
 		msg->data = NULL;
 
 		if (!_daemon_read(fifos, msg)) {
@@ -619,7 +619,7 @@ static int _do_event(int cmd, char *dmeventd_path, struct dm_event_daemon_messag
 
 	ret = daemon_talk(&fifos, msg, DM_EVENT_CMD_HELLO, NULL, NULL, 0, 0);
 
-	dm_free(msg->data);
+	free(msg->data);
 	msg->data = 0;
 
 	if (!ret)
@@ -659,7 +659,7 @@ int dm_event_register_handler(const struct dm_event_handler *dmevh)
 		ret = 0;
 	}
 
-	dm_free(msg.data);
+	free(msg.data);
 
 	dm_task_destroy(dmt);
 
@@ -686,7 +686,7 @@ int dm_event_unregister_handler(const struct dm_event_handler *dmevh)
 		ret = 0;
 	}
 
-	dm_free(msg.data);
+	dree(msg.data);
 
 	dm_task_destroy(dmt);
 
@@ -722,11 +722,11 @@ static int _parse_message(struct dm_event_daemon_message *msg, char **dso_name,
 	    (*dso_name = _fetch_string(&p, ' ')) &&
 	    (*uuid = _fetch_string(&p, ' '))) {
 		*evmask = atoi(p);
-		dm_free(id);
+		free(id);
 		return 0;
 	}
 
-	dm_free(id);
+	free(id);
 	return -ENOMEM;
 }
 
@@ -769,7 +769,7 @@ int dm_event_get_registered_device(struct dm_event_handler *dmevh, int next)
 	dm_task_destroy(dmt);
 	dmt = NULL;
 
-	dm_free(msg.data);
+	free(msg.data);
 	msg.data = NULL;
 
 	_dm_event_handler_clear_dev_info(dmevh);
@@ -791,10 +791,10 @@ int dm_event_get_registered_device(struct dm_event_handler *dmevh, int next)
 	dm_event_handler_set_dso(dmevh, reply_dso);
 	dm_event_handler_set_event_mask(dmevh, reply_mask);
 
-	dm_free(reply_dso);
+	free(reply_dso);
 	reply_dso = NULL;
 
-	dm_free(reply_uuid);
+	free(reply_uuid);
 	reply_uuid = NULL;
 
 	if (!(dmevh->dev_name = dm_strdup(dm_task_get_name(dmt)))) {
@@ -815,9 +815,9 @@ int dm_event_get_registered_device(struct dm_event_handler *dmevh, int next)
 	return ret;
 
  fail:
-	dm_free(msg.data);
-	dm_free(reply_dso);
-	dm_free(reply_uuid);
+	free(msg.data);
+	free(reply_dso);
+	free(reply_uuid);
 	_dm_event_handler_clear_dev_info(dmevh);
 	if (dmt)
 		dm_task_destroy(dmt);
@@ -982,12 +982,12 @@ int dm_event_get_timeout(const char *device_path, uint32_t *timeout)
 		if (!p) {
 			log_error("Malformed reply from dmeventd '%s'.",
 				  msg.data);
-			dm_free(msg.data);
+			free(msg.data);
 			return -EIO;
 		}
 		*timeout = atoi(p);
 	}
-	dm_free(msg.data);
+	free(msg.data);
 
 	return ret;
 }

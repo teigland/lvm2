@@ -307,7 +307,7 @@ struct dm_task *dm_task_create(int type)
 	}
 
 	if (!dm_check_version()) {
-		dm_free(dmt);
+		free(dmt);
 		return_NULL;
 	}
 
@@ -552,9 +552,9 @@ static int _dm_task_set_name(struct dm_task *dmt, const char *name,
 	char mangled_name[DM_NAME_LEN];
 	int r = 0;
 
-	dm_free(dmt->dev_name);
+	free(dmt->dev_name);
 	dmt->dev_name = NULL;
-	dm_free(dmt->mangled_dev_name);
+	free(dmt->mangled_dev_name);
 	dmt->mangled_dev_name = NULL;
 
 	if (strlen(name) >= DM_NAME_LEN) {
@@ -797,7 +797,7 @@ int dm_task_set_newname(struct dm_task *dmt, const char *newname)
 		newname = mangled_name;
 	}
 
-	dm_free(dmt->newname);
+	free(dmt->newname);
 	if (!(dmt->newname = dm_strdup(newname))) {
 		log_error("dm_task_set_newname: strdup(%s) failed", newname);
 		return 0;
@@ -814,9 +814,9 @@ int dm_task_set_uuid(struct dm_task *dmt, const char *uuid)
 	dm_string_mangling_t mangling_mode = dm_get_name_mangling_mode();
 	int r = 0;
 
-	dm_free(dmt->uuid);
+	free(dmt->uuid);
 	dmt->uuid = NULL;
-	dm_free(dmt->mangled_uuid);
+	free(dmt->mangled_uuid);
 	dmt->mangled_uuid = NULL;
 
 	if (!check_multiple_mangled_string_allowed(uuid, "UUID", mangling_mode))
@@ -1448,7 +1448,7 @@ static void _del_node_op(struct node_op_parms *nop)
 {
 	_count_node_ops[nop->type]--;
 	dm_list_del(&nop->list);
-	dm_free(nop);
+	free(nop);
 
 }
 
@@ -1552,7 +1552,7 @@ static int _stack_node_op(node_op_t type, const char *dev_name, uint32_t major,
 		warn_if_udev_failed = 0;
 	}
 
-	if (!(nop = dm_malloc(sizeof(*nop) + len))) {
+	if (!(nop = malloc(sizeof(*nop) + len))) {
 		log_error("Insufficient memory to stack mknod operation");
 		return 0;
 	}
@@ -1788,8 +1788,8 @@ static int _sysfs_get_dm_name(uint32_t major, uint32_t minor, char *buf, size_t 
 	int r = 0;
 	size_t len;
 
-	if (!(sysfs_path = dm_malloc(PATH_MAX)) ||
-	    !(temp_buf = dm_malloc(PATH_MAX))) {
+	if (!(sysfs_path = malloc(PATH_MAX)) ||
+	    !(temp_buf = malloc(PATH_MAX))) {
 		log_error("_sysfs_get_dm_name: failed to allocate temporary buffers");
 		goto bad;
 	}
@@ -1827,8 +1827,8 @@ bad:
 	if (fp && fclose(fp))
 		log_sys_error("fclose", sysfs_path);
 
-	dm_free(temp_buf);
-	dm_free(sysfs_path);
+	free(temp_buf);
+	free(sysfs_path);
 
 	return r;
 }
@@ -1840,8 +1840,8 @@ static int _sysfs_get_kernel_name(uint32_t major, uint32_t minor, char *buf, siz
 	size_t len;
 	int r = 0;
 
-	if (!(sysfs_path = dm_malloc(PATH_MAX)) ||
-	    !(temp_buf = dm_malloc(PATH_MAX))) {
+	if (!(sysfs_path = malloc(PATH_MAX)) ||
+	    !(temp_buf = malloc(PATH_MAX))) {
 		log_error("_sysfs_get_kernel_name: failed to allocate temporary buffers");
 		goto bad;
 	}
@@ -1876,8 +1876,8 @@ static int _sysfs_get_kernel_name(uint32_t major, uint32_t minor, char *buf, siz
 	strcpy(buf, name);
 	r = 1;
 bad:
-	dm_free(temp_buf);
-	dm_free(sysfs_path);
+	free(temp_buf);
+	free(sysfs_path);
 
 	return r;
 }

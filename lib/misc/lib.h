@@ -84,9 +84,9 @@
 #include "lib/misc/util.h"
 
 #ifdef DM
-#  include "dm-logging.h"
+#  include "libdm/misc/dm-logging.h"
 #else
-#  include "lib/log/lvm-logging.h"
+#  include "base/log/lvm-logging.h"
 #  include "lib/misc/lvm-globals.h"
 #  include "lib/misc/lvm-wrappers.h"
 #  include "lib/misc/lvm-maths.h"

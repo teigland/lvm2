@@ -82,7 +82,7 @@ void dm_pool_destroy(struct dm_pool *p)
 	pthread_mutex_lock(&_dm_pools_mutex);
 	dm_list_del(&p->list);
 	pthread_mutex_unlock(&_dm_pools_mutex);
-	dm_free(p);
+	free(p);
 }
 
 void *dm_pool_alloc(struct dm_pool *p, size_t s)
@@ -281,7 +281,7 @@ static struct chunk *_new_chunk(struct dm_pool *p, size_t s)
 #  define aligned_malloc(s)	(posix_memalign((void**)&c, _pagesize, \
 						ALIGN_ON_PAGE(s)) == 0)
 #else
-#  define aligned_malloc(s)	(c = dm_malloc(s))
+#  define aligned_malloc(s)	(c = malloc(s))
 #endif /* DEBUG_ENFORCE_POOL_LOCKING */
 		if (!aligned_malloc(s)) {
 #undef aligned_malloc
@@ -315,7 +315,7 @@ static void _free_chunk(struct chunk *c)
 	/* since DEBUG_MEM is using own memory list */
 	free(c); /* for posix_memalign() */
 #else
-	dm_free(c);
+	free(c);
 #endif
 }
 

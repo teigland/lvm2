@@ -16,6 +16,9 @@
 #ifndef _LVM_FILE_H
 #define _LVM_FILE_H
 
+#include <stdio.h>
+#include <sys/stat.h>
+
 struct custom_fds {
 	int out;
 	int err;

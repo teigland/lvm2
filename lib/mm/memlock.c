@@ -550,7 +550,7 @@ static void _unlock_mem(struct cmd_context *cmd)
 		_restore_mmap();
 		if (close(_maps_fd))
 			log_sys_error("close", _procselfmaps);
-		dm_free(_maps_buffer);
+		free(_maps_buffer);
 		_maps_buffer = NULL;
 		if (_mstats < unlock_mstats) {
 			if ((_mstats + lvm_getpagesize()) < unlock_mstats)

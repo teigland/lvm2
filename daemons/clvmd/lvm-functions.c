@@ -235,7 +235,7 @@ void destroy_lvhash(void)
 		if ((status = sync_unlock(resource, lvi->lock_id)))
 			DEBUGLOG("unlock_all. unlock failed(%d): %s\n",
 				 status,  strerror(errno));
-		dm_free(lvi);
+		free(lvi);
 	}
 
 	dm_hash_destroy(lv_hash);
@@ -285,7 +285,7 @@ static int hold_lock(char *resource, int mode, int flags)
 				 strerror(errno));
 		errno = saved_errno;
 	} else {
-		if (!(lvi = dm_malloc(sizeof(struct lv_info)))) {
+		if (!(lvi = malloc(sizeof(struct lv_info)))) {
 			errno = ENOMEM;
 			return -1;
 		}
@@ -295,7 +295,7 @@ static int hold_lock(char *resource, int mode, int flags)
 		status = sync_lock(resource, mode, flags & ~LCKF_CONVERT, &lvi->lock_id);
 		saved_errno = errno;
 		if (status) {
-			dm_free(lvi);
+			free(lvi);
 			DEBUGLOG("hold_lock. lock at %d failed: %s\n", mode,
 				 strerror(errno));
 		} else
@@ -325,7 +325,7 @@ static int hold_unlock(char *resource)
 	saved_errno = errno;
 	if (!status) {
 		remove_info(resource);
-		dm_free(lvi);
+		free(lvi);
 	} else {
 		DEBUGLOG("hold_unlock. unlock failed(%d): %s\n", status,
 			 strerror(errno));
@@ -741,7 +741,7 @@ static int get_initial_state(struct dm_hash_table *excl_uuid)
 
 	/* FIXME: Maybe link and use liblvm2cmd directly instead of fork */
 	if (!(lvs = popen(lvs_cmd, "r"))) {
-		dm_free(lvs_cmd);
+		free(lvs_cmd);
 		return 0;
 	}
 
@@ -783,7 +783,7 @@ static int get_initial_state(struct dm_hash_table *excl_uuid)
 	if (pclose(lvs))
 		DEBUGLOG("lvs pclose failed: %s\n", strerror(errno));
 
-	dm_free(lvs_cmd);
+	free(lvs_cmd);
 
 	return 1;
 }

@@ -455,7 +455,7 @@ static void _dm_zfree_string(char *string)
 {
 	if (string) {
 		memset(string, 0, strlen(string));
-		dm_free(string);
+		free(string);
 	}
 }
 
@@ -463,7 +463,7 @@ static void _dm_zfree_dmi(struct dm_ioctl *dmi)
 {
 	if (dmi) {
 		memset(dmi, 0, dmi->data_size);
-		dm_free(dmi);
+		free(dmi);
 	}
 }
 
@@ -474,8 +474,8 @@ static void _dm_task_free_targets(struct dm_task *dmt)
 	for (t = dmt->head; t; t = n) {
 		n = t->next;
 		_dm_zfree_string(t->params);
-		dm_free(t->type);
-		dm_free(t);
+		free(t->type);
+		free(t);
 	}
 
 	dmt->head = dmt->tail = NULL;
@@ -485,14 +485,14 @@ void dm_task_destroy(struct dm_task *dmt)
 {
 	_dm_task_free_targets(dmt);
 	_dm_zfree_dmi(dmt->dmi.v4);
-	dm_free(dmt->dev_name);
-	dm_free(dmt->mangled_dev_name);
-	dm_free(dmt->newname);
-	dm_free(dmt->message);
-	dm_free(dmt->geometry);
-	dm_free(dmt->uuid);
-	dm_free(dmt->mangled_uuid);
-	dm_free(dmt);
+	free(dmt->dev_name);
+	free(dmt->mangled_dev_name);
+	free(dmt->newname);
+	free(dmt->message);
+	free(dmt->geometry);
+	free(dmt->uuid);
+	free(dmt->mangled_uuid);
+	free(dmt);
 }
 
 /*
@@ -840,7 +840,7 @@ int dm_task_set_newuuid(struct dm_task *dmt, const char *newuuid)
 		newuuid = mangled_uuid;
 	}
 
-	dm_free(dmt->newname);
+	free(dmt->newname);
 	if (!(dmt->newname = dm_strdup(newuuid))) {
 		log_error("dm_task_set_newuuid: strdup(%s) failed", newuuid);
 		return 0;
@@ -852,7 +852,7 @@ int dm_task_set_newuuid(struct dm_task *dmt, const char *newuuid)
 
 int dm_task_set_message(struct dm_task *dmt, const char *message)
 {
-	dm_free(dmt->message);
+	free(dmt->message);
 	if (!(dmt->message = dm_strdup(message))) {
 		log_error("dm_task_set_message: strdup failed");
 		return 0;
@@ -871,7 +871,7 @@ int dm_task_set_sector(struct dm_task *dmt, uint64_t sector)
 int dm_task_set_geometry(struct dm_task *dmt, const char *cylinders, const char *heads,
 			 const char *sectors, const char *start)
 {
-	dm_free(dmt->geometry);
+	free(dmt->geometry);
 	if (dm_asprintf(&(dmt->geometry), "%s %s %s %s",
 			cylinders, heads, sectors, start) < 0) {
 		log_error("dm_task_set_geometry: sprintf failed");
@@ -987,8 +987,8 @@ struct target *create_target(uint64_t start, uint64_t len, const char *type,
 
       bad:
 	_dm_zfree_string(t->params);
-	dm_free(t->type);
-	dm_free(t);
+	free(t->type);
+	free(t);
 	return NULL;
 }
 
@@ -1156,7 +1156,7 @@ static struct dm_ioctl *_flatten(struct dm_task *dmt, unsigned repeat_count)
 	while (repeat_count--)
 		len *= 2;
 
-	if (!(dmi = dm_malloc(len)))
+	if (!(dmi = malloc(len)))
 		return NULL;
 
 	memset(dmi, 0, len);
@@ -1453,9 +1453,9 @@ static int _create_and_load_v4(struct dm_task *dmt)
 
 	/* Use the original structure last so the info will be correct */
 	dmt->type = DM_DEVICE_RESUME;
-	dm_free(dmt->uuid);
+	free(dmt->uuid);
 	dmt->uuid = NULL;
-	dm_free(dmt->mangled_uuid);
+	free(dmt->mangled_uuid);
 	dmt->mangled_uuid = NULL;
 
 	if (dm_task_run(dmt))
@@ -1463,9 +1463,9 @@ static int _create_and_load_v4(struct dm_task *dmt)
 
       revert:
 	dmt->type = DM_DEVICE_REMOVE;
-	dm_free(dmt->uuid);
+	free(dmt->uuid);
 	dmt->uuid = NULL;
-	dm_free(dmt->mangled_uuid);
+	free(dmt->mangled_uuid);
 	dmt->mangled_uuid = NULL;
 
 	/*

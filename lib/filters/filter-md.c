@@ -53,7 +53,7 @@ static void _destroy(struct dev_filter *f)
 	if (f->use_count)
 		log_error(INTERNAL_ERROR "Destroying md filter while in use %u times.", f->use_count);
 
-	dm_free(f);
+	free(f);
 }
 
 struct dev_filter *md_filter_create(struct dev_types *dt)

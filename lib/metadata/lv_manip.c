@@ -3166,7 +3166,7 @@ static int _allocate(struct alloc_handle *ah,
 		alloc_state.areas_size += _stripes_per_mimage(prev_lvseg) * prev_lvseg->area_count;
 
 	/* Allocate an array of pv_areas to hold the largest space on each PV */
-	if (!(alloc_state.areas = dm_malloc(sizeof(*alloc_state.areas) * alloc_state.areas_size))) {
+	if (!(alloc_state.areas = malloc(sizeof(*alloc_state.areas) * alloc_state.areas_size))) {
 		log_error("Couldn't allocate areas array.");
 		return 0;
 	}
@@ -3247,7 +3247,7 @@ static int _allocate(struct alloc_handle *ah,
 	r = 1;
 
       out:
-	dm_free(alloc_state.areas);
+	free(alloc_state.areas);
 	return r;
 }
 

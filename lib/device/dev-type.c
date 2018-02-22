@@ -202,7 +202,7 @@ struct dev_types *create_dev_types(const char *proc_dir,
 
 	return dt;
 bad:
-	dm_free(dt);
+	free(dt);
 	return NULL;
 }
 

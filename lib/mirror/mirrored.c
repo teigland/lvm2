@@ -536,7 +536,7 @@ static int _mirrored_modules_needed(struct dm_pool *mem,
 
 static void _mirrored_destroy(struct segment_type *segtype)
 {
-	dm_free(segtype);
+	free(segtype);
 }
 
 static struct segtype_handler _mirrored_ops = {

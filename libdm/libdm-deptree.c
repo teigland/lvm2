@@ -2670,7 +2670,7 @@ static int _emit_segment(struct dm_task *dmt, uint32_t major, uint32_t minor,
 	int ret;
 
 	do {
-		if (!(params = dm_malloc(paramsize))) {
+		if (!(params = malloc(paramsize))) {
 			log_error("Insufficient space for target parameters.");
 			return 0;
 		}
@@ -2678,7 +2678,7 @@ static int _emit_segment(struct dm_task *dmt, uint32_t major, uint32_t minor,
 		params[0] = '\0';
 		ret = _emit_segment_line(dmt, major, minor, seg, seg_start,
 					 params, paramsize);
-		dm_free(params);
+		free(params);
 
 		if (!ret)
 			stack;
