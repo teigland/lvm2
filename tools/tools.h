@@ -23,7 +23,6 @@
 #include "lib/activate/activate.h"
 #include "lib/format_text/archiver.h"
 #include "lib/cache/lvmcache.h"
-#include "lib/cache/lvmetad.h"
 #include "lib/locking/lvmlockd.h"
 #include "include/lvm-version.h"
 #include "lib/config/config.h"

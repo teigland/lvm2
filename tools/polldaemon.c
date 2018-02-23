@@ -598,11 +598,6 @@ static int _poll_daemon(struct cmd_context *cmd, struct poll_operation_id *id,
 			parms->progress_display = 0; /* Child */
 		/* FIXME Use wait_event (i.e. interval = 0) and */
 		/*       fork one daemon per copy? */
-
-		if ((daemon_mode == 1) && find_config_tree_bool(cmd, global_use_lvmetad_CFG, NULL)) {
-			if (!lvmetad_connect(cmd))
-				log_warn("WARNING: lvm polling process %d cannot connect to lvmetad.", getpid());
-		}
 	}
 
 	/*

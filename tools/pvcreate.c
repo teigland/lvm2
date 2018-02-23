@@ -109,12 +109,6 @@ int pvcreate(struct cmd_context *cmd, int argc, char **argv)
 	}
 
 	/*
-	 * Device info needs to be available for reading the VG backup file in
-	 * _pvcreate_restore_params_from_backup.
-	 */
-	lvmcache_seed_infos_from_lvmetad(cmd);
-
-	/*
 	 * Five kinds of pvcreate param values:
 	 * 1. defaults
 	 * 2. recovery-related command line args

@@ -726,8 +726,6 @@ int vgsplit(struct cmd_context *cmd, int argc, char **argv)
 	if (!vg_write(vg_to) || !vg_commit(vg_to))
 		goto_bad;
 
-	lvmetad_vg_update_finish(vg_to);
-
 	backup(vg_to);
 
 	/*
@@ -738,8 +736,6 @@ int vgsplit(struct cmd_context *cmd, int argc, char **argv)
 	if (vg_from->pv_count) {
 		if (!vg_write(vg_from) || !vg_commit(vg_from))
 			goto_bad;
-
-		lvmetad_vg_update_finish(vg_from);
 
 		backup(vg_from);
 	}
@@ -762,8 +758,6 @@ int vgsplit(struct cmd_context *cmd, int argc, char **argv)
 
 	if (!vg_write(vg_to) || !vg_commit(vg_to))
 		goto_bad;
-
-	lvmetad_vg_update_finish(vg_to);
 
 	backup(vg_to);
 

@@ -28,7 +28,6 @@
 #include "lib/datastruct/str_list.h"
 #include "lib/metadata/segtype.h"
 #include "lib/cache/lvmcache.h"
-#include "lib/cache/lvmetad.h"
 #include "lib/format_text/archiver.h"
 #include "lib/lvmpolld/lvmpolld-client.h"
 
@@ -264,8 +263,6 @@ static int _parse_debug_classes(struct cmd_context *cmd)
 			debug_classes |= LOG_CLASS_ACTIVATION;
 		else if (!strcasecmp(cv->v.str, "allocation"))
 			debug_classes |= LOG_CLASS_ALLOC;
-		else if (!strcasecmp(cv->v.str, "lvmetad"))
-			debug_classes |= LOG_CLASS_LVMETAD;
 		else if (!strcasecmp(cv->v.str, "metadata"))
 			debug_classes |= LOG_CLASS_METADATA;
 		else if (!strcasecmp(cv->v.str, "cache"))
@@ -1644,74 +1641,6 @@ static void _init_globals(struct cmd_context *cmd)
 	init_mirror_in_sync(0);
 }
 
-/*
- * init_connections();
- *   _init_lvmetad();
- *     lvmetad_disconnect();  (close previous connection)
- *     lvmetad_set_socket();  (set path from config)
- *     lvmetad_set_token();   (set token from filter config)
- *     if (find_config(use_lvmetad))
- *       lvmetad_connect();
- *
- * If lvmetad_connect() is successful, lvmetad_used() will
- * return 1.
- *
- * If the config has use_lvmetad=0, then lvmetad_connect()
- * will not be called, and lvmetad_used() will return 0.
- *
- * Other code should use lvmetad_used() to check if the
- * command is using lvmetad.
- *
- */
-
-static int _init_lvmetad(struct cmd_context *cmd)
-{
-	const struct dm_config_node *cn;
-	const char *lvmetad_socket;
-
-	lvmetad_disconnect();
-
-	lvmetad_socket = getenv("LVM_LVMETAD_SOCKET");
-	if (!lvmetad_socket)
-		lvmetad_socket = DEFAULT_RUN_DIR "/lvmetad.socket";
-
-	/* TODO?
-		lvmetad_socket = find_config_tree_str(cmd, "lvmetad/socket_path",
-						      DEFAULT_RUN_DIR "/lvmetad.socket");
-	*/
-
-	lvmetad_set_socket(lvmetad_socket);
-	cn = find_config_tree_array(cmd, devices_global_filter_CFG, NULL);
-	lvmetad_set_token(cn ? cn->v : NULL);
-
-	if (find_config_tree_int(cmd, global_locking_type_CFG, NULL) == 3 &&
-	    find_config_tree_bool(cmd, global_use_lvmetad_CFG, NULL)) {
-		log_warn("WARNING: Not using lvmetad because locking_type is 3 (clustered).");
-		return 1;
-	}
-
-	if (!find_config_tree_bool(cmd, global_use_lvmetad_CFG, NULL)) {
-		if (lvmetad_pidfile_present()) {
-			log_warn("WARNING: Not using lvmetad because config setting use_lvmetad=0.");
-			log_warn("WARNING: To avoid corruption, rescan devices to make changes visible (pvscan --cache).");
-		}
-		return 1;
-	}
-
-	if (!lvmetad_connect(cmd)) {
-		log_warn("WARNING: Failed to connect to lvmetad. Falling back to device scanning.");
-		return 1;
-	}
-
-	if (!lvmetad_used()) {
-		/* This should never happen. */
-		log_error(INTERNAL_ERROR "lvmetad setup incorrect");
-		return 0;
-	}
-
-	return 1;
-}
-
 static int _init_lvmpolld(struct cmd_context *cmd)
 {
 	const char *lvmpolld_socket;
@@ -1729,12 +1658,6 @@ static int _init_lvmpolld(struct cmd_context *cmd)
 
 int init_connections(struct cmd_context *cmd)
 {
-
-	if (!_init_lvmetad(cmd)) {
-		log_error("Failed to initialize lvmetad connection.");
-		goto bad;
-	}
-
 	if (!_init_lvmpolld(cmd)) {
 		log_error("Failed to initialize lvmpolld connection.");
 		goto bad;
@@ -2274,8 +2197,6 @@ void destroy_toolcontext(struct cmd_context *cmd)
 #endif
 	free(cmd);
 
-	lvmetad_release_token();
-	lvmetad_disconnect();
 	lvmpolld_disconnect();
 
 	release_log_memory();

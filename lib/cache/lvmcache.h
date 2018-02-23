@@ -62,7 +62,6 @@ struct lvmcache_vgsummary {
 };
 
 int lvmcache_init(void);
-void lvmcache_allow_reads_with_lvmetad(void);
 
 void lvmcache_destroy(struct cmd_context *cmd, int retain_orphans, int reset);
 
@@ -114,7 +113,6 @@ const struct format_type *lvmcache_fmt_from_info(struct lvmcache_info *info);
 int lvmcache_vgs_locked(void);
 int lvmcache_vgname_is_locked(const char *vgname);
 
-void lvmcache_seed_infos_from_lvmetad(struct cmd_context *cmd);
 
 /* Returns list of struct dm_str_list containing pool-allocated copy of vgnames */
 /* If include_internal is not set, return only proper vg names. */

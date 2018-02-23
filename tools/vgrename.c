@@ -69,7 +69,6 @@ static int _vgrename_single(struct cmd_context *cmd, const char *vg_name,
 	 * to that list here, so we have to look in lvmcache.
 	 * This requires populating lvmcache when using lvmetad.)
 	 */
-	lvmcache_seed_infos_from_lvmetad(cmd);
 
 	if (lvmcache_vginfo_from_vgname(vp->vg_name_new, NULL)) {
 		log_error("New VG name \"%s\" already exists", vp->vg_name_new);

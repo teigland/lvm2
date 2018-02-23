@@ -13,7 +13,6 @@
 #include "lib/metadata/metadata.h"
 #include "lib/metadata/segtype.h"
 #include "lib/activate/activate.h"
-#include "lib/cache/lvmetad.h"
 #include "lib/locking/lvmlockd.h"
 #include "lib/cache/lvmcache.h"
 #include "daemons/lvmlockd/lvmlockd-client.h"
@@ -1350,7 +1349,6 @@ int lockd_gl_create(struct cmd_context *cmd, const char *def_mode, const char *v
 		if ((lockd_flags & LD_RF_NO_GL_LS) &&
 		    (lockd_flags & LD_RF_NO_LOCKSPACES) &&
 		    !strcmp(vg_lock_type, "sanlock")) {
-			lvmetad_validate_global_cache(cmd, 1);
 			/*
 			 * lvmcache holds provisional VG lock_type info because
 			 * lvmetad_validate_global_cache did a disk scan.
@@ -1393,8 +1391,6 @@ int lockd_gl_create(struct cmd_context *cmd, const char *def_mode, const char *v
 
 	/* --shared with vgcreate does not mean include_shared_vgs */
 	cmd->include_shared_vgs = 0;
-
-	lvmetad_validate_global_cache(cmd, 1);
 
 	return 1;
 }
@@ -1662,7 +1658,6 @@ int lockd_gl(struct cmd_context *cmd, const char *def_mode, uint32_t flags)
 	}
 
  allow:
-	lvmetad_validate_global_cache(cmd, force_cache_update);
 	return 1;
 }
 

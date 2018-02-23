@@ -89,24 +89,6 @@ int vgimport(struct cmd_context *cmd, int argc, char **argv)
 		cmd->handles_missing_pvs = 1;
 	}
 
-	/*
-	 * Rescan devices and update lvmetad.  lvmetad may hold a copy of the
-	 * VG from before it was exported, if it was exported by another host.
-	 * We need to reread it to see that it's been exported before we can
-	 * import it.
-	 */
-	if (lvmetad_used()) {
-		if (!lvmetad_pvscan_all_devs(cmd, 1)) {
-			log_warn("WARNING: Not using lvmetad because cache update failed.");
-			lvmetad_make_unused(cmd);
-		}
-
-		if (lvmetad_used() && lvmetad_is_disabled(cmd, &reason)) {
-			log_warn("WARNING: Not using lvmetad because %s.", reason);
-			lvmetad_make_unused(cmd);
-		}
-	}
-
 	return process_each_vg(cmd, argc, argv, NULL, NULL,
 			       READ_FOR_UPDATE | READ_ALLOW_EXPORTED,
 			       0, NULL,

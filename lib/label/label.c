@@ -18,7 +18,6 @@
 #include "lib/misc/crc.h"
 #include "lib/mm/xlate.h"
 #include "lib/cache/lvmcache.h"
-#include "lib/cache/lvmetad.h"
 #include "lib/device/bcache.h"
 #include "lib/commands/toolcontext.h"
 
@@ -826,10 +825,9 @@ int label_read_sector(struct device *dev, struct label **labelp, uint64_t scan_s
 }
 
 /*
- * This is only needed when commands are using lvmetad, in which case they
- * don't do an initial label_scan, but may later need to rescan certain devs
- * from disk and call this function.  FIXME: is there some better number to
- * choose here?
+ * This is only needed when commands don't begin with an initial label_scan,
+ * but may later need to rescan certain devs from disk and call this function.
+ * FIXME: is there some better number to choose here?
  */
 
 int label_scan_setup_bcache(void)

@@ -17,7 +17,6 @@
 #include "libdaemon/client/daemon-io.h"
 #include "libdaemon/server/daemon-server.h"
 #include "include/lvm-version.h"
-#include "daemons/lvmetad/lvmetad-client.h"
 #include "daemons/lvmlockd/lvmlockd-client.h"
 #include "libdm/misc/dm-ioctl.h"
 
@@ -143,10 +142,6 @@ static const char *lvmlockd_protocol = "lvmlockd";
 static const int lvmlockd_protocol_version = 1;
 static int daemon_quit;
 static int adopt_opt;
-
-static daemon_handle lvmetad_handle;
-static pthread_mutex_t lvmetad_mutex;
-static int lvmetad_connected;
 
 /*
  * We use a separate socket for dumping daemon info.
@@ -1009,52 +1004,6 @@ static void add_work_action(struct action *act)
 	pthread_mutex_unlock(&worker_mutex);
 }
 
-static daemon_reply send_lvmetad(const char *id, ...)
-{
-	daemon_reply reply;
-	va_list ap;
-	int retries = 0;
-	int err;
-
-	va_start(ap, id);
-
-	/*
-	 * mutex is used because all threads share a single
-	 * lvmetad connection/handle.
-	 */
-	pthread_mutex_lock(&lvmetad_mutex);
-retry:
-	if (!lvmetad_connected) {
-		lvmetad_handle = lvmetad_open(NULL);
-		if (lvmetad_handle.error || lvmetad_handle.socket_fd < 0) {
-			err = lvmetad_handle.error ?: lvmetad_handle.socket_fd;
-			pthread_mutex_unlock(&lvmetad_mutex);
-			log_error("lvmetad_open reconnect error %d", err);
-			memset(&reply, 0, sizeof(reply));
-			reply.error = err;
-			va_end(ap);
-			return reply;
-		} else {
-			log_debug("lvmetad reconnected");
-			lvmetad_connected = 1;
-		}
-	}
-
-	reply = daemon_send_simple_v(lvmetad_handle, id, ap);
-
-	/* lvmetad may have been restarted */
-	if ((reply.error == ECONNRESET) && (retries < 2)) {
-		daemon_close(lvmetad_handle);
-		lvmetad_connected = 0;
-		retries++;
-		goto retry;
-	}
-	pthread_mutex_unlock(&lvmetad_mutex);
-
-	va_end(ap);
-	return reply;
-}
-
 static int res_lock(struct lockspace *ls, struct resource *r, struct action *act, int *retry)
 {
 	struct lock *lk;
@@ -1266,43 +1215,13 @@ static int res_lock(struct lockspace *ls, struct resource *r, struct action *act
 	 */
 
 	if (inval_meta && (r->type == LD_RT_VG)) {
-		daemon_reply reply;
-		char *uuid;
-
 		log_debug("S %s R %s res_lock set lvmetad vg version %u",
 			  ls->name, r->name, new_version);
-	
-		if (!ls->vg_uuid[0] || !strcmp(ls->vg_uuid, "none"))
-			uuid = (char *)"none";
-		else
-			uuid = ls->vg_uuid;
-
-		reply = send_lvmetad("set_vg_info",
-				     "token = %s", "skip",
-				     "uuid = %s", uuid,
-				     "name = %s", ls->vg_name,
-				     "version = " FMTd64, (int64_t)new_version,
-				     NULL);
-
-		if (reply.error || strcmp(daemon_reply_str(reply, "response", ""), "OK"))
-			log_error("set_vg_info in lvmetad failed %d", reply.error);
-		daemon_reply_destroy(reply);
 	}
 
 	if (inval_meta && (r->type == LD_RT_GL)) {
-		daemon_reply reply;
-
 		log_debug("S %s R %s res_lock set lvmetad global invalid",
 			  ls->name, r->name);
-
-		reply = send_lvmetad("set_global_info",
-				     "token = %s", "skip",
-				     "global_invalid = " FMTd64, INT64_C(1),
-				     NULL);
-
-		if (reply.error || strcmp(daemon_reply_str(reply, "response", ""), "OK"))
-			log_error("set_global_info in lvmetad failed %d", reply.error);
-		daemon_reply_destroy(reply);
 	}
 
 	/*
@@ -4823,162 +4742,7 @@ static void close_client_thread(void)
 
 static int get_lockd_vgs(struct list_head *vg_lockd)
 {
-	struct list_head update_vgs;
-	daemon_reply reply;
-	struct dm_config_node *cn;
-	struct dm_config_node *metadata;
-	struct dm_config_node *md_cn;
-	struct dm_config_node *lv_cn;
-	struct lockspace *ls, *safe;
-	struct resource *r;
-	const char *vg_name;
-	const char *vg_uuid;
-	const char *lv_uuid;
-	const char *lock_type;
-	const char *lock_args;
-	char find_str_path[PATH_MAX];
-	int rv = 0;
-
-	INIT_LIST_HEAD(&update_vgs);
-
-	reply = send_lvmetad("vg_list", "token = %s", "skip", NULL);
-
-	if (reply.error || strcmp(daemon_reply_str(reply, "response", ""), "OK")) {
-		log_error("vg_list from lvmetad failed %d", reply.error);
-		rv = -EINVAL;
-		goto destroy;
-	}
-
-	if (!(cn = dm_config_find_node(reply.cft->root, "volume_groups"))) {
-		log_error("get_lockd_vgs no vgs");
-		rv = -EINVAL;
-		goto destroy;
-	}
-
-	/* create an update_vgs list of all vg uuids */
-
-	for (cn = cn->child; cn; cn = cn->sib) {
-		vg_uuid = cn->key;
-
-		if (!(ls = alloc_lockspace())) {
-			rv = -ENOMEM;
-			break;
-		}
-
-		strncpy(ls->vg_uuid, vg_uuid, 64);
-		list_add_tail(&ls->list, &update_vgs);
-		log_debug("get_lockd_vgs %s", vg_uuid);
-	}
- destroy:
-	daemon_reply_destroy(reply);
-
-	if (rv < 0)
-		goto out;
-
-	/* get vg_name and lock_type for each vg uuid entry in update_vgs */
-
-	list_for_each_entry(ls, &update_vgs, list) {
-		reply = send_lvmetad("vg_lookup",
-				     "token = %s", "skip",
-				     "uuid = %s", ls->vg_uuid,
-				     NULL);
-
-		if (reply.error || strcmp(daemon_reply_str(reply, "response", ""), "OK")) {
-			log_error("vg_lookup from lvmetad failed %d", reply.error);
-			rv = -EINVAL;
-			goto next;
-		}
-
-		vg_name = daemon_reply_str(reply, "name", NULL);
-		if (!vg_name) {
-			log_error("get_lockd_vgs %s no name", ls->vg_uuid);
-			rv = -EINVAL;
-			goto next;
-		}
-
-		strncpy(ls->vg_name, vg_name, MAX_NAME);
-
-		metadata = dm_config_find_node(reply.cft->root, "metadata");
-		if (!metadata) {
-			log_error("get_lockd_vgs %s name %s no metadata",
-				  ls->vg_uuid, ls->vg_name);
-			rv = -EINVAL;
-			goto next;
-		}
-
-		lock_type = dm_config_find_str(metadata, "metadata/lock_type", NULL);
-		ls->lm_type = str_to_lm(lock_type);
-
-		if ((ls->lm_type != LD_LM_SANLOCK) && (ls->lm_type != LD_LM_DLM)) {
-			log_debug("get_lockd_vgs %s not lockd type", ls->vg_name);
-			continue;
-		}
-
-		lock_args = dm_config_find_str(metadata, "metadata/lock_args", NULL);
-		if (lock_args)
-			strncpy(ls->vg_args, lock_args, MAX_ARGS);
-
-		log_debug("get_lockd_vgs %s lock_type %s lock_args %s",
-			  ls->vg_name, lock_type, lock_args ?: "none");
-
-		/*
-		 * Make a record (struct resource) of each lv that uses a lock.
-		 * For any lv that uses a lock, we'll check if the lv is active
-		 * and if so try to adopt a lock for it.
-		 */
-
-		for (md_cn = metadata->child; md_cn; md_cn = md_cn->sib) {
-			if (strcmp(md_cn->key, "logical_volumes"))
-				continue;
-
-			for (lv_cn = md_cn->child; lv_cn; lv_cn = lv_cn->sib) {
-				snprintf(find_str_path, PATH_MAX, "%s/lock_args", lv_cn->key);
-				lock_args = dm_config_find_str(lv_cn, find_str_path, NULL);
-				if (!lock_args)
-					continue;
-
-				snprintf(find_str_path, PATH_MAX, "%s/id", lv_cn->key);
-				lv_uuid = dm_config_find_str(lv_cn, find_str_path, NULL);
-
-				if (!lv_uuid) {
-					log_error("get_lock_vgs no lv id for name %s", lv_cn->key);
-					continue;
-				}
-
-				if (!(r = alloc_resource())) {
-					rv = -ENOMEM;
-					goto next;
-				}
-
-				r->use_vb = 0;
-				r->type = LD_RT_LV;
-				strncpy(r->name, lv_uuid, MAX_NAME);
-				if (lock_args)
-					strncpy(r->lv_args, lock_args, MAX_ARGS);
-				list_add_tail(&r->list, &ls->resources);
-				log_debug("get_lockd_vgs %s lv %s %s (name %s)",
-					  ls->vg_name, r->name, lock_args ? lock_args : "", lv_cn->key);
-			}
-		}
- next:
-		daemon_reply_destroy(reply);
-
-		if (rv < 0)
-			break;
-	}
-out:
-	/* Return lockd VG's on the vg_lockd list. */
-
-	list_for_each_entry_safe(ls, safe, &update_vgs, list) {
-		list_del(&ls->list);
-
-		if ((ls->lm_type == LD_LM_SANLOCK) || (ls->lm_type == LD_LM_DLM))
-			list_add_tail(&ls->list, vg_lockd);
-		else
-			free(ls);
-	}
-
-	return rv;
+	return -1;
 }
 
 static char _dm_uuid[DM_UUID_LEN];
@@ -5845,13 +5609,6 @@ static int main_loop(daemon_state *ds_arg)
 	setup_worker_thread();
 	setup_restart();
 
-	pthread_mutex_init(&lvmetad_mutex, NULL);
-	lvmetad_handle = lvmetad_open(NULL);
-	if (lvmetad_handle.error || lvmetad_handle.socket_fd < 0)
-		log_error("lvmetad_open error %d", lvmetad_handle.error);
-	else
-		lvmetad_connected = 1;
-
 	/*
 	 * Attempt to rejoin lockspaces and adopt locks from a previous
 	 * instance of lvmlockd that left behind lockspaces/locks.
@@ -5973,7 +5730,6 @@ static int main_loop(daemon_state *ds_arg)
 	close_worker_thread();
 	close_client_thread();
 	closelog();
-	daemon_close(lvmetad_handle);
 	return 1; /* libdaemon uses 1 for success */
 }
 

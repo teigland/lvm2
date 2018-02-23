@@ -203,8 +203,6 @@ int check_lvm1_vg_inactive(struct cmd_context *cmd, const char *vgname);
 
 #define unlock_vg(cmd, vg, vol)	\
 	do { \
-		if (vg && !lvmetad_vg_update_finish(vg)) \
-			stack; \
 		if (is_real_vg(vol) && !sync_dev_names(cmd)) \
 			stack; \
 		if (!lock_vol(cmd, vol, LCK_VG_UNLOCK, NULL)) \

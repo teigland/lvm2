@@ -24,9 +24,6 @@
 #include "lib/format_text/format-text.h"
 #include "lib/config/config.h"
 
-#include "lib/cache/lvmetad.h"
-#include "daemons/lvmetad/lvmetad-client.h"
-
 #define CACHE_INVALID	0x00000001
 #define CACHE_LOCKED	0x00000002
 
@@ -148,19 +145,6 @@ int lvmcache_init(void)
 	}
 
 	return 1;
-}
-
-void lvmcache_seed_infos_from_lvmetad(struct cmd_context *cmd)
-{
-	if (!lvmetad_used() || _has_scanned)
-		return;
-
-	if (!lvmetad_pv_list_to_lvmcache(cmd)) {
-		stack;
-		return;
-	}
-
-	_has_scanned = 1;
 }
 
 static void _update_cache_info_lock_state(struct lvmcache_info *info, int locked)
@@ -597,18 +581,8 @@ const struct format_type *lvmcache_fmt_from_vgname(struct cmd_context *cmd,
 	const struct format_type *fmt;
 	char vgid_found[ID_LEN + 1] __attribute__((aligned(8)));
 
-	if (!(vginfo = lvmcache_vginfo_from_vgname(vgname, vgid))) {
-		if (!lvmetad_used())
-			return NULL; /* too bad */
-		/* If we don't have the info but we have lvmetad, we can ask
-		 * there before failing. */
-		if ((vg = lvmetad_vg_lookup(cmd, vgname, vgid))) {
-			fmt = vg->fid->fmt;
-			release_vg(vg);
-			return fmt;
-		}
+	if (!(vginfo = lvmcache_vginfo_from_vgname(vgname, vgid)))
 		return NULL;
-	}
 
 	/*
 	 * If this function is called repeatedly, only the first one needs to revalidate.
@@ -1190,9 +1164,6 @@ int lvmcache_label_rescan_vg(struct cmd_context *cmd, const char *vgname, const 
 	struct lvmcache_vginfo *vginfo;
 	struct lvmcache_info *info;
 
-	if (lvmetad_used())
-		return 1;
-
 	dm_list_init(&devs);
 
 	if (!(vginfo = lvmcache_vginfo_from_vgname(vgname, vgid)))
@@ -1238,12 +1209,6 @@ int lvmcache_label_scan(struct cmd_context *cmd)
 	struct format_type *fmt;
 
 	int r = 0;
-
-	if (lvmetad_used()) {
-		if (!label_scan_setup_bcache())
-			return 0;
-		return 1;
-	}
 
 	/* Avoid recursion when a PVID can't be found! */
 	if (_scanning_in_progress)
@@ -1390,7 +1355,6 @@ struct dm_list *lvmcache_get_vgids(struct cmd_context *cmd,
 	struct dm_list *vgids;
 	struct lvmcache_vginfo *vginfo;
 
-	// TODO plug into lvmetad here automagically?
 	lvmcache_label_scan(cmd);
 
 	if (!(vgids = str_list_create(cmd->mem))) {
@@ -2164,10 +2128,6 @@ struct lvmcache_info *lvmcache_add(struct labeller *labeller,
 			log_warn("WARNING: PV %s on %s was already found on %s.",
 				  uuid, dev_name(dev), dev_name(info->dev));
 
-			if (!_found_duplicate_pvs && lvmetad_used()) {
-				log_warn("WARNING: Disabling lvmetad cache which does not support duplicate PVs."); 
-				lvmetad_set_disabled(labeller->fmt->cmd, LVMETAD_DISABLE_REASON_DUPLICATES);
-			}
 			_found_duplicate_pvs = 1;
 
 			strncpy(dev->pvid, pvid_s, sizeof(dev->pvid));
@@ -2638,9 +2598,6 @@ int lvmcache_is_orphan(struct lvmcache_info *info) {
 int lvmcache_vgid_is_cached(const char *vgid) {
 	struct lvmcache_vginfo *vginfo;
 
-	if (lvmetad_used())
-		return 1;
-
 	vginfo = lvmcache_vginfo_from_vgid(vgid);
 
 	if (!vginfo || !vginfo->vgname)
@@ -2745,9 +2702,6 @@ int lvmcache_vg_is_foreign(struct cmd_context *cmd, const char *vgname, const ch
 {
 	struct lvmcache_vginfo *vginfo;
 	int ret = 0;
-
-	if (lvmetad_used())
-		return lvmetad_vg_is_foreign(cmd, vgname, vgid);
 
 	if ((vginfo = lvmcache_vginfo_from_vgid(vgid)))
 		ret = !is_system_id_allowed(cmd, vginfo->system_id);

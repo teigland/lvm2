@@ -19,7 +19,6 @@
 #include "lib/display/display.h"
 #include "lib/commands/toolcontext.h"
 #include "lib/cache/lvmcache.h"
-#include "lib/cache/lvmetad.h"
 #include "lib/locking/lvmlockd.h"
 #include "lib/metadata/lv_alloc.h"
 #include "lib/metadata/pv_alloc.h"
@@ -59,10 +58,6 @@ static int _vsn1_check_version(const struct dm_config_tree *cft)
 {
 	const struct dm_config_node *cn;
 	const struct dm_config_value *cv;
-
-	// TODO if this is pvscan --cache, we want this check back.
-	if (lvmetad_used())
-		return 1;
 
 	/*
 	 * Check the contents field.
@@ -238,8 +233,7 @@ static int _read_pv(struct format_instance *fid,
 		return 0;
 	}
 
-	/* TODO is the !lvmetad_used() too coarse here? */
-	if (!pv->dev && !lvmetad_used())
+	if (!pv->dev)
 		pv->status |= MISSING_PV;
 
 	if ((pv->status & MISSING_PV) && pv->dev && pv_mda_used_count(pv) == 0) {
@@ -1155,10 +1149,7 @@ static struct volume_group *_read_vg(struct format_instance *fid,
 		goto bad;
 	}
 
-	if (allow_lvmetad_extensions)
-		_read_sections(fid, "outdated_pvs", _read_pv, vg,
-			       vgn, pv_hash, lv_hash, 1);
-	else if (dm_config_has_node(vgn, "outdated_pvs"))
+	if (dm_config_has_node(vgn, "outdated_pvs"))
 		log_error(INTERNAL_ERROR "Unexpected outdated_pvs section in metadata of VG %s.", vg->name);
 
 	/* Optional tags */

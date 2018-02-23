@@ -20,7 +20,6 @@
 #include "lib/commands/toolcontext.h"
 #include "lib/cache/lvmcache.h"
 #include "lib/format_text/archiver.h"
-#include "lib/cache/lvmetad.h"
 
 struct volume_group *alloc_vg(const char *pool_name, struct cmd_context *cmd,
 			      const char *vg_name)
