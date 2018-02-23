@@ -633,16 +633,6 @@ int dev_open_readonly_quiet(struct device *dev)
 	return dev_open_flags(dev, O_RDONLY, 1, 1);
 }
 
-int dev_test_excl(struct device *dev)
-{
-	int flags = 0;
-
-	flags |= O_EXCL;
-	flags |= O_RDWR;
-
-	return dev_open_flags(dev, flags, 1, 1);
-}
-
 static void _close(struct device *dev)
 {
 	if (close(dev->fd))

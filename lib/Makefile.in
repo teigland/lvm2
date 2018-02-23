@@ -62,7 +62,6 @@ LIB_SOURCE=\
 	lib/metadata/lv_manip.c \
 	lib/metadata/merge.c \
 	lib/metadata/metadata.c \
-	lib/metadata/metadata-liblvm.c \
 	lib/metadata/mirror.c \
 	lib/metadata/pool_manip.c \
 	lib/metadata/pv.c \

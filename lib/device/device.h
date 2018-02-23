@@ -143,7 +143,6 @@ int dev_open_readonly_quiet(struct device *dev);
 int dev_close(struct device *dev);
 int dev_close_immediate(struct device *dev);
 void dev_close_all(void);
-int dev_test_excl(struct device *dev);
 
 int dev_fd(struct device *dev);
 const char *dev_name(const struct device *dev);

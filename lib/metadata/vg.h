@@ -32,13 +32,6 @@ typedef enum {
 	ALLOC_INHERIT
 } alloc_policy_t;
 
-struct pv_to_write {
-	struct dm_list list;
-	struct physical_volume *pv;
-	struct pvcreate_params *pp;
-	int new_pv;
-};
-
 #define MAX_EXTENT_COUNT  (UINT32_MAX)
 
 struct volume_group {
@@ -88,8 +81,6 @@ struct volume_group {
 	 * List of physical volumes that were used in vgextend but do not carry
 	 * a PV label yet. They need to be pvcreate'd at vg_write time.
 	 */
-
-	struct dm_list pvs_to_write; /* struct pv_to_write */
 
 	struct dm_list pv_write_list; /* struct pv_list */
 

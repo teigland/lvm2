@@ -644,12 +644,6 @@ void vg_revert(struct volume_group *vg);
 struct volume_group *vg_read_internal(struct cmd_context *cmd, const char *vg_name,
 				      const char *vgid, uint32_t warn_flags, int *consistent);
 
-#define get_pvs( cmd ) get_pvs_internal((cmd), NULL, NULL)
-#define get_pvs_perserve_vg( cmd, pv_list, vg_list ) get_pvs_internal((cmd), (pv_list), (vg_list))
-
-struct dm_list *get_pvs_internal(struct cmd_context *cmd,
-		struct dm_list *pvslist, struct dm_list *vgslist);
-
 /*
  * Add/remove LV to/from volume group
  */
@@ -658,12 +652,8 @@ int unlink_lv_from_vg(struct logical_volume *lv);
 void lv_set_visible(struct logical_volume *lv);
 void lv_set_hidden(struct logical_volume *lv);
 
-struct dm_list *get_vgnames(struct cmd_context *cmd, int include_internal);
-struct dm_list *get_vgids(struct cmd_context *cmd, int include_internal);
 int get_vgnameids(struct cmd_context *cmd, struct dm_list *vgnameids,
 		  const char *only_this_vgname, int include_internal);
-int scan_vgs_for_pvs(struct cmd_context *cmd, uint32_t warn_flags);
-
 int pv_write(struct cmd_context *cmd, struct physical_volume *pv, int allow_non_orphan);
 int move_pv(struct volume_group *vg_from, struct volume_group *vg_to,
 	    const char *pv_name);
