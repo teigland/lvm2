@@ -1606,6 +1606,14 @@ void lvmcache_del(struct lvmcache_info *info)
 	free(info);
 }
 
+void lvmcache_del_dev(struct device *dev)
+{
+	struct lvmcache_info *info;
+
+	if ((info = lvmcache_info_from_pvid((const char *)dev->pvid, dev, 0)))
+		lvmcache_del(info);
+}
+
 /*
  * vginfo must be info->vginfo unless info is NULL (orphans)
  */
